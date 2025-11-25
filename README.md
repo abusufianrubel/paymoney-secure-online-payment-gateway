@@ -1,62 +1,192 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400"></a></p>
+# **PayMoney – Online Payment Gateway System**
 
-<p align="center">
-<a href="https://travis-ci.org/laravel/framework"><img src="https://travis-ci.org/laravel/framework.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+PayMoney is a secure, multi-currency online payment gateway and wallet system similar to PayPal or Stripe. It supports deposits, transfers, withdrawals, currency exchange, merchant payments, crypto transactions, TRC-20 tokens, KYC, 2FA, and a wide selection of premium add-ons.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## **Features**
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+* Multi-currency wallet system
+* Deposits via PayPal, Stripe, Payeer, PayUMoney, CoinPayments, Coinbase & Bank
+* Money transfer to registered/unregistered users
+* Request money from users
+* Currency exchange (Local or API-based)
+* Manual withdrawals (PayPal/Bank)
+* Crypto send/receive (BTC, LTC, DOGE, ETH, TRX)
+* TRC-20 token deployment & token wallet
+* Merchant system with Standard & Express Checkout
+* Dispute handling & support ticket system
+* KYC (Identity & Address verification)
+* 2FA (Email, Phone, Google Authenticator)
+* Email templates & SMTP configuration
+* User groups, roles & permissions
+* Revenue tracking and reporting
+* Notification settings per transaction type
+* Add-ons: P2P Exchange, Virtual Card, Escrow, Shop, Event Tickets, Referral System & more
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## **Demo Access**
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### **Admin**
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 1500 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+* **URL:** [https://demo.paymoney.techvill.net/admin](https://demo.paymoney.techvill.net/admin)
+* **Email:** [admin@techvill.net](mailto:admin@techvill.net)
+* **Password:** 123456
 
-## Laravel Sponsors
+### **User**
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+* **URL:** [https://demo.paymoney.techvill.net/login](https://demo.paymoney.techvill.net/login)
+* **Email:** [kyla@gmail.com](mailto:kyla@gmail.com)
+* **Password:** 123456
 
-### Premium Partners
+### **Merchant**
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/)**
-- **[OP.GG](https://op.gg)**
+* **URL:** [https://demo.paymoney.techvill.net/login](https://demo.paymoney.techvill.net/login)
+* **Email:** [irish@gmail.com](mailto:irish@gmail.com)
+* **Password:** 123456
 
-## Contributing
+### **Stripe Test Card**
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```
+Card Number: 4242 4242 4242 4242
+Expiry: 12/29
+CVC: 123
+```
 
-## Code of Conduct
+---
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+# **Installation Guide**
 
-## Security Vulnerabilities
+## **1. Configure Database**
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+1. Log in to your cPanel
+   Visit: `http://yourdomain.com/cpanel`
+2. Go to **MySQL Databases**
+3. Create a new **Database**
+4. Create a **Database User**
+5. Assign a password
 
-## License
+   > Save your database name, username, and password.
+6. Add the user to the database with **ALL Privileges**
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+If you are unfamiliar with MySQL setup, refer to your hosting provider's documentation.
+
+---
+
+## **2. Upload Files to Server**
+
+1. (Optional) Create a **Subdomain**
+
+   * `Domains → Subdomains`
+2. Open **File Manager → Upload**
+3. Upload the **PayMoney Installer ZIP** (from CodeCanyon)
+4. Extract the ZIP file inside your domain or subdomain root directory
+
+---
+
+## **3. Installation Wizard Steps**
+
+### **Step 1 — Server Requirements**
+
+The installer will automatically check PHP extensions, version, and server configuration.
+
+### **Step 2 — Folder Permissions**
+
+The installer will list folders requiring write permissions.
+Apply the required permissions before continuing.
+
+### **Step 3 — Verify Envato Purchase Code**
+
+Enter your **purchase code**.
+
+If you see:
+
+> "Purchase code has already been used"
+
+This means:
+
+* The script was already installed on another domain.
+* A **Regular License** allows installation on **1 domain only**.
+* You may reinstall on the **same domain** without issues.
+
+To install on multiple domains, you need an **Extended License**.
+
+Local installations are unlimited.
+
+### **Step 4 — Database Settings**
+
+Enter:
+
+* Database name
+* Username
+* Password
+* Host (usually `localhost`)
+
+If credentials are incorrect, the installer will not proceed.
+
+### **Step 5 — Admin Account Setup**
+
+Enter:
+
+* First name
+* Last name
+* Admin password
+
+After saving, you should see:
+**"Installation Successful"**
+
+---
+
+## **4. Post-Installation Setup**
+
+### **Add Currency**
+
+Navigate to:
+
+```
+Currencies → Add New
+```
+
+If your currency is not listed, create a new one manually.
+
+---
+
+## **5. Optional (Recommended) Setup**
+
+### **Customize Email Templates**
+
+```
+Email Templates → Edit
+```
+
+Modify templates for Admin and Users.
+
+### **Configure Roles & Permissions**
+
+1. Admin Roles
+
+   ```
+   Settings → Roles & Permissions → Add Role
+   ```
+2. User & Merchant Groups
+
+   ```
+   Settings → Users Group
+   ```
+
+### **Review PayMoney Settings**
+
+Configure:
+
+* Payment Methods
+* Fees & Limits
+* Notifications
+* 2FA
+* KYC
+* Preferences
+* Merchant Options
+
+---
+
+# **You're Ready to Use PayMoney! 🎉**
