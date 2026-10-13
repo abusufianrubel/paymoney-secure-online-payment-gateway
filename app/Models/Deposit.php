@@ -215,4 +215,14 @@ class Deposit extends Model
 
         return $deposit;
     }
+
+    /**
+     * Defines a relationship where this transaction belongs to an Agent instance.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function agent()
+    {
+        return $this->belongsTo(\Modules\Agent\Entities\Agent::class, 'agent_id');
+    }
 }

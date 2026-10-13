@@ -27,6 +27,14 @@
                 <li {{ isset($list_menu) && $list_menu == 'bank' ? 'class=active' : '' }}>
                     <a data-spinner="true" href='{{ url(config('adminPrefix') . '/settings/payment-methods/bank/' . $currency->id) }}'>{{ __('Banks') }}</a>
                 </li>
+                <li {{ isset($list_menu) && $list_menu == 'flutterwave' ? 'class=active' : '' }}>
+                    <a data-spinner="true" href='{{ url(config('adminPrefix') . '/settings/payment-methods/flutterwave/' . $currency->id) }}'>{{ __('Flutterwave') }}</a>
+                </li>
+                @if (moduleExists('AirtimeRecharge') && isActive('AirtimeRecharge'))
+                    <li {{ isset($list_menu) && $list_menu == 'reloadly' ? 'class=active' : '' }}>
+                        <a data-spinner="true" href='{{ url(config('adminPrefix') . '/settings/payment-methods/reloadly/' . $currency->id) }}'>{{ __('Reloadly') }}</a>
+                    </li>
+                @endif
                 @php
                     $modules = addonPaymentMethods('Wallet');
                     $type = array_column($modules, 'type');

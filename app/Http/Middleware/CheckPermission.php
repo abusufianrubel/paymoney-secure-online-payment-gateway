@@ -3,7 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Traits\ApiResponse;
-use Common, Config;
+use Common;
 use Closure;
 
 
@@ -22,14 +22,12 @@ class CheckPermission
 
     public function handle($request, Closure $next, $permissions)
     {
-        $prefix = str_replace('/', '', request()->route()->getPrefix());
-        if ($prefix == config('adminPrefix')) {
-            $gaurd_type = auth('admin')->user()->id;
-        } else {
-            $gaurd_type = \Auth::user()->id;
-        }
+        $prefix = request()->route()->getPrefix();
+        $prefix = strpos($prefix, '/') ? explode('/', $prefix)[0] : str_replace('/', '', $prefix);
 
-        if ($this->permission->has_permission($gaurd_type, $permissions)) {
+        $userId = ($prefix == config('adminPrefix')) ? auth('admin')->user()->id : auth()->user()->id;
+
+        if ($this->permission->has_permission($userId, $permissions)) {
             return $next($request);
         } else {
             if (str_contains($prefix, 'apiv2')) {

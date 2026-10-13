@@ -72,8 +72,3 @@
     </div>
 </div>
 @endsection
-
-@push('extra_body_scripts')
-<script type="text/javascript">
-</script>
-@endpush

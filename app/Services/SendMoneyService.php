@@ -67,7 +67,9 @@ class SendMoneyService
 
         // Check if receiver exists
         if (is_null($receiver)) {
-            return true;
+            return [
+                'status' => true
+            ];
         }
 
         return $this->validateReceiverUserEmail($receiver);
@@ -86,7 +88,9 @@ class SendMoneyService
     protected function validateReceiverUserEmail($receiver)
     {
         if (is_null($receiver)) {
-            return true;
+            return [
+                'status' => true
+            ];
         }
 
         $user = auth()->user();
@@ -101,7 +105,10 @@ class SendMoneyService
             throw new SendMoneyException(__("You cannot send money to a :x user.", ["x" => $receiver->status]));
         }
 
-        return true;
+        return [
+            'status' => true,
+            'receiver' => getColumnValue($receiver)
+        ];
     }
 
 
@@ -123,10 +130,12 @@ class SendMoneyService
             throw new SendMoneyException(__("Please set your phone number first."));
         }
 
-        $receiver = User::select('formattedPhone', 'status')->where("formattedPhone", $phone)->first();
+        $receiver = User::select('first_name', 'last_name', 'formattedPhone', 'status')->where("formattedPhone", $phone)->first();
 
         if (is_null($receiver)) {
-            return true;
+            return [
+                'status' => true
+            ];
         }
 
         return $this->validateReceiverUserPhone($receiver);
@@ -145,7 +154,9 @@ class SendMoneyService
     {
         // Check if receiver exists
         if (is_null($receiver)) {
-            return true;
+            return [
+                'status' => true
+            ];
         }
 
         $user = auth()->user();
@@ -160,7 +171,10 @@ class SendMoneyService
             throw new SendMoneyException(__("You cannot send money to a :x user.", ["x" => $receiver->status]));
         }
 
-        return true;
+        return [
+            'status' => true,
+            'receiver' => getColumnValue($receiver)
+        ];
     }
 
 

@@ -3,9 +3,10 @@
 namespace App\Models;
 
 use App\Http\Controllers\Users\EmailController;
+use App\Http\Helpers\Common;
 use App\Services\Sms\SendMoneySmsService;
 use Illuminate\Database\Eloquent\Model;
-use Exception, DB, Common;
+use Exception, DB;
 use App\Services\Mail\SendMoney\{
     NotifyAdminOnSendMoneyMailService,
     EmailToReceiverMailService, 
@@ -26,7 +27,6 @@ class Transfer extends Model
     public function __construct()
     {
         $this->helper      = new Common();
-        $this->emailObject = new EmailController();
     }
 
     public function sender()
@@ -80,45 +80,37 @@ class Transfer extends Model
      */
     public function getTransfersUsersResponse($search)
     {
-        $getTransfersUsers = $this->whereHas('sender', function ($query) use ($search) {
-            $query->where('first_name', 'LIKE', '%' . $search . '%')->orWhere('last_name', 'LIKE', '%' . $search . '%');
-        })
-        ->distinct('sender_id')
-        ->with(['sender:id,first_name,last_name'])
-        ->get(['sender_id'])
-        ->map(function ($transferA) {
-            $arr['user_id']    = $transferA->sender_id;
-            $arr['first_name'] = $transferA->sender?->first_name;
-            $arr['last_name']  = $transferA->sender?->last_name;
-            return $arr;
-        });
+        // Fetch sender data and convert to standard Collection
+        $transfersUsers = collect($this->getTransfersByRelation('sender', 'sender_id', $search));
 
-        $getTransfersEndUsers = $this->whereHas('receiver', function ($query) use ($search) {
-            $query->where('first_name', 'LIKE', '%' . $search . '%')->orWhere('last_name', 'LIKE', '%' . $search . '%');
-        })
-        ->distinct('receiver_id')
-        ->with(['receiver:id,first_name,last_name'])
-        ->get(['receiver_id'])
-        ->map(function ($transferB) {
-            $arr['user_id']    = $transferB->receiver_id;
-            $arr['first_name'] = $transferB->receiver?->first_name;
-            $arr['last_name']  = $transferB->receiver?->last_name;
-            return $arr;
-        });
+        // Fetch receiver data and convert to standard Collection
+        $transfersEndUsers = collect($this->getTransfersByRelation('receiver', 'receiver_id', $search));
 
-        if ($getTransfersUsers->isNotEmpty()) {
-            return $getTransfersUsers->unique();
-        }
+        // Merge both sender and receiver results as standard Collections
+        $allTransfersUsers = $transfersUsers->merge($transfersEndUsers);
 
-        if ($getTransfersEndUsers->isNotEmpty()) {
-            return $getTransfersEndUsers->unique();
-        }
-
-        if ($getTransfersUsers->isNotEmpty() && $getTransfersEndUsers->isNotEmpty()) {
-            $getUniqueTransfersUsers = ($getTransfersUsers->merge($getTransfersEndUsers))->unique();
-            return $getUniqueTransfersUsers;
-        }
+        // Return unique records
+        return $allTransfersUsers->unique();
     }
+
+    private function getTransfersByRelation($relation, $relationId, $search)
+    {
+        return $this->whereHas($relation, function ($query) use ($search) {
+            $query->where('first_name', 'LIKE', '%' . $search . '%')
+                ->orWhere('last_name', 'LIKE', '%' . $search . '%');
+        })
+        ->distinct($relationId)
+        ->with([$relation . ':id,first_name,last_name'])
+        ->get([$relationId])
+        ->map(function ($transfer) use ($relationId, $relation) {
+            return [
+                'user_id'    => $transfer->{$relationId},
+                'first_name' => $transfer->{$relation}?->first_name,
+                'last_name'  => $transfer->{$relation}?->last_name,
+            ];
+        });
+    }
+
 
     /**
      * [Transfers Filtering Results]
@@ -242,7 +234,7 @@ class Transfer extends Model
         $transaction->status            = $arr['status'];
         $transaction->save();
 
-        if (module('Referral') && settings('referral_enabled') == 'Yes' && isset($arr['userInfo'])) {
+        if (moduleExists('Referral') && settings('referral_enabled') == 'Yes' && isset($arr['userInfo'])) {
             $currency   = Currency::find($arr['currency_id'], ['code']);
             $refAwardData = [
                 'userId'          => $arr['userInfo']->id,
@@ -327,7 +319,7 @@ class Transfer extends Model
                 // Notification Email/SMS
                 $this->notificationToSender($transfer);
                 (new NotifyAdminOnSendMoneyMailService)->send($transfer, ['type' => 'send', 'medium' => 'email']);
-                if (module('Referral') && settings('referral_enabled') == 'Yes' && !empty($transactionResponse)) {
+                if (moduleExists('Referral') && settings('referral_enabled') == 'Yes' && !empty($transactionResponse)) {
                     if (isset($transactionResponse['email_status']) && $transactionResponse['email_status'] === 200 && !empty($transactionResponse['email_details'])) {
                         $awardInfo = (new \Modules\Referral\Services\Email\ReferralAwardMailService)->send($transactionResponse['email_details']);
                         \Modules\Referral\Jobs\ProcessRewardEmail::dispatch($awardInfo);

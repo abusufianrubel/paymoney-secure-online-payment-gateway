@@ -430,11 +430,11 @@
     var expressMerchantQrCodeUrl = "{{ route('user.express_merchant.qrcode') }}";
     var expressMerchantGetQrCodeUrl = "{{ route('user.express_merchant.get_qrcode') }}";
     var flasheshDarkPath = "{{ asset('public/frontend/templates/js/flashesh-dark.min.js') }}";
-    var bootstrapCssPath = "{{ asset('public/dist/libraries/bootstrap-5.0.2/css/bootstrap.min.css') }}";
+    var bootstrapCssPath = "{{ asset('public/dist/libraries/bootstrap/css/bootstrap.min.css') }}";
     var styleCssPath = "{{ asset('public/frontend/templates/css/style.min.css') }}";
     var favIcon = "{{ faviconPath() }}";
-    var jqueryPath = "{{ asset('public/dist/libraries/jquery-3.6.1/jquery-3.6.1.min.js') }}";
-    var bootstrapJsPath = "{{ asset('public/dist/libraries/bootstrap-5.0.2/js/bootstrap.min.js') }}";
+    var jqueryPath = "{{ asset('public/dist/libraries/jquery/dist/jquery.min.js') }}";
+    var bootstrapJsPath = "{{ asset('public/dist/libraries/bootstrap/js/bootstrap.min.js') }}";
     var mainJsPath = "{{ asset('public/frontend/templates/js/main.min.js') }}";
     var fontLink = "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700&display=swap"
     var payButtonTitle = "{{ __('You\'re almost there!') }}";

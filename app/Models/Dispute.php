@@ -70,91 +70,43 @@ class Dispute extends Model
 
     public function getDisputesList($from, $to, $status, $user)
     {
+        $date_range = 'Available';
 
-        if (empty($from) || empty($to))
-        {
+        if (empty($from) || empty($to)){
             $date_range = null;
         }
-        else if (empty($from))
-        {
-            $date_range = null;
-        }
-        else if (empty($to))
-        {
-            $date_range = null;
-        }
-        else
-        {
-            $date_range = 'Available';
-        }
 
-        $condition1 = [];
-        if (!empty($status) && $status != 'all')
-        {
-            $condition1['disputes.status'] = $status;
-        }
+        $disputes = $this->with([
+            'claimant:id,first_name,last_name,picture',
+            'defendant:id,first_name,last_name,picture'
+        ])
+        ->where(function ($query) use ($status, $user) {
+            $query->where(function ($q) use ($status, $user) {
+                if (!empty($status) && $status != 'all') {
+                    $q->where('disputes.status', $status);
+                }
 
-        if (!empty($user))
-        {
-            $condition1['disputes.claimant_id'] = $user;
-        }
+                if (!empty($user)) {
+                    $q->where('disputes.claimant_id', $user);
+                }
+            })
+            ->orWhere(function ($q) use ($status, $user) {
+                if (!empty($status) && $status != 'all') {
+                    $q->where('disputes.status', $status);
+                }
 
-        $condition2 = [];
-        if (!empty($status) && $status != 'all')
-        {
-            $condition2['disputes.status'] = $status;
-        }
-        if (!empty($user))
-        {
-            $condition2['disputes.defendant_id'] = $user;
-        }
+                if (!empty($user)) {
+                    $q->where('disputes.defendant_id', $user);
+                }
+            });
+        });
 
         if (!empty($date_range)) {
-            $disputes = $this->with([
-                    'claimant' => function ($query)
-                    {
-                        $query->select('id', 'first_name', 'last_name', 'picture');
-                    },
-                    'defendant' => function ($query)
-                    {
-                        $query->select('id', 'first_name', 'last_name', 'picture');
-                    },
-                ])
-                ->where($condition1)
-                ->orWhere(function ($query) use ($status, $user) {
-                    if (!empty($status) && $status != 'all') {
-                        $query->where('disputes.status', $status);
-                    }
-                    if (!empty($user)) {
-                        $query->where('disputes.defendant_id', $user);
-                    }
-                })
-                ->whereDate('created_at', '>=', $from)->whereDate('created_at', '<=', $to)
-                ->select('disputes.*');
-
-        } else {
-            $disputes = $this->with([
-                    'claimant' => function ($query)
-                    {
-                        $query->select('id', 'first_name', 'last_name', 'picture');
-                    },
-                    'defendant' => function ($query)
-                    {
-                        $query->select('id', 'first_name', 'last_name', 'picture');
-                    },
-                ])
-                ->where($condition1)
-                ->orWhere(function ($query) use ($status, $user) {
-                    if (!empty($status) && $status != 'all') {
-                        $query->where('disputes.status', $status);
-                    }
-                    if (!empty($user)) {
-                        $query->where('disputes.defendant_id', $user);
-                    }
-                })
-                ->select('disputes.*');
+            $disputes->whereDate('created_at', '>=', $from)
+                ->whereDate('created_at', '<=', $to);
         }
-        return $disputes;
+
+        return $disputes->select('disputes.*');
     }
 
     public function latestDispute()

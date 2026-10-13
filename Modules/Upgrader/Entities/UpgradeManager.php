@@ -2,154 +2,427 @@
 
 namespace Modules\Upgrader\Entities;
 
-use Modules\Upgrader\Entities\Handler\{
-    View, Contractor
-};
+use Modules\Upgrader\Entities\Handler\FilesystemWritable;
+use Modules\Upgrader\Entities\Handler\Contractor;
 use Illuminate\Support\Facades\{
-    Artisan, File, Log
+    Artisan, Config, File, Log
 };
 use ZipArchive;
 
 class UpgradeManager extends Contractor
 {
-    /**
-     * List of non-writable directories
-     *
-     * @var array
-     */
-    private $directoriesNeedPermission = [];
+    public const STATE_FILE = 'upgrade.state.json';
+
+    public const PHASE_FILES_DONE = 'files_done';
 
     /**
-     * View the upgrade process
-     *
-     * @param string $redirectTo
-     * @return void
+     * @var array<int, array{step: string, message: string, level: string, time: string}>
      */
-    public function view($redirectTo)
+    private array $logs = [];
+
+    /**
+     * @var array<int, string>
+     */
+    private array $directoriesNeedPermission = [];
+
+    /**
+     * @return array{success: bool, logs: array, message?: string}
+     */
+    public function runFilesPhase(string $token): array
     {
-        return (new View())->view($redirectTo);
+        $this->resetLogs();
+
+        $isValid = $this->isValid();
+
+        if (! $isValid['status']) {
+            $this->logStep('validate', $isValid['message'], 'error');
+
+            return $this->phaseResponse(false, $isValid['message']);
+        }
+
+        if (! $this->validateToken($token)) {
+            $this->logStep('validate', __('Invalid or expired upgrade session. Please start again from the update page.'), 'error');
+
+            return $this->phaseResponse(false, __('Invalid upgrade session.'));
+        }
+
+        try {
+            if (function_exists('beforeUpgrade')) {
+                ob_start();
+
+                try {
+                    beforeUpgrade();
+                } finally {
+                    ob_end_clean();
+                }
+            }
+
+            $this->logStep(
+                'start',
+                __('Updating files from :from to :to', [
+                    'from' => $this->getCurrentVersion(),
+                    'to' => $this->getLastVersion(),
+                ]),
+                'info'
+            );
+
+            $this->installFiles($this->updaterJson['archive']);
+            $this->writeStateFile($token);
+
+            $this->logStep('files', __('Files updated successfully. Starting database phase…'), 'success');
+
+            return $this->phaseResponse(true);
+        } catch (\Throwable $e) {
+            $this->logStep('error', $e->getMessage(), 'error');
+            Log::error('Upgrader - Files phase failed', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+
+            $this->recovery();
+            $this->logStep('maintenance', __('Disabling maintenance mode…'), 'info');
+            self::disableMaintenanceMode();
+
+            return $this->phaseResponse(false, $e->getMessage());
+        }
     }
 
     /**
-     * Run the upgrade process
-     *
-     * @return void
+     * @return array{success: bool, logs: array, message?: string}
      */
-    public function run()
+    public function runFinalizePhase(string $token): array
     {
-        $updaterJson = $this->updaterJson;
-        $isValid = $this->isValid();
+        $this->resetLogs();
 
-        if (!$isValid['status']) {
-            $this->log($isValid['message']);
+        if (! $this->validateToken($token)) {
+            $this->logStep('validate', __('Invalid or expired upgrade session.'), 'error');
+
+            return $this->phaseResponse(false, __('Invalid upgrade session.'));
+        }
+
+        if (! $this->validateStateFile($token, self::PHASE_FILES_DONE)) {
+            $this->logStep('validate', __('File update phase has not completed. Please run the upgrade from the beginning.'), 'error');
+
+            return $this->phaseResponse(false, __('File phase not completed.'));
+        }
+
+        return $this->executeFinalize($token, true);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function getMaintenanceExceptUris(): array
+    {
+        $prefixes = array_unique(array_filter([
+            trim((string) env('ADMIN_PREFIX', 'admin'), '/'),
+            trim((string) config('adminPrefix', ''), '/'),
+            trim((string) config('paymoney.prefix', ''), '/'),
+        ]));
+
+        $paths = [
+            '*/system-update',
+            '*/system-update/*',
+        ];
+
+        foreach ($prefixes as $prefix) {
+            $paths[] = $prefix.'/system-update';
+            $paths[] = $prefix.'/system-update/*';
+        }
+
+        $appPath = trim((string) parse_url((string) config('app.url'), PHP_URL_PATH), '/');
+
+        if ($appPath !== '') {
+            foreach ($prefixes as $prefix) {
+                $paths[] = $appPath.'/'.$prefix.'/system-update';
+                $paths[] = $appPath.'/'.$prefix.'/system-update/*';
+            }
+
+            $paths[] = $appPath.'/system-update';
+            $paths[] = $appPath.'/system-update/*';
+        }
+
+        try {
+            $routePath = trim(parse_url(route('systemUpdate.upgrade', absolute: false), PHP_URL_PATH) ?? '', '/');
+
+            if ($routePath !== '') {
+                $paths[] = $routePath;
+                $paths[] = $routePath.'/*';
+            }
+        } catch (\Throwable $e) {
+            // Route may be unavailable during early bootstrap
+        }
+
+        return array_values(array_unique($paths));
+    }
+
+    /**
+     * Patch storage/framework/down so upgrade routes work during maintenance.
+     */
+    public static function syncMaintenanceExceptPaths(): void
+    {
+        $downPath = storage_path('framework/down');
+
+        if (! is_file($downPath)) {
             return;
         }
 
-        if(function_exists('beforeUpgrade')){
-            beforeUpgrade();
+        $data = json_decode(file_get_contents($downPath), true);
+
+        if (! is_array($data)) {
+            return;
         }
 
-        $this->log(__('The system upgrading: ') . $this->getCurrentVersion() . ' to ' . $this->getLastVersion());
+        $data['except'] = array_values(array_unique(array_merge(
+            $data['except'] ?? [],
+            self::getMaintenanceExceptUris()
+        )));
 
-        try {
-            if (($this->download($updaterJson['archive'])) === false) {
-                $this->log(__('Enable to download the archive file. Upgrade process aborted.'));
-                return;
-            }
+        file_put_contents($downPath, json_encode($data, JSON_PRETTY_PRINT));
+    }
 
-            $this->log(__('Enabling maintenance mode...'));
-            Artisan::call('down');
+    /**
+     * Enable maintenance with upgrade routes excluded (finalize phase only).
+     */
+    public static function enableMaintenanceMode(): void
+    {
+        $except = self::getMaintenanceExceptUris();
 
-            if ($this->install() === false) {
-                $this->recovery();
+        if (! app()->isDown()) {
+            Artisan::call('down', [
+                '--retry' => 60,
+                '--except' => $except,
+            ]);
+        }
 
-                $this->log(__('Disabling maintenance mode...'));
-                Artisan::call('up');
-                return;
-            }
+        self::syncMaintenanceExceptPaths();
+    }
 
-            $this->setCurrentVersion($updaterJson['version']); //update system version
-
-            $this->log(__('Disabling maintenance mode...'));
+    public static function disableMaintenanceMode(): void
+    {
+        if (app()->isDown()) {
             Artisan::call('up');
+        }
+    }
 
-            if(function_exists('afterUpgrade')){
+    /**
+     * @return array{success: bool, logs: array, message?: string}
+     */
+    private function executeFinalize(string $token, bool $clearSession): array
+    {
+        try {
+            self::bootstrapForDatabaseWork();
+            $this->clearApplicationConfigCache();
+
+            $this->logStep('maintenance', __('Enabling maintenance mode…'), 'info');
+            self::enableMaintenanceMode();
+
+            $this->logStep('database', __('Running database migrations…'), 'info');
+            $this->migrations();
+
+            $this->logStep('seed', __('Running database seeders…'), 'info');
+            $this->seeds();
+
+            if (function_exists('afterUpgrade')) {
                 afterUpgrade();
             }
 
-            $this->log('<b>' . __('The system successfully updated to ') . $this->getLastVersion() . '<b>');
+            $this->logStep('cleanup', __('Cleaning up temporary files…'), 'info');
+            $this->cleanUp();
 
-        } catch (\Exception $e) {
-            $this->log(__('An exception occurred: ') . '<small>' . $e->getMessage() . '</small>');
-            $this->recovery();
+            $this->logStep('optimize', __('Clearing and optimizing application cache…'), 'info');
+            $this->refreshConfig();
+
+            $this->setCurrentVersion($this->updaterJson['version']);
+
+            $this->logStep('maintenance', __('Disabling maintenance mode…'), 'info');
+            self::disableMaintenanceMode();
+
+            $this->clearStateFile();
+
+            if ($clearSession) {
+                self::clearUpgradeToken();
+            }
+
+            $this->logStep(
+                'complete',
+                __('System successfully updated to :version', ['version' => $this->getLastVersion()]),
+                'success'
+            );
+
+            return $this->phaseResponse(true);
+        } catch (\Throwable $e) {
+            $this->logStep('error', $e->getMessage(), 'error');
+            Log::error('Upgrader - Finalize phase failed', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+
+            return $this->phaseResponse(false, $e->getMessage());
         }
     }
 
     /**
-     * Install the update
-     *
-     * @return void
+     * @return array{success: bool, logs: array, message?: string}
      */
-    private function install()
+    private function phaseResponse(bool $success, ?string $message = null): array
     {
-        try {
-            $this->copyArchiveFilesAndDirectories();
-            $this->deleteFilesAndDirectories();
-            $this->migrations();
-            $this->seeds();
-            $this->cleanUp();
-            $this->refreshConfig();
-        } catch (\Exception $e) {
+        $response = [
+            'success' => $success,
+            'logs' => $this->logs,
+        ];
+
+        if ($message !== null) {
+            $response['message'] = $message;
+        }
+
+        return $response;
+    }
+
+    private function resetLogs(): void
+    {
+        $this->logs = [];
+    }
+
+    private function logStep(string $step, string $message, string $level = 'info'): void
+    {
+        $entry = [
+            'step' => $step,
+            'message' => $message,
+            'level' => $level,
+            'time' => now()->format('H:i:s'),
+        ];
+
+        $this->logs[] = $entry;
+        Log::info('Upgrader - [' . $level . '] ' . $message);
+    }
+
+    public function validateUpgradeToken(string $token): bool
+    {
+        return $this->validateToken($token);
+    }
+
+    private function validateToken(string $token): bool
+    {
+        if ($token === '') {
             return false;
         }
 
-        return true;
+        if (session()->has('upgrader.token') && hash_equals((string) session('upgrader.token'), $token)) {
+            return true;
+        }
+
+        $stored = self::readStoredUpgradeToken();
+
+        return $stored !== null && hash_equals($stored, $token);
     }
 
-    /**
-     * Copy all the files and directories from the archive to the root directory
-     *
-     * @return void
-     */
-    private function copyArchiveFilesAndDirectories()
+    private static function upgradeTokenStoragePath(): string
     {
-        $this->log('<p>' . __('Copying required files') . '</p>', false);
+        return storage_path('updates/.upgrade-token');
+    }
 
-        $copyCounter = 0;
+    public static function readStoredUpgradeToken(): ?string
+    {
+        $path = self::upgradeTokenStoragePath();
 
-        // Copy files
-        foreach (File::allFiles(base_path('tmp')) as $file) {
-            $fileRealPath = $file->getRealPath();
+        if (! is_file($path)) {
+            return null;
+        }
 
-            if (File::exists($fileRealPath)) {
-                Log::info("File Exist: " . $fileRealPath);
-                $this->backup($fileRealPath, $file->getRelativePathname());
-            }
+        $token = trim((string) file_get_contents($path));
 
-            Log::info("File copied: " . $fileRealPath);
+        return $token !== '' ? $token : null;
+    }
 
-            if ($copyCounter % 5 != 0) {
-                $this->log('.', false);
-            }
+    private function stateFilePath(): string
+    {
+        return storage_path('updates/' . self::STATE_FILE);
+    }
 
-            $copyCounter++;
+    private function writeStateFile(string $token): void
+    {
+        $directory = storage_path('updates');
 
-            $this->copy($fileRealPath, $file->getRelativePathname());
+        if (! is_dir($directory)) {
+            File::makeDirectory($directory, 0755, true);
+        }
+
+        File::put($this->stateFilePath(), json_encode([
+            'phase' => self::PHASE_FILES_DONE,
+            'token' => $token,
+            'target_version' => $this->getLastVersion(),
+            'current_version' => $this->getCurrentVersion(),
+            'archive' => $this->updaterJson['archive'],
+            'completed_at' => now()->toIso8601String(),
+        ], JSON_PRETTY_PRINT));
+    }
+
+    private function validateStateFile(string $token, string $expectedPhase): bool
+    {
+        $path = $this->stateFilePath();
+
+        if (! file_exists($path)) {
+            return false;
+        }
+
+        $state = json_decode(file_get_contents($path), true);
+
+        if (! is_array($state)) {
+            return false;
+        }
+
+        return ($state['phase'] ?? '') === $expectedPhase
+            && hash_equals((string) ($state['token'] ?? ''), $token);
+    }
+
+    private function clearStateFile(): void
+    {
+        if (file_exists($this->stateFilePath())) {
+            File::delete($this->stateFilePath());
         }
     }
 
-    /**
-     * Delete all the files and directories which are listed in the delete array
-     *
-     * @return void
-     */
-    protected function deleteFilesAndDirectories()
+    private function installFiles(string $filename): void
     {
-        if (!is_array($this->updaterJson['delete'])) {
+        $this->logStep('delete', __('Removing obsolete files…'), 'info');
+        $this->deleteFilesAndDirectories();
+
+        $this->logStep('copy', __('Copying new application files…'), 'info');
+
+        if ($this->copyArchiveFilesAndDirectories($filename) === false) {
+            throw new \RuntimeException(__('Failed to extract the update archive.'));
+        }
+    }
+
+    private function copyArchiveFilesAndDirectories(string $filename): bool
+    {
+        try {
+            $zip = new ZipArchive();
+            $res = $zip->open($this->baseURL . '/' . $filename);
+
+            if ($res !== true) {
+                throw new \RuntimeException(__('Could not open update archive.'));
+            }
+
+            $zip->extractTo(base_path());
+            $zip->close();
+
+            return true;
+        } catch (\Throwable $e) {
+            $this->logStep('copy', $e->getMessage(), 'error');
+
+            return false;
+        }
+    }
+
+    protected function deleteFilesAndDirectories(): void
+    {
+        if (! is_array($this->updaterJson['delete'])) {
             return;
         }
-
-        $this->log('<p>' . __('Deleting required files...') . '</p>', false);
 
         foreach ($this->updaterJson['delete'] as $deletableItem) {
             if (File::isFile($deletableItem) && File::exists($deletableItem)) {
@@ -158,269 +431,354 @@ class UpgradeManager extends Contractor
                 File::deleteDirectory($deletableItem);
             }
         }
+
+        $downloadDirectory = storage_path('app' . DIRECTORY_SEPARATOR . 'downloaded-files');
+
+        if (File::isDirectory($downloadDirectory)) {
+            File::deleteDirectory($downloadDirectory);
+        }
     }
 
     /**
-     * Migrate files if exist
-     *
-     * @return void
+     * Use a non-database cache driver so Laravel can boot before the cache table exists.
      */
-    private function migrations()
+    public static function bootstrapForDatabaseWork(): void
     {
-        $this->log('<p>' . __('Migrating files') . '...</p>', false);
+        $configCache = base_path('bootstrap/cache/config.php');
 
-        $version = 'v' . str_replace('.', '_', $this->getLastVersion());
-        $directories = ['database', 'migrations', 'versions', $version];
-        $paths = [implode('/', $directories)];
-
-        array_unshift($directories, 'module-name');
-
-        foreach (\Nwidart\Modules\Facades\Module::getOrdered() as $module) {
-            $directories[0] = 'Modules/' . $module->getName();
-
-            array_push($paths, implode('/', $directories));
+        if (is_file($configCache)) {
+            @unlink($configCache);
         }
 
-        // Create new tables if exists
-        Artisan::call('migrate');
+        Config::set('cache.default', 'array');
 
-        foreach ($paths as $path) {
-            if (is_dir(base_path() . '/' . $path)) {
-                // Modify tables for the latest version
-                Artisan::call('migrate --path=' . $path);
+        if (app()->bound('cache')) {
+            app()->forgetInstance('cache');
+            app()->forgetInstance('cache.store');
+        }
+    }
+
+    private function clearApplicationConfigCache(): void
+    {
+        $configCache = base_path('bootstrap/cache/config.php');
+
+        if (is_file($configCache)) {
+            @unlink($configCache);
+            $this->logStep('prepare', __('Application config cache cleared.'), 'info');
+        }
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function resolveMigrationVersions(): array
+    {
+        $versions = config('paymoney.migration_versions') ?? [];
+
+        if (is_string($versions)) {
+            $versions = [$versions];
+        }
+
+        $target = $this->getLastVersion();
+
+        if ($target) {
+            $versions[] = $target;
+
+            $parts = explode('.', $target);
+
+            if (count($parts) === 3) {
+                $versions[] = $parts[0] . '.' . $parts[1] . '.0';
             }
         }
+
+        return array_values(array_unique(array_filter($versions)));
     }
+
     /**
-     * Seed files if exist
-     *
-     * @return void
+     * @return array<int, string>
      */
-    private function seeds()
+    private function collectMigrationPaths(): array
     {
-        $this->log('<p>' . __('Seeding files') . '...</p>', false);
+        $paths = [];
+        $currentVersion = $this->getCurrentVersion();
 
-        $version = 'v' . str_replace('.', '_', $this->getLastVersion());
-        $seedDirectories = ['Database\\Seeders\\versions\\' . $version . '\\DatabaseSeeder'];
+        foreach ($this->resolveMigrationVersions() as $version) {
+            if ($currentVersion && version_compare($version, $currentVersion, '<=')) {
+                continue;
+            }
 
-        foreach (\Nwidart\Modules\Facades\Module::getOrdered() as $module) {
-            array_push($seedDirectories, 'Modules\\' . $module->getName() . '\\Database\\Seeders\\versions\\' . $version . '\\DatabaseSeeder');
-        }
+            $versionFolder = 'v' . str_replace('.', '_', $version);
 
-        foreach ($seedDirectories as $class) {
-            if (class_exists($class)) {
-                Artisan::call('db:seed', ['--class' => $class]);
+            $paths[] = implode('/', ['database', 'migrations', 'versions', $versionFolder]);
+
+            foreach (\Nwidart\Modules\Facades\Module::getOrdered() as $module) {
+                $paths[] = implode('/', ['Modules', $module->getName(), 'Database', 'Migrations', 'versions', $versionFolder]);
             }
         }
+
+        return array_values(array_unique($paths));
     }
 
-    /**
-     * Clean up the temporary, backup and update files
-     *
-     * @return void
-     */
-    private function cleanUp()
+    private function migrations(): void
     {
-        $this->log('<p>' . __('Deleting temporary directory...') . '</p>');
-        File::deleteDirectory($this->tempPath());
+        $versions = $this->resolveMigrationVersions();
 
-        $this->log('<p>' . __('Deleting backup directory...') . '</p>');
-        File::deleteDirectory($this->backupPath());
+        if (empty($versions)) {
+            $this->logStep('migrate', __('No migration versions configured — skipped.'), 'warning');
 
-        $this->log('<p>' . __('Deleting update file...') . '</p>');
-        File::deleteDirectory(storage_path('updates'));
-    }
-
-    /**
-     * Download the update archive file
-     *
-     * @param  mixed $filename
-     * @return void
-     */
-    private function download($filename, $log = true)
-    {
-        if ($log) {
-            $this->log(__('Downloading update from ') . $this->baseURL . '/' . $filename);
+            return;
         }
+
+        $migrationPaths = $this->collectMigrationPaths();
+
+        $this->logStep(
+            'migrate',
+            __('Migration versions: :versions', ['versions' => implode(', ', $versions)]),
+            'info'
+        );
+
+        $ranCount = 0;
+
+        foreach ($migrationPaths as $path) {
+            $fullPath = base_path($path);
+
+            if (! is_dir($fullPath)) {
+                $this->logStep('migrate', __('Skipped (not found): :path', ['path' => $path]), 'warning');
+
+                continue;
+            }
+
+            $files = glob($fullPath . '/*.php') ?: [];
+
+            if ($files === []) {
+                $this->logStep('migrate', __('Skipped (no migration files): :path', ['path' => $path]), 'warning');
+
+                continue;
+            }
+
+            $this->logStep(
+                'migrate',
+                __('Migrating :count file(s) in :path', ['count' => count($files), 'path' => $path]),
+                'info'
+            );
+
+            $this->runMigrate($path);
+            $ranCount++;
+
+            $this->logStep('migrate', __('Completed: :path', ['path' => $path]), 'success');
+        }
+
+        if ($ranCount === 0) {
+            $this->logStep('migrate', __('No migrations to run — skipped.'), 'warning');
+        }
+    }
+
+    private function runMigrate(string $path): void
+    {
+        self::bootstrapForDatabaseWork();
+
+        $exitCode = Artisan::call('migrate', [
+            '--path' => $path,
+            '--force' => true,
+        ]);
+
+        $output = trim(Artisan::output());
+
+        if ($output !== '') {
+            $this->logStep('migrate', $output, 'info');
+        }
+
+        if ($exitCode !== 0) {
+            throw new \RuntimeException(
+                __('Migration failed for :path', ['path' => $path])
+                . ($output !== '' ? ': ' . $output : '')
+            );
+        }
+    }
+
+    private function seeds(): void
+    {
+        $versions = config('paymoney.seed_versions') ?? [];
+
+        if (is_string($versions)) {
+            $versions = [$versions];
+        }
+
+        if (empty($versions)) {
+            $this->logStep('seed', __('No seed versions configured — skipped.'), 'warning');
+
+            return;
+        }
+
+        $ranCount = 0;
+
+        $currentVersion = $this->getCurrentVersion();
+
+        foreach ($versions as $version) {
+            
+            if ($currentVersion && version_compare($version, $currentVersion, '<=')) {
+                continue;
+            }
+
+            $versionFolder = 'v' . str_replace('.', '_', $version);
+            $seedClasses = [
+                'Database\\Seeders\\versions\\' . $versionFolder . '\\DatabaseSeeder',
+            ];
+
+            foreach (\Nwidart\Modules\Facades\Module::getOrdered() as $module) {
+                $seedClasses[] = 'Modules\\' . $module->getName()
+                    . '\\Database\\Seeders\\versions\\' . $versionFolder . '\\DatabaseSeeder';
+            }
+
+            foreach ($seedClasses as $class) {
+                if (! class_exists($class)) {
+                    $this->logStep('seed', __('Skipped (not found): :class', ['class' => $class]), 'warning');
+
+                    continue;
+                }
+
+                $this->logStep('seed', __('Seeding: :class', ['class' => class_basename($class)]), 'info');
+
+                $exitCode = Artisan::call('db:seed', [
+                    '--class' => $class,
+                    '--force' => true,
+                ]);
+
+                if ($exitCode !== 0) {
+                    throw new \RuntimeException(__('Seeder failed: :class', ['class' => $class]));
+                }
+
+                $ranCount++;
+                $this->logStep('seed', __('Seeded: :class', ['class' => class_basename($class)]), 'success');
+            }
+        }
+
+        if ($ranCount === 0) {
+            $this->logStep('seed', __('No seeders to run — skipped.'), 'warning');
+        }
+    }
+
+    private function cleanUp(): void
+    {
+        if (is_dir($this->tempPath())) {
+            File::deleteDirectory($this->tempPath());
+        }
+
+        if (is_dir($this->backupPath())) {
+            File::deleteDirectory($this->backupPath());
+        }
+
+        $updatesPath = storage_path('updates');
+
+        if (is_dir($updatesPath)) {
+            File::deleteDirectory($updatesPath);
+        }
+    }
+
+    private function recovery(): void
+    {
+        $this->logStep('recovery', __('Attempting to restore from backup…'), 'warning');
 
         try {
-            $zip = new ZipArchive;
-            $res = $zip->open($this->baseURL . '/' . $filename);
+            if (! is_dir($this->backupPath())) {
+                $this->logStep('recovery', __('No backup directory found.'), 'warning');
 
-            $extractToPath = $this->tempPath();
-
-            if (is_dir($extractToPath)) {
-                File::deleteDirectory($extractToPath);
+                return;
             }
 
-
-            if ($res === true) {
-                $res = $zip->extractTo($extractToPath);
-                $zip->close();
+            foreach (File::allFiles($this->backupPath()) as $file) {
+                $filename = $this->processRecoveryFilename((string) $file);
+                File::copy($this->backupPath($filename), $this->basePath($filename));
             }
 
-        } catch (\Exception $e) {
-
-            $this->log(__('An exception occurred: ') . $e->getMessage());
-
-            return false;
+            $this->logStep('recovery', __('Recovery completed.'), 'success');
+        } catch (\Throwable $e) {
+            $this->logStep('recovery', __('Recovery failed: :error', ['error' => $e->getMessage()]), 'error');
         }
-
-        return $this->baseURL . '/' . $filename;
     }
 
-    /**
-     * Backup the file to the backup directory
-     *
-     * @param  mixed $filename
-     * @return void
-     */
-    private function backup($src, $dst)
-    {
-        $this->copy($src, $this->basePath() . DIRECTORY_SEPARATOR . $dst);
-    }
-
-    /**
-     * Recovery the system from the backup
-     *
-     * @return void
-     */
-    private function recovery()
-    {
-        $this->log(__('Attempting to recovery your system from backup.'));
-
-        try {
-            $backupFiles = File::allFiles($this->backupPath());
-            foreach ($backupFiles as $file) {
-                $filename = $this->processRecoveryFilename((string)$file);
-
-                File::copy($this->backupPath($filename) , $this->basePath($filename)); //to respective folder
-            }
-        } catch (\Exception $e) {
-            $this->log(__("Recovery failed, try it manually. Run: 'php artisan up' to disable the maintenance mode."));
-            $this->log(__('An exception occurred: ') . '<small>' . $e->getMessage() . '</small>');
-
-            return false;
-        }
-
-        $this->log(__('Recovery completed successfully.'));
-
-        return true;
-    }
-
-    /**
-     * Process the recovery filename
-     *
-     * @param  mixed $filename
-     * @return void
-     */
-    private function processRecoveryFilename($filename)
+    private function processRecoveryFilename(string $filename): string
     {
         return substr($filename, (strlen($filename) - strlen($this->backupPath()) - 1) * (-1));
     }
 
-    /**
-     * Clear the cache, route and views
-     *
-     * @return void
-     */
-    public function refreshConfig()
+    public function refreshConfig(): void
     {
+        self::bootstrapForDatabaseWork();
+
         try {
-            $this->log(__('Clearing cache, route, views...'));
-            \Artisan::call('cache:clear');
-            \Artisan::call('route:clear');
-            \Artisan::call('view:clear');
-        } catch (\Exception $e) {
-            // something wrong here, just ignore
-        }
-    }
+            Artisan::call('optimize:clear');
+            Artisan::call('route:clear');
+            Artisan::call('view:clear');
 
-    /**
-     * Check writable permission in directories
-     *
-     * @return bool
-     */
-    private function needPermission()
-    {
-        if (!$this->download($this->updaterJson['archive'], false)) {
-            return false;
-        }
-
-        foreach (File::allFiles(base_path('tmp')) as $file) {
-            $dirname = pathinfo($file->getRelativePathname())['dirname'];
-
-            if (!File::exists($dirname) && !File::makeDirectory($dirname, 0777, true, true)) {
-                $a = explode(DIRECTORY_SEPARATOR, $dirname);
-                $parent = null;
-
-                for ($i = 0; $i < sizeof($a); $i += 1) {
-                    $tmppath = implode(DIRECTORY_SEPARATOR, array_slice($a, 0, $i));
-
-                    if (empty($tmppath)) {
-                        continue;
-                    }
-
-                    try {
-                        if (!file_exists($tmppath)) {
-                            break;
-                        } else {
-                            $parent = $tmppath;
-                        }
-                    } catch (\Exception $ex) {
-                        $this->log($dirname.' not in open_basedir: ' . ini_get('open_basedir'));
-                        $parent = $tmppath;
-                    }
-                }
-
-                if (!is_writable($parent) && !in_array($parent, $this->directoriesNeedPermission)) {
-                    $this->directoriesNeedPermission[] = $parent;
-                }
-            } else if (!is_writable($dirname) && !in_array($dirname, $this->directoriesNeedPermission)) {
-                $this->directoriesNeedPermission[] = $dirname;
+            try {
+                Artisan::call('cache:clear');
+            } catch (\Throwable $e) {
+                $this->logStep('optimize', __('Cache table clear skipped (will be available after migrations).'), 'warning');
             }
+
+            $this->logStep('optimize', __('Application cache cleared.'), 'success');
+        } catch (\Throwable $e) {
+            $this->logStep('optimize', __('Cache clear warning: :error', ['error' => $e->getMessage()]), 'warning');
+        }
+    }
+
+    private function needPermission(): bool
+    {
+        $filesystem = new FilesystemWritable(base_path(), [
+            'exclude' => [
+                'bootstrap/cache',
+                'storage',
+                'storage/app',
+                'storage/app/public',
+                'storage/framework',
+                'storage/framework/cache',
+                'storage/framework/sessions',
+                'storage/framework/views',
+                'storage/logs',
+                'public/uploads',
+            ],
+        ]);
+
+        if (! $filesystem->isWritable()) {
+            $this->directoriesNeedPermission = $filesystem->getNotWritables();
+
+            return true;
         }
 
-        return !empty($this->directoriesNeedPermission);
-
+        return false;
     }
 
     /**
-     * Check if the update file is valid
-     *
-     * @return array
+     * @return array<string, mixed>
      */
-    public function isValid()
+    public function isValid(): array
     {
-        // check if the update file is valid
         if (is_null($this->updaterJson['version']) || is_null($this->updaterJson['archive'])) {
             return [
                 'status' => false,
-                'message' => __('The update file is not valid.')
+                'message' => __('The update file is not valid.'),
             ];
         }
 
-        // check if the update version is equal to current version
         if (version_compare($this->getLastVersion(), $this->getCurrentVersion(), '=')) {
             return [
                 'status' => false,
-                'message' => __('The version you uploaded is the same as the current one (:x)', ['x' => $this->getLastVersion()])
+                'message' => __('The version you uploaded is the same as the current one (:x)', ['x' => $this->getLastVersion()]),
             ];
         }
 
-        // check if the update version is older than current version
         if (version_compare($this->getLastVersion(), $this->getCurrentVersion(), '<')) {
             return [
                 'status' => false,
-                'message' => __('The version you uploaded (:x) is older than the current one (:y)',['x' => $this->getLastVersion(), 'y' => $this->getCurrentVersion()])
+                'message' => __('The version you uploaded (:x) is older than the current one (:y)', ['x' => $this->getLastVersion(), 'y' => $this->getCurrentVersion()]),
             ];
         }
 
-        // check if the update version is supported
-        if (!in_array($this->getCurrentVersion(), $this->getSupportedVersions())) {
+        if (! in_array($this->getCurrentVersion(), $this->getSupportedVersions())) {
             return [
                 'status' => false,
-                'message' => __('You are on a version (:x) that is not supported by this update.', ['x' => $this->getCurrentVersion()])
+                'message' => __('You are on a version (:x) that is not supported by this update.', ['x' => $this->getCurrentVersion()]),
             ];
         }
 
@@ -429,15 +787,39 @@ class UpgradeManager extends Contractor
                 'status' => false,
                 'needPermission' => true,
                 'permissionRequire' => $this->directoriesNeedPermission,
-                'message' => __('These directories need writable permission. you need re-change the permission after successfully system update.')
+                'message' => __('These directories need writable permission. you need re-change the permission after successfully system update.'),
             ];
         }
 
-        // everything is ok
         return [
             'status' => true,
             'json' => $this->updaterJson,
-            'message' => __('An update version (:x) of :y is available.', ['x' => $this->getLastVersion(), 'y' => env('APP_NAME', 'PayMoney')])
+            'message' => __('An update version (:x) of :y is available.', ['x' => $this->getLastVersion(), 'y' => env('APP_NAME', 'PayMoney')]),
         ];
+    }
+
+    public static function createUpgradeToken(): string
+    {
+        $token = bin2hex(random_bytes(20));
+        session(['upgrader.token' => $token]);
+
+        $directory = storage_path('updates');
+
+        if (! is_dir($directory)) {
+            File::makeDirectory($directory, 0755, true);
+        }
+
+        File::put(self::upgradeTokenStoragePath(), $token);
+
+        return $token;
+    }
+
+    public static function clearUpgradeToken(): void
+    {
+        session()->forget('upgrader.token');
+
+        if (is_file(self::upgradeTokenStoragePath())) {
+            File::delete(self::upgradeTokenStoragePath());
+        }
     }
 }

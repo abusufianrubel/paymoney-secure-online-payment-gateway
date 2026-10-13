@@ -171,6 +171,14 @@ img {
     padding-right: 120px;
 }
 
+.pl-120 {
+    padding-left:120px;
+}
+
+.pr-75{
+    padding-right:75px;
+}
+
 .pl-0 {
     padding-left: 0;
 }

@@ -15,18 +15,12 @@ class CreateWithdrawalsTable extends Migration
     {
         Schema::create('withdrawals', function (Blueprint $table)
         {
-            $table->increments('id');
+            $table->id();
 
-            $table->integer('user_id')->unsigned()->index()->nullable();
-            $table->foreign('user_id')->references('id')->on('users')->onUpdate('cascade')->onDelete('cascade');
-
-            $table->integer('currency_id')->unsigned()->index()->nullable();
-            $table->foreign('currency_id')->references('id')->on('currencies')->onUpdate('cascade')->onDelete('cascade');
-
-            $table->integer('payment_method_id')->unsigned()->index()->nullable();
-            $table->foreign('payment_method_id')->references('id')->on('payment_methods')->onUpdate('cascade')->onDelete('cascade');
-
-            $table->string('uuid', 13)->nullable()->comment = "Unique ID (For Each Withdrawal)";
+            $table->foreignId('user_id')->constrained('users')->onUpdate('cascade')->onDelete('cascade');
+            $table->foreignId('currency_id')->constrained('currencies')->onUpdate('cascade')->onDelete('cascade');
+            $table->foreignId('payment_method_id')->nullable()->constrained('payment_methods')->onUpdate('cascade')->onDelete('cascade');
+            $table->string('uuid', 13)->nullable()->comment('Unique ID (For Each Withdrawal)');
             $table->decimal('charge_percentage', 20,8)->nullable()->default(0.00000000);
             $table->decimal('charge_fixed', 20,8)->nullable()->default(0.00000000);
             $table->decimal('subtotal', 20,8)->nullable()->default(0.00000000);

@@ -211,7 +211,7 @@
 @push('extra_body_scripts')
 
   <!-- jquery.validate -->
-  <script src="{{ asset('public/dist/plugins/jquery-validation-1.17.0/dist/jquery.validate.min.js') }}" type="text/javascript"></script>
+  <script src="{{ asset('public/dist/plugins/jquery-validation/dist/jquery.validate.min.js') }}" type="text/javascript"></script>
 
   <script type="text/javascript">
 
@@ -245,7 +245,6 @@
                 cache: false,
             }).done(function(response)
             {
-                // console.log(response);
                 if (response.status == false)
                 {
                     errorElement.addClass('error').html(response.message).css("font-weight", "bold");

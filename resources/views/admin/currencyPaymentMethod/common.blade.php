@@ -25,12 +25,14 @@
 
 <!-- Activated for -->
 <div class="form-group row">
-							
-    <label class="col-lg-3 control-label f-14 fw-bold text-md-end mb-7p">{{ __('Activate For') }} </label>
 
+    @if ($list_menu != 'reloadly')
+        <label class="col-lg-3 control-label f-14 fw-bold text-md-end mb-7p">{{ __('Activate For') }} </label>
+    @endif
+							
     <div class="col-lg-6">
         <div class="row gap-2">
-            @if ($list_menu != 'mts')
+            @if ($list_menu != 'mts' && $list_menu != 'reloadly')
                 <div class="pr-customize">
                     <div class="check-parent-div flex-for-column px-2 pt-2 pb-0">
                         <label class="checkbox-container">

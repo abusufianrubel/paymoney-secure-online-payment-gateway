@@ -3,7 +3,7 @@
 
 @section('head_style')
     <link rel="stylesheet" type="text/css" href="{{ asset('public/dist/libraries/sweetalert/sweetalert.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('public/dist/plugins/bootstrap-toggle-2.2.0/css/bootstrap-toggle.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('public/dist/plugins/bootstrap-toggle/css/bootstrap-toggle.min.css') }}">
 @endsection
 
 @section('page_content')
@@ -116,6 +116,51 @@
                                 </div>
                             </div>
                         </div>
+
+                        @if (moduleExists("Remittance") && isActive("Remittance"))
+                            <div id="remittance-div">
+                                <!-- Remittance Type -->
+                                <div id="remittance-type-div">
+                                    <div class="form-group row">
+                                        <label class="col-sm-3 control-label mt-11 f-14 fw-bold text-sm-end mt-11" for="remittance_type">{{ __('Remittance Type') }}</label>
+                                        <div class="col-sm-6">
+                                            <select class="form-control f-12 remittance_type select2" name="remittance_type[]" id="remittance_type" multiple>
+                                                <option value='send' {{ in_array('send', $remittanceType) ? 'selected' : '' }}>{{ __('Send') }}</option>
+                                                <option value='receive' {{ in_array('receive', $remittanceType) ? 'selected' : '' }}>{{ __('Receive') }}</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="remittance-payout-method-div">
+                                    <!-- Remittance Payout Method -->
+                                    <div class="form-group row">
+                                        <label class="col-sm-3 control-label mt-11 f-14 fw-bold text-sm-end mt-11" for="remittance_payout_method">{{ __('Remittance Payout Method') }}</label>
+                                        <div class="col-sm-6">
+                                            <select class="form-control f-12 remittance_payout_method select2" name="remittance_payout_method[]" id="remittance_payout_method" multiple>
+                                                @foreach($remittancePayoutMethod as $key => $value)
+                                                    <option value='{{ $value->id }}' {{ in_array($value->id, explode(',', $currency->remittance_payout_method_id ?? '')) ? 'selected' : '' }}>{{ $value->payout_method }}</option>
+                                                
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Country -->
+                                <div class="form-group row">
+                                    <label class="f-14 mt-11 fw-bold text-sm-end col-sm-3 control-label" for="country_id">{{ __('Country') }}</label>
+                                    <div class="col-sm-6">
+                                        <select class="form-control f-14 p-0 select2" name="country_id" id="country_id">
+                                            <option value="">{{ __('Select Country') }}</option>
+                                            @foreach($countries as $country)
+                                                <option value="{{ $country->id }}" {{ $country->id == $currency->country_id ? 'selected' : '' }}>{{ $country->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+
                         <!-- Status -->
                         <div class="form-group row">
                             <label class="col-sm-3 control-label mt-11 f-14 fw-bold text-sm-end mt-11" for="status">{{ __('Status') }}</label>
@@ -180,10 +225,10 @@
 @push('extra_body_scripts')
 
     <!-- jquery.validate -->
-    <script src="{{ asset('public/dist/plugins/jquery-validation-1.17.0/dist/jquery.validate.min.js') }}" type="text/javascript"></script>
-    <script src="{{ asset('public/dist/plugins/jquery-validation-1.17.0/dist/additional-methods.min.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('public/dist/plugins/jquery-validation/dist/jquery.validate.min.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('public/dist/plugins/jquery-validation/dist/additional-methods.min.js') }}" type="text/javascript"></script>
     <script src="{{ asset('public/dist/libraries/sweetalert/sweetalert.min.js') }}" type="text/javascript"></script>
-    <script src="{{ asset('public/dist/plugins/bootstrap-toggle-2.2.0/js/bootstrap-toggle.min.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('public/dist/plugins/bootstrap-toggle/js/bootstrap-toggle.min.js') }}" type="text/javascript"></script>
 
     @include('common.read-file-on-change')
     @include('common.restrict_number_to_pref_decimal')
@@ -194,10 +239,10 @@
         $(window).on('load', function(){
             var type = $('select#type').find(':selected').val();
             if (type == 'crypto') {
-                $('#exchange_from_div, #exchange_rate_div').css('display', 'none');
+                $('#exchange_from_div, #exchange_rate_div, #remittance-div').css('display', 'none');
                 $('#address_div').css('display', 'block');
             } else if (type == 'fiat') {
-                $('#exchange_from_div, #exchange_rate_div').css('display', 'block');
+                $('#exchange_from_div, #exchange_rate_div, #remittance-div').css('display', 'block');
                 $('#address_div').css('display', 'none');
             }
         });
@@ -215,11 +260,11 @@
 
         function exchangeRateFrom(type) {
             if (type == 'crypto') {
-                $('#exchange_from_div, #exchange_rate_div').css('display', 'none');
+                $('#exchange_from_div, #exchange_rate_div, #remittance-div').css('display', 'none');
                 $('#address_div').css('display', 'block');
                 $('#allowed_wallet_creation_div').css('display', 'block');
             } else if (type == 'fiat') {
-                $('#exchange_from_div, #exchange_rate_div').css('display', 'block');
+                $('#exchange_from_div, #exchange_rate_div, #remittance-div').css('display', 'block');
                 $('#address_div').css('display', 'none');
                 $('#allowed_wallet_creation_div').css('display', 'block');
             }

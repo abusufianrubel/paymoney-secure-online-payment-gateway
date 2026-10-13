@@ -15,8 +15,11 @@
                         <strong>{{ ucwords(settings('name')) }}</strong>
                     </div>
                     <br>
-                    <div>{{ __('Period') }} : {{ $date_range }}</div>
-                    <br>
+                    
+                    @isset($date_range)
+                        <div>{{ __('Period') }} : {{ $date_range }}</div>
+                        <br>
+                    @endisset
                     <div>{{ __('Print Date') }} : {{ dateFormat(now()) }}</div>
                 </div>
                 <div class="logo-img">

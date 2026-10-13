@@ -15,16 +15,11 @@ class CreateFeesLimitsTable extends Migration
     {
         Schema::create('fees_limits', function (Blueprint $table)
         {
-            $table->increments('id');
+            $table->id();
 
-            $table->integer('currency_id')->unsigned()->index()->nullable();
-            $table->foreign('currency_id')->references('id')->on('currencies')->onUpdate('cascade')->onDelete('cascade');
-
-            $table->integer('transaction_type_id')->unsigned()->nullable();
-            $table->foreign('transaction_type_id')->references('id')->on('transaction_types')->onUpdate('cascade')->onDelete('cascade');
-
-            $table->integer('payment_method_id')->unsigned()->nullable();
-            $table->foreign('payment_method_id')->references('id')->on('payment_methods')->onUpdate('cascade')->onDelete('cascade');
+            $table->foreignId('currency_id')->constrained('currencies')->onUpdate('cascade')->onDelete('cascade');
+            $table->foreignId('transaction_type_id')->constrained('transaction_types')->onUpdate('cascade')->onDelete('cascade');
+            $table->foreignId('payment_method_id')->nullable()->constrained('payment_methods')->onUpdate('cascade')->onDelete('cascade');
 
             $table->decimal('charge_percentage', 20, 8)->default(0.00000000);
             $table->decimal('charge_fixed', 20, 8)->default(0.00000000);

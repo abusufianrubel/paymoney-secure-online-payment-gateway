@@ -14,6 +14,44 @@ class TransactionResource extends JsonResource
      */
     public function toArray($request)
     {
+        $transactionImage = null;
+        $directoryName = null;
+        $exchangeTransaction = [Exchange_From, Exchange_To];
+        $userTransaction = [Transferred, Received, Request_Sent, Request_Received, Crypto_Sent, Crypto_Received, Token_Sent, Token_Received];
+
+        if (moduleExists('CryptoExchange')) {
+            $exchangeTransaction =array_merge($exchangeTransaction, [Crypto_Swap, Crypto_Buy, Crypto_Sell]);
+        }
+
+        if (in_array($this->transaction_type_id, [Deposit, Withdrawal])) {
+            $directoryName = optional($this->payment_method)->name;
+        } elseif (in_array($this->transaction_type_id, $userTransaction)) {
+            $transactionImage = optional($this->end_user)->picture;
+            $directoryName = 'profile';
+        } elseif (in_array($this->transaction_type_id,  $exchangeTransaction)) {
+            $transactionImage = optional($this->currency)->logo;
+            $directoryName = 'currency';
+        } elseif (in_array($this->transaction_type_id, [Payment_Sent, Payment_Received])) {
+            $transactionImage = optional($this->merchant)->logo;
+            $directoryName = 'merchant';
+        }
+
+        if (moduleExists('Investment') && ($this->transaction_type_id == Investment)) {
+            $directoryName = 'investment';
+        }
+
+        if (moduleExists('Agent') && ($this->transaction_type_id == Cashin)) {
+            $directoryName = 'cashin';
+        }
+
+        if (moduleExists('Agent') && ($this->transaction_type_id == Cashout)) {
+            $directoryName = 'cashout';
+        }
+
+        if (in_array($this->transaction_type_id, [Crypto_Sent, Token_Sent])) {
+            $payload  = json_decode(optional($this->cryptoAssetApiLog)->payload);
+            $networkFee = moneyFormat($payload->network ?? optional($this->currency)->symbol, formatNumber($payload->network_fee, $this->currency_id));
+        }
 
         return [
             'id'                     => $this->id,
@@ -33,7 +71,7 @@ class TransactionResource extends JsonResource
             'end_user_photo'         => image(optional($this->end_user)->picture, 'profile'),
 
             'transaction_type_id'    => $this->transaction_type_id,
-            'transaction_type'       => optional($this->transaction_type)->name,
+            'transaction_type'       => transactionTypeName($this->transaction_type, 'api'),
             'curr_code'              => optional($this->currency)->code,
             'curr_symbol'            => optional($this->currency)->symbol,
 
@@ -45,10 +83,15 @@ class TransactionResource extends JsonResource
 
             'display_charge_percentage'=> formatNumber($this->charge_percentage, $this->currency_id),
             'display_charge_fixed'   => formatNumber($this->charge_fixed, $this->currency_id),
-            'display_subtotal'       => moneyFormat(optional($this->currency)->symbol, formatNumber($this->subtotal, $this->currency_id)),
-            'display_total'          => moneyFormat(optional($this->currency)->symbol, formatNumber($this->total, $this->currency_id)),
-            'display_totalFess'      => moneyFormat(optional($this->currency)->symbol, formatNumber($this->charge_percentage + $this->charge_fixed, $this->currency_id)),
-
+            'display_subtotal'       => moneyFormat(optional($this->currency)->symbol, 
+                                        formatNumber($this->subtotal, $this->currency_id)),
+            'display_total'          => moneyFormat(optional($this->currency)->symbol,
+                                        formatNumber((moduleExists('Agent') && ($this->transaction_type_id == Cashout) 
+                                        ? $this->subtotal + $this->charge_percentage + $this->charge_fixed 
+                                        : $this->total),$this->currency_id)),
+            'display_totalFess'      => $networkFee ?? moneyFormat(optional($this->currency)->symbol, 
+                                        formatNumber($this->charge_percentage + $this->charge_fixed, 
+                                        $this->currency_id)),
             'status'                 => $this->status,
             'email'                  => $this->email,
             'phone'                  => $this->phone,
@@ -58,6 +101,7 @@ class TransactionResource extends JsonResource
             'payment_method_name'    => optional($this->payment_method)->name,
             'company_name'           => settings('name'),
             'company_logo'           => logoPath(),
+            'transaction_image'      => image($transactionImage,  $directoryName),
 
             'merchant_id'            => $this->merchant_id,
             'merchant_name'          => optional($this->merchant)->business_name,
@@ -69,7 +113,7 @@ class TransactionResource extends JsonResource
 
             'bank_id'                => $this->bank_id,
             'bank_name'              => optional($this->bank)->bank_name,
-            'bank_logo'              => optional(optional($this->bank)->file)->filename
+            'bank_logo'              => optional(optional($this->bank)->file)->filename,
         ];
     }
 }

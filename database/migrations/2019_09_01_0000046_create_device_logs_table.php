@@ -15,10 +15,9 @@ class CreateDeviceLogsTable extends Migration
     {
         Schema::create('device_logs', function (Blueprint $table)
         {
-            $table->increments('id');
+            $table->id();
 
-            $table->integer('user_id')->unsigned()->index()->nullable();
-            $table->foreign('user_id')->references('id')->on('users')->onUpdate('cascade')->onDelete('cascade');
+            $table->foreignId('user_id')->nullable()->constrained('users')->onUpdate('cascade')->onDelete('cascade');
 
             $table->string('browser_fingerprint', 40)->nullable();
             $table->string('browser_agent');

@@ -4,10 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\DataTables\Admin\CurrenciesDataTable;
 use App\Http\Controllers\Controller;
-use DB, Config, Common, Exception;
 use App\Rules\CheckValidFile;
 use Illuminate\Http\Request;
+use DB, Common, Exception;
 use App\Models\{
+    Country,
     Transaction,
     Currency,
     Wallet,
@@ -46,13 +47,18 @@ class CurrencyController extends Controller
                 'exchange_from' => $request->type == 'fiat' ? 'required' : '',
                 'address' => $request->type == 'crypto' ? 'required' : '',
                 'status' => 'required',
+                'remittance_type' => 'nullable|array',
+                'remittance_type.*' => 'in:send,receive',
+                'remittance_payout_method' => 'nullable|array',
+                'remittance_payout_method.*' => 'exists:remittance_payout_methods,id',
+                'country_id' => 'nullable|exists:countries,id',
             ], [
                 'rate.min' => 'Please enter values greater than 0.0001',
                 'code.unique' => 'The currency already exists',
                 'exchange_from.required' => 'Exchange from is required' 
             ]);
 
-            $getCurrency = $this->currency->getCurrency(['code' => $request->code], ['type', 'code']);
+            $getCurrency = $this->currency->getCurrency(['code' => $request->code, 'type' => $request->type], ['type', 'code']);
 
             if (!empty($getCurrency) && $getCurrency->code === $request->code && $getCurrency->type === $request->type) {
                 $this->helper->one_time_message('error', __('The :x is already exist.', ['x' => __('currency')]));
@@ -75,6 +81,22 @@ class CurrencyController extends Controller
                 $currency->default = '0';
                 $filename = $this->processCurrencyLogo('add', $request, null);
                 $currency->logo = $filename;
+
+                if (isActive("Remittance")) {
+
+                    if ($request->remittance_type) {
+                        $currency->remittance_type = implode(',', $request->remittance_type);
+                    }
+
+                    if ($request->remittance_payout_method) {
+                        $currency->remittance_payout_method_id = implode(',', $request->remittance_payout_method);
+                    }
+
+                    if ($request->country_id) {
+                        $currency->country_id = $request->country_id;
+                    }
+                }
+
                 $currency->save();
 
                 DB::commit();
@@ -86,6 +108,11 @@ class CurrencyController extends Controller
                 $this->helper->one_time_message('error', $e->getMessage());
                 return redirect(config('adminPrefix').'/settings/currency');
             }
+        }
+
+        if (moduleExists('Remittance') && isActive("Remittance")) {
+            $data['remittancePayoutMethods'] = \Modules\Remittance\Entities\RemittancePayoutMethod::get(['id', 'payout_method']);
+            $data['countries'] = Country::get(['id', 'iso3', 'name']);
         }
 
         return view('admin.currencies.add', $data);
@@ -107,6 +134,11 @@ class CurrencyController extends Controller
                 'exchange_from' => $request->type == 'fiat' ? 'required' : '',
                 'address' => $request->type == 'crypto' ? 'required' : '',
                 'status' => $request->default_currency == '0' ? 'required' : '',
+                'remittance_type' => 'nullable|array',
+                'remittance_type.*' => 'in:send,receive',
+                'remittance_payout_method' => 'nullable|array',
+                'remittance_payout_method.*' => 'exists:remittance_payout_methods,id',
+                'country_id' => 'nullable|exists:countries,id',
             ], [
                 'rate.min' => 'Please enter values greater than 0.0001',
                 'code.unique' => 'The currency already exists',
@@ -155,9 +187,10 @@ class CurrencyController extends Controller
                 }
 
                 if (isset($request->logo)) {
-                    $filename = $this->processCurrencyLogo('edit', $request, $currentLogo = $currency->logo);
+                    $filename = $this->processCurrencyLogo('edit', $request, $currency->logo);
                     $currency->logo = $filename;
                 }
+
                 if ($request->type == 'fiat' || $request->type == 'crypto') {
                     if ($request->create_wallet == 'on') {
                         $this->createUsersWallet($currency->id);
@@ -166,14 +199,35 @@ class CurrencyController extends Controller
                         $currency->allowed_wallet_creation = 'No';
                     }
                 }
+
+                if (isActive("Remittance")) {
+
+                    if ($request->remittance_type) {
+                        $currency->remittance_type = implode(',', $request->remittance_type);
+                    } else {
+                        $currency->remittance_type = null;
+                    }
+
+                    if ($request->remittance_payout_method) {
+                        $currency->remittance_payout_method_id = implode(',', $request->remittance_payout_method);
+                    } else {
+                        $currency->remittance_payout_method_id = null;
+                    }
+
+                    if ($request->country_id) {
+                        $currency->country_id = $request->country_id;
+                    } else {
+                        $currency->country_id = null;
+                    }
+                }
+
                 $currency->save();
                 DB::commit();
 
                 $this->helper->one_time_message('success', __('The :x has been successfully saved.', ['x' => __('currency')]));
                 return redirect(config('adminPrefix').'/settings/currency');
-            }
-            catch (Exception $e)
-            {
+
+            } catch (Exception $e) {
                 DB::rollBack();
                 $this->helper->one_time_message('error', $e->getMessage());
                 return redirect(config('adminPrefix').'/settings/currency');
@@ -181,11 +235,19 @@ class CurrencyController extends Controller
         }
 
         $data['currency'] = Currency::find($id);
-        if (!empty($data['currency'])) {
-            return view('admin.currencies.edit', $data);
+
+        if (empty($data['currency'])) {
+            $this->helper->one_time_message('error', __('The :x does not exist.', ['x' => __('currency')]));
+            return redirect(config('adminPrefix') . '/settings/currency');
         }
-        $this->helper->one_time_message('error', __('The :x does not exist.', ['x' => __('currency')]));
-        return redirect(config('adminPrefix').'/settings/currency');
+
+        if (moduleExists('Remittance') && isActive("Remittance")) {
+            $data['remittanceType'] = $data['currency']->remittance_type ? explode(',', $data['currency']->remittance_type) : [];
+            $data['remittancePayoutMethod'] = \Modules\Remittance\Entities\RemittancePayoutMethod::get(['id', 'payout_method']);
+            $data['countries'] = Country::get(['id', 'iso3', 'name']);
+        }
+
+        return view('admin.currencies.edit', $data);
     }
 
     protected function processCurrencyLogo($type, $request, $currentLogo)
@@ -236,34 +298,40 @@ class CurrencyController extends Controller
     public function delete($id)
     {
         $currency = Currency::find($id);
-        if (!empty($currency)) {
-            $transaction = Transaction::where(['currency_id' => $currency->id])->first();
 
-            // Checking if the currency exist in modules operation
-            $module = moduleExistChecker($currency);
-            if (!empty($module)) {
-                $this->helper->one_time_message('error',  __('The :x already exist for this currency. Currency cannot be deleted.', ['x' => implode(', ', $module)]));
-                return redirect(config('adminPrefix').'/settings/currency');
-            }
-
-            if (isset($currency) && $currency->default == 1) {
-                $this->helper->one_time_message('error', __('The default :x cannot be deleted.', ['x' => __('currency')]));
-            } elseif (isset($transaction)) {
-                $this->helper->one_time_message('error', __('This currency cannot be deleted. Already transaction exist.'));
-            } else {
-                if (isset($currency)) {
-                    $location = public_path('uploads/currency_logos/' . $currency->logo);
-                    if (isset($currency->logo) && file_exists($location)) {
-                        unlink($location);
-                    }
-                    $currency->delete();
-                }
-                $this->helper->one_time_message('success', __('The :x has been successfully deleted.', ['x' => __('currency')]));
-            }
-            return redirect(config('adminPrefix').'/settings/currency');
+        if (empty($currency)) {
+            $this->helper->one_time_message('error', __('The :x does not exist.', ['x' => __('currency')]));
+            return redirect(config('adminPrefix') . '/settings/currency');
         }
-        $this->helper->one_time_message('error', __('The :x does not exist.', ['x' => __('currency')]));
-        return redirect(config('adminPrefix').'/settings/currency');
+
+        $transaction = Transaction::where(['currency_id' => $currency->id])->first();
+        $wallet = Wallet::where('currency_id', $currency->id)->first();
+
+        // Checking if the currency exist in modules operation
+        $module = moduleExistChecker($currency);
+        if (!empty($module)) {
+            $this->helper->one_time_message('error',  __('The :x already exist for this currency. Currency cannot be deleted.', ['x' => implode(', ', $module)]));
+            return redirect(config('adminPrefix') . '/settings/currency');
+        }
+
+        if (isset($currency) && $currency->default == 1) {
+            $this->helper->one_time_message('error', __('The default :x cannot be deleted.', ['x' => __('currency')]));
+        } elseif (isset($transaction)) {
+            $this->helper->one_time_message('error', __('This currency cannot be deleted. Already transaction exist.'));
+        } elseif(isset($wallet)) {
+            $this->helper->one_time_message('error', __('This currency cannot be deleted because user wallets already exist for it.'));
+        } else {
+            if (isset($currency)) {
+                $location = public_path('uploads/currency_logos/' . $currency->logo);
+                if (isset($currency->logo) && file_exists($location)) {
+                    unlink($location);
+                }
+                $currency->delete();
+            }
+            $this->helper->one_time_message('success', __('The :x has been successfully deleted.', ['x' => __('currency')]));
+        }
+        return redirect(config('adminPrefix') . '/settings/currency');
+        
     }
 
     protected function createUsersWallet($currencyId)

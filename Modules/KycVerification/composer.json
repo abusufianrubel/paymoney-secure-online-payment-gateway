@@ -1,0 +1,32 @@
+{
+    "name": "techvillage/kycverification-module",
+    "type": "laravel-module",
+    "description": "",
+    "authors": [
+        {
+            "name": "Techvillage",
+            "email": "support@techvill.org"
+        }
+    ],
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {
+
+            }
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\KycVerification\\": "",
+            "Modules\\KycVerification\\App\\": "app/",
+            "Modules\\KycVerification\\Database\\Factories\\": "database/factories/",
+            "Modules\\KycVerification\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\KycVerification\\Tests\\": "tests/"
+        }
+    }
+}

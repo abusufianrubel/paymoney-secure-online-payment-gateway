@@ -1,8 +1,4 @@
 <?php
-/**
- * Created By: TechVillage.net
- * Start Date: 22-Jan-2018
- */
 $logo = settings('logo');
 ?>
 
@@ -19,17 +15,18 @@ $logo = settings('logo');
     <!-- Tell the browser to be responsive to screen width -->
     <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
 
-    <!-- Bootstrap 3.3.5 -->
-    <link rel="stylesheet" href="{{ asset('public/dist/libraries/bootstrap-5.0.2/css/bootstrap.min.css') }}">
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="{{ asset('public/dist/libraries/bootstrap/css/bootstrap.min.css') }}">
 
     <!-- Font Awesome -->
-    <link rel="stylesheet" type="text/css" href="{{ asset('public/dist/libraries/font-awesome-4.7.0/css/font-awesome.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ asset('public/dist/libraries/font-awesome/css/font-awesome.min.css') }}">
 
     <!-- Theme style -->
     <link rel="stylesheet" href="{{ asset('public/admin/templates/adminLte/AdminLTE.min.css') }}">
 
     <!-- iCheck -->
     <link rel="stylesheet" href="{{ asset('public/dist/plugins/iCheck/square/blue.min.css') }}">
+
     <link rel="stylesheet" type="text/css" href="{{ asset('public/admin/templates/css/style.min.css') }}">
 
     <!---favicon-->
@@ -72,13 +69,13 @@ $logo = settings('logo');
 </div>
 <!-- /.login-box -->
 
-<!-- jQuery 3 -->
-<script src="{{ asset('public/dist/libraries/jquery-3.2.1/dist/jquery.min.js') }}"></script>
-<!-- Bootstrap 3.3.5 -->
-<script src="{{ asset('public/dist/libraries/bootstrap-5.0.2/js/bootstrap.min.js') }}"></script>
+<!-- jQuery -->
+<script src="{{ asset('public/dist/libraries/jquery/dist/jquery.min.js') }}"></script>
+<!-- Bootstrap -->
+<script src="{{ asset('public/dist/libraries/bootstrap/js/bootstrap.min.js') }}"></script>
 
 <!-- jquery.validate -->
-<script src="{{ asset('public/dist/plugins/jquery-validation-1.17.0/dist/jquery.validate.min.js') }}" type="text/javascript"></script>
+<script src="{{ asset('public/dist/plugins/jquery-validation/dist/jquery.validate.min.js') }}" type="text/javascript"></script>
 
 <script type="text/javascript">
 

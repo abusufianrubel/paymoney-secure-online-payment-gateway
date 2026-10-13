@@ -1,5 +1,10 @@
 'use strict';
 
+if (window["ReactNativeWebView"]) {
+    $("#success-button-div").addClass('d-none');
+    $("#failed-button-div").addClass('d-none');
+}
+
 function sendMessage(statusCode) {
     setTimeout(() => {
         (window["ReactNativeWebView"] || window).postMessage(JSON.stringify(statusCode));

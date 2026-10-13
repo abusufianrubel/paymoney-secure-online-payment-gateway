@@ -87,6 +87,18 @@ class PayeerProcessor extends PaymentProcessor
         }
     }
 
+    /**
+     * Method initiateGateway
+     *
+     * @param $data $data
+     *
+     * @return void
+     */
+    public function initiateGateway($data)
+    {
+        return view(('gateways.' . $this->gateway()), $data);
+    }
+
     public function paymentView()
     {
         return 'gateways.'.$this->gateway();

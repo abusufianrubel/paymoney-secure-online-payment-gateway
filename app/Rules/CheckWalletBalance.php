@@ -15,18 +15,18 @@ class CheckWalletBalance implements Rule
      * @param  mixed  $value
      * @return bool
      */
-    public function passes($attribute, $value)
+    public function passes($attribute, $value): bool
     {
-        if (!empty($value)) {
-            $request = app(\Illuminate\Http\Request::class);
-            $wallet  = Wallet::where(['user_id' => Auth::user()->id, 'currency_id' => $request->currency_id])->first();
-
-            if ($wallet->balance < $request->amount) {
-                return false;
-            }
-            return true;
+        if (empty($value)) {
+            return false;
         }
-        return false;
+
+        $request = app(\Illuminate\Http\Request::class);
+
+        $wallet = Wallet::where(['user_id' => Auth::id(), 'currency_id' => $request->currency_id])->first();
+
+        // Check if the wallet exists and has sufficient balance
+        return !empty($wallet) && ($wallet->balance >= $request->amount);
     }
 
     /**
@@ -36,6 +36,6 @@ class CheckWalletBalance implements Rule
      */
     public function message()
     {
-        return trans('validation.check_wallet_balance');
+        return __('You do not have enough balance in your wallet.');
     }
 }

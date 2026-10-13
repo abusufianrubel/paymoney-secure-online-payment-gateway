@@ -15,15 +15,15 @@
         @isset($message)
             <p class="text-danger"> {{ $message }}</p>
         @endisset
-        <div class="btn-tryagin d-flex justify-content-center align-items-center">
+        <div class="btn-tryagin d-flex justify-content-center align-items-center" id="failed-button-div">
             <a href="{{ url('/') }}" class="btn btn-lg btn-light">{{ __('Home') }}</a>
         </div>
     </div>
 </div>
 @endsection
 
-@push('js')
+@section('js')
     <script src="{{ asset('public/user/customs/js/reactwebview.min.js') }}"></script>
-@endpush
+@endsection
 
 

@@ -50,8 +50,9 @@ class SendMoneyController extends Controller
     public function emailValidate(EmailCheckRequest $request)
     {
         try {
-            if ($this->service->validateEmail($request->receiver_email)) {
-                return $this->okResponse([], __("Payable Request."));
+            $data = $this->service->validateEmail($request->receiver_email);
+            if ($data['status']) {
+                return $this->okResponse($data, __("Payable Request."));
             }
         } catch (SendMoneyException $exception) {
             return $this->unprocessableResponse([], $exception->getMessage());
@@ -72,8 +73,10 @@ class SendMoneyController extends Controller
     public function phoneValidate(PhoneCheckRequest $request)
     {
         try {
-            if ($this->service->validatePhoneNumber($request->receiver_phone)) {
-                return $this->okResponse([], __("Payable Request."));
+            $data = $this->service->validatePhoneNumber($request->receiver_phone);
+
+            if ($data['status']) {
+                return $this->okResponse($data, __("Payable Request."));
             }
         } catch (SendMoneyException $exception) {
             return $this->unprocessableResponse([], $exception->getMessage());

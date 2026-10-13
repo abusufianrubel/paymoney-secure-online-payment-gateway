@@ -15,7 +15,7 @@ class CreateAppStoreCredentialsTable extends Migration
     {
         Schema::create('app_store_credentials', function (Blueprint $table)
         {
-            $table->increments('id');
+            $table->id();
             $table->string('has_app_credentials', 3)->comment('Yes or No');
             $table->string('link', 191)->nullable();
             $table->string('logo', 100);

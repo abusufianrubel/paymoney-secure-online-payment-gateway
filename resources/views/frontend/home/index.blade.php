@@ -248,6 +248,7 @@
 			</div>
 		</div>
 	</div>
+	
 
 	<!-- Our Benefits section -->
 	<div class="px-240 bg-ligt-pink">
@@ -366,6 +367,8 @@
 			</div>
 		</div>
 	</div>
+
+
 
 	<!-- Service we provide -->
 	<div class="px-240 provide-sec position-relative">
@@ -556,6 +559,82 @@
 			<div class="col-md-6 p-sm:0 mt-r42 position-relative">
 				<img class="video-img" src="{{ asset('public/frontend/templates/images/home/dotvid.png') }}" alt="dot">
 				<img class="custom-z" src="{{ asset('public/frontend/templates/images/home/rectangle.png') }}" alt="">
+			</div>
+		</div>
+	</div>
+
+	<div class="px-240 get-section position-relative pt-59 mt-n24">
+		<div class="row mb-4 mt-5 mt-md-0 pb-137">
+			<div class="col-lg-6">
+				<p class="mb-0 f-18 color-FE gilroy-medium leading-24">
+					{{ __('FOR THE CRYPTO ENTHUSIASTS') }}
+				</p>
+				<p class="mb-0 color-05B gilroy-Semibold f-36 mt-2 text-uppercase">
+					{!! __('Unlock the Power of :x', ['x' => '<br>' . __('Digital Assets')]) !!}
+				</p>
+
+				<p class="small-border mb-0 mt-20 bgd-blue"></p>
+
+				<p class="mt-20 gilroy-light f-18 color-5B w-517">
+					{{ __(':x integrates blockchain APIs to enable seamless creation, management, and transactions of cryptocurrencies, enhancing its platform with secure and versatile digital asset capabilities.', ['x' => settings('name')]) }}</p>
+				<a href="" class="learn-btn text-lg gilroy-Semibold mt-32" previewlistener="true">{{ __('Learn more') }}
+					<svg width="16" height="10" viewBox="0 0 16 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<path fill-rule="evenodd" clip-rule="evenodd" d="M0 4.57143C0 4.25584 0.255837 4 0.571429 4L15.4286 4C15.7442 4 16 4.25584 16 4.57143C16 4.88702 15.7442 5.14286 15.4286 5.14286L0.571429 5.14286C0.255837 5.14286 0 4.88702 0 4.57143Z" fill="currentColor"></path>
+						<path fill-rule="evenodd" clip-rule="evenodd" d="M11.0243 0.167368C11.2475 -0.0557892 11.6093 -0.0557892 11.8324 0.167368L15.8324 4.16737C16.0556 4.39052 16.0556 4.75233 15.8324 4.97549L11.8324 8.97549C11.6093 9.19865 11.2475 9.19865 11.0243 8.97549C10.8011 8.75233 10.8011 8.39052 11.0243 8.16737L14.6202 4.57143L11.0243 0.97549C10.8011 0.752333 10.8011 0.390524 11.0243 0.167368Z" fill="currentColor"></path>
+					</svg>					
+				</a>
+			</div>
+			<div class="col-lg-6 px-35">
+				<div class="row justify-content-center">
+					<div class="col-4 col-sm-3 pl-0 px-20r mt-4">
+						<div class="d-flex justify-content-center align-items-center mt-md-4 mb-md-4">
+								{!! svgIcons('bitcoin') !!}
+						</div>
+            <p class="mb-3 color-FF gilroy-medium f-18 leading-24 f-r16 text-center mt-1">{{ __('BITCOIN') }}</p>
+					</div>
+					<div class="col-4 col-sm-3 p-r0 px-20r mt-4">
+						<div class="d-flex justify-content-center align-items-center mt-md-4 mb-md-4">
+								{!! svgIcons('litcoin') !!}							
+						</div>
+						<p class="mb-3 color-FF gilroy-medium f-18 leading-24 f-r16 text-center mt-1">{{ __('LITECOIN') }}</p>
+					</div>
+					<div class="col-4 col-sm-3 pl-0 px-20r mt-4">
+						<div class="d-flex justify-content-center align-items-center mt-md-4 mb-md-4">
+								{!! svgIcons('tron') !!}				
+						</div>
+						<p class="mb-3 color-FF gilroy-medium f-18 leading-24 f-r16 text-center mt-1">{{ __('TRON') }}</p>
+					</div>
+					<div class="col-4 col-sm-3 pl-0 px-20r mt-1 mt-sm-4">
+						<div class="d-flex justify-content-center align-items-center mt-md-4 mb-md-4">
+							{!! svgIcons('ethereum') !!}
+						</div>
+            <p class="mb-3 color-FF gilroy-medium f-18 leading-24 f-r16 text-center mt-1">{{ __('ETHEREUM') }}</p>
+					</div>
+          <div class="col-4 col-sm-3 pl-0 px-20r mt-1">
+						<div class="d-flex justify-content-center align-items-center mt-md-4 mb-md-4">
+							{!! svgIcons('doge') !!}
+						</div>
+            <p class="mb-3 color-FF gilroy-medium f-18 leading-24 f-r16 text-center mt-1">{{ __('DOGE') }}</p>				
+					</div>
+          <div class="col-4 col-sm-3 pl-0 px-20r mt-1">
+						<div class="d-flex justify-content-center align-items-center mt-md-4 mb-md-4">
+							{!! svgIcons('tether') !!}
+						</div>
+            <p class="mb-3 color-FF gilroy-medium f-18 leading-24 f-r16 text-center mt-2">{{ __('USDT') }}</p>				
+					</div>
+          <div class="col-4 col-sm-3 pl-0 px-20r mt-1">
+						<div class="d-flex justify-content-center align-items-center -mt-8p mt-md-4 mb-2">
+							{!! svgIcons('trc-20') !!}
+						</div>
+            <p class="mb-3 color-FF gilroy-medium f-18 leading-24 f-r16 text-center -mt-11p">{{ __('TRC-20') }}</p>				
+					</div>
+          <div class="col-4 col-sm-3 pl-0 px-20r mt-1">
+						<div class="d-flex justify-content-center align-items-center mt-md-4 mb-md-4">
+							{!! svgIcons('custom-token') !!}
+						</div>
+            <p class="mb-3 color-FF gilroy-medium f-18 leading-24 f-r16 text-center mt-1">{{ __('Custom Token') }}</p>
+					</div>
+				</div>
 			</div>
 		</div>
 	</div>

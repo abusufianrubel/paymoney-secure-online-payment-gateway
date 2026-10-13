@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Users;
 
 use App\Exceptions\Api\V2\AmountLimitException;
+use App\Exceptions\Api\V2\FeesException;
 use Exception;
 use App\Services\DepositMoneyService;
 use App\Http\Controllers\Controller;
@@ -63,7 +64,7 @@ class DepositController extends Controller
             setPaymentData($transInfo);
             return view('user.deposit.confirm', $transInfo);
 
-        } catch (AmountLimitException $e) {
+        } catch (AmountLimitException|FeesException $e) {
             $this->helper->one_time_message('error', __( $e->getMessage() ));
             return redirect('deposit');
         }
@@ -82,33 +83,40 @@ class DepositController extends Controller
      */
     public function depositGateway(Request $request)
     {
-        actionSessionCheck();
+        try {
+            actionSessionCheck();
 
-        $data = getPaymentData();
+            $data = getPaymentData();
 
-        // These are the mandatory field for dynamic gateway payment.
-        $paymentData = [
-            'currency_id' => $data['currencyId'],
-            'total' => $data['totalAmount'],
-            'transaction_type' => Deposit,
-            'payment_type' => 'deposit',
-            'method' => $data['payment_method'],
-            'redirectUrl' => route('deposit.complete'),
-            'cancel_url' => url('deposit'),
-            'gateway' => $data['paymentMethodAlias'],
-            'user_id' => Auth::id(),
-            'uuid' => unique_code()
-        ];
+            // These are the mandatory field for dynamic gateway payment.
+            $paymentData = [
+                'currency_id' => $data['currencyId'],
+                'total' => $data['totalAmount'],
+                'transaction_type' => Deposit,
+                'payment_type' => 'deposit',
+                'method' => $data['payment_method'],
+                'redirectUrl' => route('deposit.complete'),
+                'success_url' => route('user.deposit.success'),
+                'cancel_url' => url('deposit'),
+                'gateway' => $data['paymentMethodAlias'],
+                'user_id' => Auth::id(),
+                'uuid' => unique_code()
+            ];
 
-        if ($data['payment_method'] == Bank) {
-            $paymentData['banks'] = getBankList($data['currencyId'], 'deposit');
+            if ($data['payment_method'] == Bank) {
+                $paymentData['banks'] = getBankList($data['currencyId'], 'deposit');
+            }
+
+            $data = array_merge($data, $paymentData);
+
+            setPaymentData($data);
+
+            return redirect(gatewayPaymentUrl($data));
+
+        } catch (Exception $e) {
+            $this->helper->one_time_message('error', $e->getMessage());
+            return redirect('deposit');
         }
-
-        $data = array_merge($data, $paymentData);
-
-        setPaymentData($data);
-
-        return redirect(gatewayPaymentUrl($data));
 
     }
 
@@ -154,6 +162,20 @@ class DepositController extends Controller
             );
 
             $data ['transaction_id'] = $depositResponse['transaction']->id;
+
+            if (moduleExists('Referral') && settings('referral_enabled') == 'Yes') {
+
+                $refAwardData = [
+                    'userId'          => $depositResponse['deposit']->user_id,
+                    'currencyId'      => $depositResponse['deposit']->currency_id,
+                    'currencyCode'    => $depositResponse['deposit']?->currency?->code,
+                    'presentAmount'   => $depositResponse['deposit']->amount,
+                    'paymentMethodId' => $depositResponse['deposit']->payment_method_id,
+                    'transactionType' => 'Deposit',
+                ];
+
+                (new \Modules\Referral\Entities\ReferralAward)->checkReferralAward($refAwardData);
+            }
 
             clearActionSession();
 

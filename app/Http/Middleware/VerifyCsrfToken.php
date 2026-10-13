@@ -29,7 +29,9 @@ class VerifyCsrfToken extends Middleware
         'gateway/payment-verify/payeer',
         'gateway/payment-verify/payumoney',
         'gateway/payment-verify/coinbase',
-        'receive/blockio-balance-change-notification',
-        'receive/tatumio-balance-change-notification'
+        'receive/tatumio-balance-change-notification',
+        'virtualcard/webhook/*' ,
+        'gateway/payment-verify/flutterwave',
+        'gateway/process-payment/flutterwave'
     ];
 }

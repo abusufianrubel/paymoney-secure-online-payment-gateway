@@ -40,6 +40,11 @@ class TatumIoTransaction
         return $tatumAssetSetting;
     }
 
+    public function networkCredentials()
+    {
+        return  $this->networkCredentials;
+    }
+
     public function getMerchantAddress()
     {
         return $this->networkCredentials->address;
@@ -57,12 +62,12 @@ class TatumIoTransaction
 
     public function getMerchantBalance()
     {
-        return $this->cryptoNetwork->getBalanceOfAddress($this->getMerchantAddress());
+        return checkDemoEnvironment() ? $this->networkCredentials->balance : $this->cryptoNetwork->getBalanceOfAddress($this->getMerchantAddress());
     }
 
     public function getTransactionByHash($arg_hash)
     {
-        $url = "https://api.tatum.io/v3/" . $this->cryptoNetwork->networkName() . "/transaction/" . $arg_hash;
+        $url = tatumApiUrl($this->cryptoNetwork->networkName() . '/transaction/' . $arg_hash);
         $response = Http::withHeaders([
             "x-api-key" => $this->getMerchantApiKey(),
         ])->get($url);
@@ -70,6 +75,11 @@ class TatumIoTransaction
         $response = json_decode($response);
 
         return $response;
+    }
+
+    public function getTokenBalanceByAddress($nativeAddress, $tokenAddress)
+    {
+        return $this->cryptoNetwork->getTokenDetails($nativeAddress, $tokenAddress);
     }
 
     public function checkUserTatumWallet($user_id)
@@ -105,7 +115,7 @@ class TatumIoTransaction
 
     public function getUserBalance()
     {
-        return $this->cryptoNetwork->getBalanceOfAddress($this->getUserAddress());
+        return checkDemoEnvironment() ? $this->userCryptoWallet->balance : $this->cryptoNetwork->getBalanceOfAddress($this->getUserAddress());
     }
 
     public function getAddressBalance($address)
@@ -115,13 +125,13 @@ class TatumIoTransaction
 
     public function transactionView($hash)
     {
-        if (in_array($this->cryptoNetwork->networkName(), ['dogecoin', 'ethereum', 'tron'])) {
+        if (in_array($this->cryptoNetwork->networkName(), ['dogecoin', 'ethereum', 'tron', 'litecoin'])) {
 
             return $this->cryptoNetwork->transactionDetails($hash);
 
         }
 
-        $url = "https://api.tatum.io/v3/".$this->cryptoNetwork->networkName()."/transaction/". $hash;
+        $url = tatumApiUrl($this->cryptoNetwork->networkName().'/transaction/'. $hash);
 
         $response = Http::withHeaders([
             "x-api-key" => $this->getMerchantApiKey(),
@@ -150,7 +160,7 @@ class TatumIoTransaction
                 return $this->cryptoNetwork->getEstimateFees($sender, $receiver, $amount, $priority);
             }
 
-            $url = "https://api.tatum.io/v3/blockchain/estimate";
+            $url = tatumApiUrl('blockchain/estimate');
             $apiKey = $this->getMerchantApiKey();
             $payload = array(
                 "chain" => $chain,
@@ -184,6 +194,21 @@ class TatumIoTransaction
     public function sendCryptoAdminToUser($amount, $priority)
     {
         return $this->cryptoSendProcess($this->getMerchantAddress(), $this->getMerchantPrivateKey(), $this->getUserAddress(), $amount, $priority);
+    }
+
+    public function sendTokenAdminToUser($tokenAddress, $amount)
+    {
+        return $this->tokenSendProcess($tokenAddress, $this->getMerchantPrivateKey(), $this->getUserAddress(), $amount);
+    }
+
+    public function sendTokenUserToAdmin($tokenAddress, $amount)
+    {
+        return $this->tokenSendProcess($tokenAddress, $this->getUserPrivateKey(), $this->getMerchantAddress(), $amount);
+    }
+
+    public function sendTokenToAddress($tokenAddress, $amount, $receiver)
+    {
+        return $this->tokenSendProcess($tokenAddress, $this->getUserPrivateKey(), $receiver, $amount);
     }
 
     public function sendCryptoUserToAdmin($amount, $priority)
@@ -222,7 +247,7 @@ class TatumIoTransaction
             "changeAddress" => $sender,
         ];
 
-        $url = "https://api.tatum.io/v3/" . $this->cryptoNetwork->networkName() . "/transaction";
+        $url = tatumApiUrl($this->cryptoNetwork->networkName() . '/transaction');
 
         $api_key = $this->getMerchantApiKey();
 
@@ -232,6 +257,11 @@ class TatumIoTransaction
         ])->post($url, $payload);
 
         return json_decode($response);
+    }
+
+    public function tokenSendProcess($tokenAddress, $key, $receiver, $amount)
+    {
+        return $this->cryptoNetwork->tokenTransaction($tokenAddress, $key, $receiver, $amount);
     }
 
     public function checkAddress($address, $via='web')
@@ -246,7 +276,7 @@ class TatumIoTransaction
             ]);
         } catch (Exception $e) {
             
-            if ($via=='api') {
+            if ($via == 'api') {
                 throw new Exception($e->getMessage());
             }
 
@@ -267,18 +297,49 @@ class TatumIoTransaction
         $transaction->uuid = $arr['uniqueCode'];
         $transaction->transaction_type_id = (isset($arr['transactionType']))  ?  $arr['transactionType'] :  Crypto_Sent;
         $transaction->subtotal = $arr['amount'];
-        $transaction->total = (isset($arr['transactionType']) && ($arr['transactionType'] == Crypto_Received) ) ? $arr['amount'] : "-" . ($arr['amount']);
+        $transaction->total = (isset($arr['transactionType']) && ($arr['transactionType'] == Crypto_Received || $arr['transactionType'] == Token_Received) ) ? $arr['amount'] : "-" . ($arr['amount']);
         $transaction->status = (isset($arr['status'])) ? $arr['status'] : 'Pending';
         $transaction->save();
         return $transaction->id;
     }
-
+    
     public function createWithdrawalOrSendCryptoApiLog($arr)
     {
         $cryptoApiLog = new CryptoAssetApiLog();
         $cryptoApiLog->payment_method_id = TatumIo;
         $cryptoApiLog->object_id = $arr['transactionId'];
         $cryptoApiLog->object_type = (isset($arr['object_type'])) ? $arr['object_type'] : 'crypto_sent';
+        $cryptoApiLog->confirmations = (isset($arr['confirmations'])) ? $arr['confirmations'] : 0;
+        $cryptoApiLog->network = $arr['walletCurrencyCode'];
+        $cryptoApiLog->payload = json_encode($arr['withdrawInfoData']);
+        $cryptoApiLog->save();
+
+        return $cryptoApiLog;
+    }
+
+    public function createTokenTransaction($arr)
+    {
+        $transaction = new \App\Models\Transaction();
+        $transaction->user_id = $arr['userId'];
+        $transaction->end_user_id = $arr['endUserId'];
+        $transaction->currency_id = $arr['currencyId'];
+        $transaction->payment_method_id = TatumIo;
+        $transaction->uuid = $arr['uniqueCode'];
+        $transaction->transaction_type_id = (isset($arr['transactionType']))  ?  $arr['transactionType'] :  Token_Sent;
+        $transaction->subtotal = $arr['amount'];
+        $transaction->total = (isset($arr['transactionType']) && ($arr['transactionType'] == Token_Received) ) ? $arr['amount'] : "-" . ($arr['amount']);
+        $transaction->status = $arr['status'];
+        $transaction->save();
+
+        return $transaction->id;
+    }
+
+    public function createWithdrawalOrSendTokenApiLog($arr)
+    {
+        $cryptoApiLog = new CryptoAssetApiLog();
+        $cryptoApiLog->payment_method_id = TatumIo;
+        $cryptoApiLog->object_id = $arr['transactionId'];
+        $cryptoApiLog->object_type = (isset($arr['object_type'])) ? $arr['object_type'] : 'token_sent';
         $cryptoApiLog->confirmations = (isset($arr['confirmations'])) ? $arr['confirmations'] : 0;
         $cryptoApiLog->network = $arr['walletCurrencyCode'];
         $cryptoApiLog->payload = json_encode($arr['withdrawInfoData']);
@@ -350,18 +411,45 @@ class TatumIoTransaction
                 $tatumNetworkArray['network'] =  $network;
 
                 //create new crypt api log if empty
-                $blockIoAssetApiLog = new CryptoAssetApiLog();
-                $blockIoAssetApiLog->payment_method_id = TatumIo;
-                $blockIoAssetApiLog->object_id = $walletId;
-                $blockIoAssetApiLog->object_type = 'wallet_address';
-                $blockIoAssetApiLog->network = $network;
-                $blockIoAssetApiLog->payload = json_encode($tatumNetworkArray);
-                $blockIoAssetApiLog->save();
+                $tatumIoAssetApiLog = new CryptoAssetApiLog();
+                $tatumIoAssetApiLog->payment_method_id = TatumIo;
+                $tatumIoAssetApiLog->object_id = $walletId;
+                $tatumIoAssetApiLog->object_type = 'wallet_address';
+                $tatumIoAssetApiLog->network = $network;
+                $tatumIoAssetApiLog->payload = json_encode($tatumNetworkArray);
+                $tatumIoAssetApiLog->save();
             }
 
         } catch (Exception $e) {
             throw new Exception($e->getMessage());
         }
+    }
+
+    public function generateSmartContract($tokenName, $symbol, $decimals, $totalSupply)
+    {
+
+        $arr = [
+            'receipent' => $this->getMerchantAddress(), 
+            'privateKey' => $this->getMerchantPrivateKey(),
+            'tokenName' => $tokenName,
+            'symbol' => $symbol,
+            'decimals' => $decimals,
+            'totalSupply' => $totalSupply,
+        ];
+
+
+        return $this->cryptoNetwork->deploySmartContract($arr);
+
+    }
+
+    public function getSmartContractList($network)
+    {
+        return $this->cryptoNetwork->getSmartContractList($this->getMerchantAddress(), $network);
+    }
+
+    public function getTokenTransactionDetails($txId)
+    {
+        return $this->cryptoNetwork->tokenTransactionDetails($txId);
     }
 
 

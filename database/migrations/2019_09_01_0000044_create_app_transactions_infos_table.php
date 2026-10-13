@@ -15,9 +15,8 @@ class CreateAppTransactionsInfosTable extends Migration
     {
         Schema::create('app_transactions_infos', function (Blueprint $table)
         {
-            $table->increments('id');
-            $table->integer('app_id')->unsigned()->index();
-            $table->foreign('app_id')->references('id')->on('merchant_apps')->onUpdate('cascade')->onDelete('cascade');
+            $table->id();
+            $table->foreignId('app_id')->constrained('merchant_apps')->onUpdate('cascade')->onDelete('cascade');
             $table->string('payment_method', 20);
             $table->decimal('amount', 20,8); //updated to decimal
             $table->string('currency', 10);

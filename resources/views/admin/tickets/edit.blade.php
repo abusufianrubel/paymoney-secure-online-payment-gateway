@@ -6,8 +6,8 @@
     <!-- wysihtml5 -->
     <link rel="stylesheet" type="text/css" href="{{  asset('public/dist/plugins/bootstrap-wysihtml5/bootstrap3-wysihtml5.min.css') }}">
 
-    <!-- jquery-ui-1.12.1 -->
-    <link rel="stylesheet" type="text/css" href="{{ asset('public/dist/libraries/jquery-ui-1.12.1/jquery-ui.min.css')}}">
+    <!-- jquery-ui -->
+    <link rel="stylesheet" type="text/css" href="{{ asset('public/dist/libraries/jquery-ui/jquery-ui.min.css')}}">
 @endsection
 
 @section('page_content')
@@ -137,13 +137,13 @@
 @push('extra_body_scripts')
 
 <!-- jquery.validate -->
-<script src="{{ asset('public/dist/plugins/jquery-validation-1.17.0/dist/jquery.validate.min.js') }}" type="text/javascript"></script>
+<script src="{{ asset('public/dist/plugins/jquery-validation/dist/jquery.validate.min.js') }}" type="text/javascript"></script>
 
 <!-- wysihtml5 -->
 <script src="{{ asset('public/dist/plugins/bootstrap-wysihtml5/bootstrap3-wysihtml5.all.min.js') }}" type="text/javascript"></script>
 
-<!-- jquery-ui-1.12.1 -->
-<script src="{{ asset('public/dist/libraries/jquery-ui-1.12.1/jquery-ui.min.js') }}" type="text/javascript"></script>
+<!-- jquery-ui -->
+<script src="{{ asset('public/dist/libraries/jquery-ui/jquery-ui.min.js') }}" type="text/javascript"></script>
 
 <script type="text/javascript">
     $(function () {
@@ -237,8 +237,6 @@
                         },
                         success:function (response)
                         {
-                            // console.log(response);
-
                             $('form').find("button[type='submit']").prop('disabled',true);
 
                             if(response.status == 'success')
@@ -269,7 +267,6 @@
                 }
                 else
                 {
-                    // console.log(req.term.length);
                     $('#user_id').val('');
                 }
             },

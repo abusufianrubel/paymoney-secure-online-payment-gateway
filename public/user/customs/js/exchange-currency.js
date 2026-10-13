@@ -163,6 +163,8 @@ if ($('.main-containt').find('#exchangeMoneyCreate').length) {
                             localStorage.setItem('amountLstorage', amount);
                         }
                     } else {
+                        $('#amountLimitError').text(response.message);
+                        $('#exchangeMoneyCreateSubmitBtn').attr('disabled', true);
                         determineDecimalPoint();
                         hideExchangeRateGetAmountDiv();
                     }
@@ -262,6 +264,18 @@ if ($('.main-containt').find('#exchangeMoneyCreate').length) {
                                 $('#toCurrencyWalletBalanceDiv').removeClass('d-none');
                                 $('#toWalletCurrencyBalance').text(object.balance);
                                 $('#toWalletCurrencyCode').text(object.currencyCode);
+
+                                let amount = $('#amount').val().trim();
+
+                                if (($.isNumeric(amount) && amount > 0) && fromCurrencyWalletId != '' ) {
+                                    checkAmountLimitAndFeesLimit()
+                                    .then((status) => {
+                                        let toCurrencyWalletId = $('#toCurrencyWallet').val();
+                                        if (status && toCurrencyWalletId != '') {
+                                            getAmountFromGive();
+                                        }
+                                    });
+                                } 
                             } else {
                                 $('#toCurrencyWalletBalanceDiv').addClass('d-none');
                             }
@@ -270,19 +284,6 @@ if ($('.main-containt').find('#exchangeMoneyCreate').length) {
                 });
             });
         }
-
-        let amount = $('#amount').val().trim();
-
-        if (($.isNumeric(amount) && amount > 0) && fromCurrencyWalletId != '' ) {
-            checkAmountLimitAndFeesLimit()
-            .then((status) => {
-                let toCurrencyWalletId = $('#toCurrencyWallet').val();
-                if (status && toCurrencyWalletId != '') {
-                    getAmountFromGive();
-                }
-            });
-        } 
-
     });
 
     // Event: converted currency wallet change

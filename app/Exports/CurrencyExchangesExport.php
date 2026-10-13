@@ -89,7 +89,7 @@ class CurrencyExchangesExport implements FromQuery, WithHeadings, WithMapping, S
             $amount,
             ($currencyExchange->fee == 0) ? "-" : formatNumber($currencyExchange->fee),
             $total,
-            moneyFormat(optional(optional($currencyExchange->toWallet)->currency)->symbol, (float) ($currencyExchange->exchange_rate)),
+            formatNumber($currencyExchange->exchange_rate, $currencyExchange?->toWallet?->currency?->id),
             $fromCurrencyCode,
             $toCurrencyCode,
             getStatus($currencyExchange->status)

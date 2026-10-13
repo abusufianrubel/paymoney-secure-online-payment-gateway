@@ -16,6 +16,7 @@ use App\Models\{Dispute,
     Reason,
     User
 };
+use App\Services\Mail\Dispute\CloseDisputeMailService;
 
 class DisputeController extends Controller
 {
@@ -193,6 +194,17 @@ class DisputeController extends Controller
         $dispute         = Dispute::find($request->id);
         $dispute->status = $request->status;
         $dispute->save();
+
+        if ($dispute->status == 'Closed') {
+            
+            if ($dispute->claimant) {
+                (new CloseDisputeMailService)->send($dispute, ['recipient' => $dispute->claimant, 'closed_by' => 'Admin']);
+            }
+
+            if ($dispute->defendant) {
+                (new CloseDisputeMailService)->send($dispute, ['recipient' => $dispute->defendant, 'closed_by' => 'Admin']);
+            }
+        }
 
         $data['status'] = 1;
 

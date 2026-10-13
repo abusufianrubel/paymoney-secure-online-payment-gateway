@@ -10,16 +10,11 @@ use Closure;
 class CheckUserSuspended
 {
     use ApiResponse;
-    protected $helper;
-    public function __construct()
-    {
-        $this->helper = new Common();
-    }
-
+    
     public function handle($request, Closure $next)
     {
         // if user suspended can't do any transactions
-        $user = $this->helper->getUserStatus(auth()->user()->status);
+        $user = Common::getUserStatus(auth()->user()->status);
 
         if ($user == 'Suspended') {
             $prefix = str_replace('/', '', request()->route()->getPrefix());

@@ -5,9 +5,12 @@
 <form id="payment-form" method="POST">
     {{ csrf_field() }}
 
+    <span id="stripe-error" class="fw-bold text-danger d-none"></span>
+
     <div id="payment-element">
         <!-- Elements will create form elements here -->
     </div>
+
 
     <input type="hidden" name="currency_id" id="currency_id" value="{{ $currency_id }}">
     <input type="hidden" name="amount" id="amount" value="{{ $total }}">
@@ -18,7 +21,8 @@
     <div class="row">
         <div class="col-12">
             <div class="d-grid mt-2">
-                <button type="submit" class="btn btn-lg btn-primary" type="submit" id="stripeSubmitBtn">
+            
+                <button class="btn btn-lg btn-primary" type="submit" id="stripe_btn" disabled>
                     <div class="spinner spinner-border text-white spinner-border-sm mx-2 d-none">
                         <span class="visually-hidden"></span>
                     </div>
@@ -39,9 +43,9 @@
 
 
 
-<script src="{{ asset('public/dist/plugins/jquery-validation-1.17.0/dist/jquery.validate.min.js') }}" type="text/javascript"></script>
+<script src="{{ asset('public/dist/plugins/jquery-validation/dist/jquery.validate.min.js') }}" type="text/javascript"></script>
 
-<script src="{{ asset('public/dist/plugins/debounce-1.1/jquery.ba-throttle-debounce.min.js') }}" type="text/javascript"></script>
+<script src="{{ asset('public/dist/plugins/debounce/jquery.ba-throttle-debounce.min.js') }}" type="text/javascript"></script>
 
 <script type="text/javascript">
     'use strict';
@@ -60,6 +64,7 @@
     var paymentIntendKey = "{{ $paymentIntent }}";
     var publishableKey = "{{ $publishableKey }}";
     var lang = '{{ app()->getLocale() }}';
+    let stripeError = "{{ __('An unexpected error occurred. Please try again.') }}";
 
 </script>
 

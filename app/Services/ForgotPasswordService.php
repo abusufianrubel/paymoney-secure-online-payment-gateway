@@ -12,7 +12,7 @@ namespace App\Services;
 use DB, Hash, Password;
 use App\Models\User;
 use App\Exceptions\Api\V2\ForgotPasswordException;
-use App\Services\Mail\PasswordResetMailService;
+use App\Services\Mail\ForgotPasswordMailService;
 
 class ForgotPasswordService
 {
@@ -33,14 +33,10 @@ class ForgotPasswordService
         $reset['code'] = $user['code']  = otpCode6();
         $reset['created_at'] = date('Y-m-d H:i:s');
 
-        $reset['token'] = base64_encode(Password::createToken(User::where('email', $email)->first()));
-
         DB::table('password_resets')->where('email', $email)->delete();
         DB::table('password_resets')->insert($reset);
 
-        $reset['resetUrl'] = url('password/resets', $reset['token']);
-
-        $response = (new PasswordResetMailService)->send($user, $reset);
+        $response = (new ForgotPasswordMailService)->send($user, $reset);
 
         return $response;
     }

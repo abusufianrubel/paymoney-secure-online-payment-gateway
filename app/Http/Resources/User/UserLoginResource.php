@@ -18,6 +18,7 @@ class UserLoginResource extends JsonResource
         $defaultCountry = Country::where('is_default', 'yes')->value('short_name');
         return [
             'user_id'        => $this->id,
+            'role_id'        => $this->role_id,
             'first_name'     => $this->first_name,
             'last_name'      => $this->last_name,
             'full_name'      => $this->full_name,

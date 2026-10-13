@@ -1,6 +1,9 @@
 @foreach($transactions as $key=>$transaction)
     @php
-        $transactionTypes = [Deposit, Withdrawal, Transferred, Received, Exchange_From, Exchange_To, Request_Sent, Request_Received, Payment_Sent, Payment_Received, Crypto_Sent, Crypto_Received];
+        $transactionTypes = [Deposit, Withdrawal, Transferred, Received, Exchange_From, Exchange_To, Request_Sent, Request_Received, Payment_Sent, Payment_Received, Crypto_Sent, Crypto_Received, Token_Sent, Token_Received];
+        if (moduleExists('Referral') && settings('referral_enabled') == 'Yes' && defined('Referral_Award')) {
+            $transactionTypes[] = Referral_Award;
+        }
     @endphp
     @if (in_array($transaction->transaction_type?->id, $transactionTypes))
     <div class="transac-parent cursor-pointer" data-bs-toggle="modal" data-bs-target="#transaction-Info-{{ $key }}">
@@ -22,7 +25,7 @@
                         } else if (in_array($transaction->transaction_type?->id, [Payment_Sent, Payment_Received])) {
                             $transactionImage = $transaction->merchant?->logo;
                             $directoryName = 'merchant';
-                        } else if (in_array($transaction->transaction_type?->id, [Crypto_Sent, Crypto_Received])) {
+                        } else if (in_array($transaction->transaction_type?->id, [Crypto_Sent, Crypto_Received, Token_Sent, Token_Received])) {
                             $transactionImage = $transaction->end_user?->picture ?? null;
                             $directoryName = 'profile';
                         } else {
@@ -35,12 +38,16 @@
 
                 <div class="ml-20 r-ml-8">
                     <!-- Transaction Type -->
-                    <p class="mb-0 text-dark f-16 gilroy-medium theme-tran">{{ strpos($transaction->transaction_type?->name, '_') !== false ? str_replace('_', ' ', $transaction->transaction_type?->name) : $transaction->transaction_type?->name }}</p>
+
+                    <p class="mb-0 text-dark f-16 gilroy-medium theme-tran">
+                        {{ transactionTypeName($transaction->transaction_type) }}
+                    </p>
+
                     <div class="d-flex flex-wrap">
                         @php
-                            if (in_array($transaction->transaction_type?->id, [Deposit, Withdrawal, Payment_Sent, Payment_Received, Crypto_Sent])) {
+                            if (in_array($transaction->transaction_type?->id, [Deposit, Withdrawal, Payment_Sent, Payment_Received, Crypto_Sent, Token_Sent])) {
                                 $transactionInfo = $transaction->payment_method?->id == Mts ? settings('name') : $transaction->payment_method?->name;
-                            } else if (in_array($transaction->transaction_type?->id, [Transferred, Received, Request_Sent, Request_Received, Crypto_Received])) {
+                            } else if (in_array($transaction->transaction_type?->id, [Transferred, Received, Request_Sent, Request_Received, Crypto_Received, Token_Received])) {
                                 $transactionInfo = getColumnValue($transaction->end_user, 'first_name', 'last_name', 'unregistered');
                             } else if (in_array($transaction->transaction_type?->id, [Exchange_From, Exchange_To])) {
                                 $transactionInfo = $transaction->currency?->code;
@@ -66,26 +73,26 @@
             <div class="d-flex justify-content-center align-items-center">
                 <div>
                     <p class="mb-0 gilroy-medium text-gray-100 r-f-12 f-16 ph-20">
-                        @if (in_array($transaction->transaction_type?->id, [Deposit, Received, Exchange_To, Payment_Received, Request_Sent, Crypto_Received])) 
+                        @if (in_array($transaction->transaction_type?->id, [Deposit, Received, Exchange_To, Payment_Received, Request_Sent, Crypto_Received]))
                             <svg class="mx-2" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M8.89992 3.84617L7.02742 5.71867L5.88409 6.86784C5.65113 7.10045 5.33538 7.23109 5.00617 7.23109C4.67697 7.23109 4.36122 7.10045 4.12826 6.86784L1.10659 3.84617C0.709923 3.4495 0.995756 2.77284 1.54992 2.77284H8.45659C9.01659 2.77284 9.29659 3.4495 8.89992 3.84617Z" fill="#2AAA5E" />
                             </svg>
-                        @else     
+                        @else
                             <svg class="mx-2" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M8.89992 6.15383L7.02742 4.28133L5.88409 3.13216C5.65113 2.89955 5.33538 2.76891 5.00617 2.76891C4.67697 2.76891 4.36122 2.89955 4.12826 3.13216L1.10659 6.15383C0.709923 6.5505 0.995756 7.22716 1.54992 7.22716H8.45659C9.01659 7.22716 9.29659 6.5505 8.89992 6.15383Z" fill="#D9204C"></path>
                             </svg>
                         @endif
                         {{ moneyFormat($transaction->currency?->symbol, formatNumber($transaction->subtotal, $transaction->currency_id)) }}
                     </p>
-                    
-                        
+
+
                     <p class="{{ getColor($transaction->status) }} f-13 gilroy-regular text-end mt-6 mb-0 status-info rlt-txt">{{ getStatus($transaction->status) }}</p>
                 </div>
                 <div class="cursor-pointer transaction-arrow ml-28 r-ml-12">
                     <a class="arrow-hovers" data-bs-toggle="modal" data-bs-target="#transaction-Info-{{ $key }}">
                         <svg class="nscaleX-1" width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path fill-rule="evenodd" clip-rule="evenodd" d="M3.5312 1.52861C3.27085 1.78896 3.27085 2.21107 3.5312 2.47141L7.0598 6.00001L3.5312 9.52861C3.27085 9.78895 3.27085 10.2111 3.5312 10.4714C3.79155 10.7318 4.21366 10.7318 4.47401 10.4714L8.47401 6.47141C8.73436 6.21106 8.73436 5.78895 8.47401 5.52861L4.47401 1.52861C4.21366 1.26826 3.79155 1.26826 3.5312 1.52861Z" fill="currentColor"/>
-                        </svg> 
+                        </svg>
                     </a>
                 </div>
             </div>
@@ -121,16 +128,16 @@
                             <p class="mb-0 mt-9 text-dark dark-5B f-20 gilroy-Semibold transac-title">{{ __('Transaction Details') }}</p>
 
                             <!-- Crypto Address -->
-                            @if ($transaction->transaction_type_id == Crypto_Sent || $transaction->transaction_type_id == Crypto_Received)
+                            @if ( in_array($transaction->transaction_type_id, [Crypto_Sent, Crypto_Received, Token_Sent, Token_Received] ) )
                                 <div class="row gx-sm-5">
                                     <div class="col-12">
                                         <p class="mb-0 mt-4 text-gray-100 gilroy-medium f-13 leading-20 r-f-9 r-mt-11">
                                             {{ getTransactionInfo($transaction->transaction_type?->name)['type'] }}
                                             {{ __('Address') }}</p>
                                         <p class="mb-0 mt-5p text-dark gilroy-medium f-15 leading-22 r-text">
-                                            @if ($transaction->transaction_type_id == Crypto_Sent)
+                                            @if ($transaction->transaction_type_id == Crypto_Sent || $transaction->transaction_type_id == Token_Sent )
                                                 {{ optional(cryptoApiLogDetails($transaction))['receiverAddress'] }}
-                                            @elseif($transaction->transaction_type_id == Crypto_Received)
+                                            @elseif($transaction->transaction_type_id == Crypto_Received || $transaction->transaction_type_id == Token_Received)
                                                 {{ optional(cryptoApiLogDetails($transaction))['senderAddress'] }}
                                             @endif
                                         </p>
@@ -157,10 +164,22 @@
                                     <p class="mb-0 mt-20 text-gray-100 gilroy-medium f-13 leading-20 r-f-9 r-mt-11">{{ __('Transaction Fee') }}</p>
                                     <p class="mb-0 mt-5p text-dark gilroy-medium f-15 leading-22 r-text">
 
-                                        @if (($transaction->transaction_type?->name == 'Crypto_Sent') | ($transaction->transaction_type?->name == 'Crypto_Received'))
+                                        @if (in_array($transaction->transaction_type?->name, ['Crypto_Sent', 'Crypto_Received']))
+                                            {{
+                                                optional(cryptoApiLogDetails($transaction))['network_fee'] != 0
+                                                    ? moneyFormat($transaction->currency?->symbol, optional(cryptoApiLogDetails($transaction))['network_fee'])
+                                                    : '-'
+                                            }}
+                                        @elseif(in_array($transaction->transaction_type?->name, ['Token_Sent', 'Token_Received']))
+                                            {{
+                                                optional(cryptoApiLogDetails($transaction))['network_fee'] != 0
+                                                    ? moneyFormat(optional(cryptoApiLogDetails($transaction))['network'], optional(cryptoApiLogDetails($transaction))['network_fee'])
+                                                    : '-'
+                                            }}
+                                        @elseif(in_array($transaction->transaction_type?->name, ['Token_Sent', 'Token_Received']))
                                             {{ 
                                                 optional(cryptoApiLogDetails($transaction))['network_fee'] != 0 
-                                                    ? moneyFormat($transaction->currency?->symbol, optional(cryptoApiLogDetails($transaction))['network_fee']) 
+                                                    ? moneyFormat(optional(cryptoApiLogDetails($transaction))['network'], optional(cryptoApiLogDetails($transaction))['network_fee']) 
                                                     : '-' 
                                             }}
                                         @else
@@ -194,7 +213,7 @@
                                     <p class="mb-0 mt-5p text-dark dark-CDO gilroy-medium f-15 leading-22 r-text">{{ moneyFormat($transaction->currency?->symbol, formatNumber($transaction->total, $transaction->currency_id)) }}</p>
                                 </div>
                             </div>
-                            
+
                             <!-- Transaction Note -->
                             @if (!empty($transaction->note))
                             <div class="row gx-sm-5">
@@ -203,6 +222,28 @@
                                     <p class="mb-0 mt-5p text-dark gilroy-medium f-15 leading-22 r-text">{{ $transaction->note ?? '' }}</p>
                                 </div>
                             </div>
+                            @endif
+                            @if ($transaction->transaction_type_id == Withdrawal)
+                                <div class="row gx-sm-5">
+                                    <div class="col-6">
+                                        <p class="mb-0 mt-20 text-gray-100 gilroy-medium f-13 leading-20 r-f-9 r-mt-11">{{ __('Withdrawal Account') }}</p>
+                                        <p class="mb-0 mt-5p text-dark gilroy-medium f-15 leading-22 r-text">{{ $transaction?->withdrawal->payment_method_info }}</p>
+                                    </div>
+                                    @if ($transaction?->withdrawal->payment_method_id == 5)
+                                        <div class="col-6">
+                                            <p class="mb-0 mt-20 text-gray-100 gilroy-medium f-13 leading-20 r-f-9 r-mt-11">{{ __('Account Number') }}</p>
+                                            <p class="mb-0 mt-5p text-dark gilroy-medium f-15 leading-22 r-text">{{ $transaction?->withdrawal?->withdrawal_detail->account_number }}</p>
+                                        </div>
+                                        <div class="col-6">
+                                            <p class="mb-0 mt-20 text-gray-100 gilroy-medium f-13 leading-20 r-f-9 r-mt-11">{{ __('Bank') }}</p>
+                                            <p class="mb-0 mt-5p text-dark gilroy-medium f-15 leading-22 r-text">{{ $transaction?->withdrawal?->withdrawal_detail->bank_name }}</p>
+                                        </div>
+                                        <div class="col-6">
+                                            <p class="mb-0 mt-20 text-gray-100 gilroy-medium f-13 leading-20 r-f-9 r-mt-11">{{ __('Branch') }}</p>
+                                            <p class="mb-0 mt-5p text-dark gilroy-medium f-15 leading-22 r-text">{{ $transaction?->withdrawal?->withdrawal_detail->bank_branch_address }}</p>
+                                        </div>
+                                    @endif
+                                </div>
                             @endif
 
                             @if ($transaction->transaction_type_id == Withdrawal)
@@ -265,8 +306,7 @@
 
     @if (!in_array($transaction->transaction_type?->id, $transactionTypes))
         @foreach (getCustomModules() as $addon)
-
-            @if (module($addon->get('name')) && view()->exists(strtolower($addon->get('name')) . '::user.transaction.'.strtolower($addon->get('name'))) && in_array($transaction->transaction_type?->id, config($addon->get('alias') . '.' . 'transaction_types')))
+            @if (moduleExists($addon->get('name')) && view()->exists(strtolower($addon->get('name')) . '::user.transaction.'.strtolower($addon->get('name'))) && in_array($transaction->transaction_type?->id, config($addon->get('alias') . '.' . 'transaction_types')))
                 @include(strtolower($addon->get('name')) . '::user.transaction.'.strtolower($addon->get('name')))
             @endif
         @endforeach

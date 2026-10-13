@@ -4,6 +4,10 @@ $(".success").on('click', function(){
   $(".alert-animate").animate({opacity:'1',right: '20px'},200);
 });
 
+$(document).ready(function () {
+  $('.select2').not('.select2-img').select2();
+});
+
 // Theme change
 document.querySelector('#switch').addEventListener('click', function() {
   var wasDarkMode = localStorage.getItem('dark') === '1';
@@ -60,11 +64,6 @@ if ($(window).width() < 992) {
     });
   });
 }
-
-// select2
-$(document).ready(function () {
-  $('.select2').select2();
-});
 
 // selcetbox color chang from option select
 $('.list-parrent').on('change', function () {

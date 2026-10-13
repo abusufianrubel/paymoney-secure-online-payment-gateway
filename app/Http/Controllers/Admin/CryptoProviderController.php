@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Helpers\Common;
 use App\Models\CryptoProvider;
+use Exception;
 use Illuminate\Http\Request;
 
 class CryptoProviderController extends Controller
@@ -18,20 +20,39 @@ class CryptoProviderController extends Controller
             return redirect()->back();
         }
 
-        $data['providers'] = CryptoProvider::get();
+        $data['providers'] = $providers = CryptoProvider::get();
+
 
         $data['provider'] = CryptoProvider::with([
-            'cryptoAssetSettings:id,currency_id,crypto_provider_id,network,network_credentials,status', 
+            'cryptoAssetSettings:id,currency_id,crypto_provider_id,network,network_credentials,status',
             'cryptoAssetSettings.currency:id,name,type,code,symbol,logo,status'
         ])
         ->where('alias', $provider)
         ->first();
+
+        if (strtolower($provider) == 'tatumio' && ! checkDemoEnvironment()) {
+            $response = updateTatumAssetCredentials();
+
+            if (! $response['status']) {
+                (new Common())->one_time_message('error', $response['message']);
+                return redirect()->route('dashboard');
+            }
+
+            $data['activeCryptoProviders'] = getProviderActiveStatus($providers);
+        }
 
         return view(strtolower($provider) . '::admin.crypto_provider.' . strtolower($provider), $data);
     }
 
     public function statusChange(Request $request, $provider)
     {
+        if (checkDemoEnvironment()) {
+            return response()->json([
+                'status'  => 400,
+                'message' => __('Provider On/Off is not allowed in demo site.')
+            ]);
+        }
+
         $allProviders = CryptoProvider::all(['name']);
         $status = $request->provider_status == 'true' ? 'Active' : 'Inactive';
         

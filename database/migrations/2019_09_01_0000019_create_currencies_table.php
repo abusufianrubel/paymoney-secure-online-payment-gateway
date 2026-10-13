@@ -10,7 +10,7 @@ class CreateCurrenciesTable extends Migration
     {
         Schema::create('currencies', function (Blueprint $table)
         {
-            $table->increments('id');
+            $table->id();
             $table->string('type', 20)->default('fiat')->comment('fiat or crypto');
             $table->string('name', 50);
             $table->char('symbol', 10);

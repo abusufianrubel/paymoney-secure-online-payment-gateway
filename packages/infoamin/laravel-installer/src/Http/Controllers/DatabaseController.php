@@ -60,9 +60,10 @@ class DatabaseController extends AppController
 
             Artisan::call('migrate');
             Artisan::call('db:seed');
-            Artisan::call('module:seed ' . 'BlockIo');
             Artisan::call('module:seed ' . 'TatumIo');
             Artisan::call('module:seed ' . 'Upgrader');
+            Artisan::call('module:seed ' . 'Virtualcard');
+            Artisan::call('module:seed ' . 'KycVerification');
 
             \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
         } catch (Exception $e) {

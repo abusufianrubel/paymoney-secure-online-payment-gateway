@@ -4,6 +4,7 @@ namespace App\Http\Helpers;
 use App\Http\Controllers\Users\EmailController;
 use App\Models\NotificationSetting;
 use Session, Config, Exception;
+use Illuminate\Support\Str;
 use App\Exceptions\Api\V2\{
     AmountLimitException,
     WalletException,
@@ -51,43 +52,27 @@ class Common
         return $return_value;
     }
 
-    /*
-     * @param $user_id
-     * @param $permissions
-     * @static has_permission
+    /**
+     * Check if a user has the specified permissions.
+     *
+     * @param int $userId The ID of the user.
+     * @param string $permissions Pipe-separated string of permissions.
+     * @return int Returns the count of matching permissions.
      */
-    public static function has_permission($user_id, $permissions = '')
+    public static function has_permission($userId, $permissions = '')
     {
         $permissions = explode('|', $permissions);
-
-        $permission_id = [];
-        $i             = 0;
-
         $prefix = str_replace('/', '', request()->route()->getPrefix());
-        if ($prefix == config('adminPrefix'))
-        {
-            $user_type = 'Admin';
-        }
-        else
-        {
-            $user_type = 'User';
-        }
+        $userType = (Str::startsWith($prefix, config('adminPrefix')) || $prefix === config('adminPrefix')) 
+                    ? 'Admin' : 'User';
+        $permissionIds = Permission::whereIn('name', $permissions)->pluck('id')->toArray();
+        $roleId = RoleUser::where(['user_id' => $userId, 'user_type' => $userType])->value('role_id');
 
-        $userPermissions = Permission::whereIn('name', $permissions)->get(['id']);
-        foreach ($userPermissions as $value)
-        {
-            $permission_id[$i++] = $value->id;
+        if (!empty($permissionIds) && isset($roleId)) {
+            return PermissionRole::where('role_id', $roleId)->whereIn('permission_id', $permissionIds)->count();
         }
-        $role = RoleUser::where(['user_id' => $user_id, 'user_type' => $user_type])->first(['role_id']);
-        if (count($permission_id) && isset($role->role_id))
-        {
-            $has_permit = PermissionRole::where('role_id', $role->role_id)->whereIn('permission_id', $permission_id);
-            return $has_permit->count();
-        }
-        else
-        {
-            return 0;
-        }
+        
+        return 0;
     }
 
     /**
@@ -186,7 +171,7 @@ class Common
     }
 
     //  Check user status
-    public function getUserStatus($userStatus)
+    public static function getUserStatus($userStatus)
     {
         if ($userStatus == 'Suspended')
         {
@@ -370,22 +355,25 @@ class Common
         $maxError = $currencyFee->max_limit &&  $amount > $currencyFee->max_limit;
 
         if ($minError && $maxError) {
-            throw new AmountLimitException(__("Maximum acceptable amount is :x and minimum acceptable amount is :y", [
+            throw new AmountLimitException(__("Maximum acceptable amount is :x :z and minimum acceptable amount is :y :z", [
                 "x" => formatNumber($currencyFee->max_limit, optional($currencyFee->currency)->id),
                 "y" => formatNumber($currencyFee->min_limit, optional($currencyFee->currency)->id),
+                "z" => optional($currencyFee->currency)->code
             ]));
         } elseif ($maxError) {
             throw new AmountLimitException(__(
-                "Maximum acceptable amount is :x",
+                "Maximum acceptable amount is :x :y",
                 [
-                    "x" => formatNumber($currencyFee->max_limit, optional($currencyFee->currency)->id)
+                    "x" => formatNumber($currencyFee->max_limit, optional($currencyFee->currency)->id),
+                    "y" => optional($currencyFee->currency)->code
                 ]
             ));
         } elseif ($minError) {
             throw new AmountLimitException(__(
-                "Minimum acceptable amount is :x",
+                "Minimum acceptable amount is :x :y",
                 [
-                    "x" => formatNumber($currencyFee->min_limit, optional($currencyFee->currency)->id)
+                    "x" => formatNumber($currencyFee->min_limit, optional($currencyFee->currency)->id),
+                    "y" => optional($currencyFee->currency)->code
                 ]
             ));
         }

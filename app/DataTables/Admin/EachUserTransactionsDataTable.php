@@ -30,19 +30,27 @@ class EachUserTransactionsDataTable extends DataTable
                     case Request_Sent:
                     case Withdrawal:
                     case Payment_Sent:
+                    case defined('Virtualcard_Topup') && Virtualcard_Topup:
+                    case defined('Virtualcard_Withdrawal') && Virtualcard_Withdrawal:
                         if (isset($transaction->user->first_name) && !empty($transaction->user->first_name)) {
                             $sender = $transaction->user->first_name . ' ' . $transaction->user->last_name;
                             $senderWithLink = (Common::has_permission(auth('admin')->user()->id, 'edit_user')) ? '<a href="' . url(config('adminPrefix') . '/users/edit/' . $transaction->user_id) . '">' . $sender . '</a>' : $sender;
                         }
                         break;
-                    case (module('CryptoExchange') ? Crypto_Buy : false):
-                    case (module('CryptoExchange') ? Crypto_Sell : false):
-                    case (module('CryptoExchange') ? Crypto_Swap : false):
+                    case (moduleExists('CryptoExchange') ? Crypto_Buy : false):
+                    case (moduleExists('CryptoExchange') ? Crypto_Sell : false):
+                    case (moduleExists('CryptoExchange') ? Crypto_Swap : false):
                         if (isset($transaction->user->first_name) && !empty($transaction->user->first_name)) {
                             $sender = $transaction->user->first_name . ' ' . $transaction->user->last_name;
                             $senderWithLink = (Common::has_permission(auth('admin')->user()->id, 'edit_user')) ? '<a href="' . url(config('adminPrefix') . '/users/edit/' . $transaction->user_id) . '">' . $sender . '</a>' : $sender;
                         } elseif (isset($transaction->crypto_exchange->email_phone) && !empty($transaction->crypto_exchange->email_phone)) {
                            $senderWithLink = isset($transaction->crypto_exchange->email_phone) ?  $transaction->crypto_exchange->email_phone : '' ;
+                        }
+                        break;
+                    case (moduleExists('Invoice') ? Invoice_Payment_Sent : false):
+                        if (isset($transaction->user?->first_name) && !empty($transaction->user?->first_name)) {
+                            $sender = $transaction->user?->first_name . ' ' . $transaction->user?->last_name;
+                            $senderWithLink = (Common::has_permission(auth('admin')->user()->id, 'edit_user')) ? '<a href="' . url(config('adminPrefix') . '/users/edit/' . $transaction->user_id) . '">' . $sender . '</a>' : $sender;
                         }
                         break;
                     case Received:
@@ -56,7 +64,7 @@ class EachUserTransactionsDataTable extends DataTable
                 }
                 return $senderWithLink;
             })->addColumn('receiver', function ($transaction) {
-                
+
                 $receiverWithLink = getTransactionListUser($transaction, 'receiver');
                 if (!is_null($receiverWithLink)) {
                     return $receiverWithLink;
@@ -128,6 +136,12 @@ class EachUserTransactionsDataTable extends DataTable
                             $receiverWithLink = (Common::has_permission(auth('admin')->user()->id, 'edit_user')) ? '<a href="' . url(config('adminPrefix') . '/users/edit/' . $transaction->user_id) . '">' . $receiver . '</a>' : $receiver;
                         }
                         break;
+                    case (moduleExists('Invoice') ? Invoice_Payment_Received : false):
+                        if (isset($transaction->end_user?->first_name) && !empty($transaction->end_user?->first_name)) {
+                            $receiver = $transaction->end_user?->first_name . ' ' . $transaction->end_user?->last_name;
+                            $receiverWithLink = (Common::has_permission(auth('admin')->user()->id, 'edit_user')) ? '<a href="' . url(config('adminPrefix') . '/users/edit/' . $transaction->end_user_id) . '">' . $receiver . '</a>' : $receiver;
+                        }
+                        break;
                 }
                 return $receiverWithLink;
             })->editColumn('transaction_type_id', function ($transaction) {
@@ -135,7 +149,7 @@ class EachUserTransactionsDataTable extends DataTable
             })->editColumn('subtotal', function ($transaction) {
                 return isset($transaction->currency->type) && ($transaction->currency->type != 'fiat') ? $transaction->subtotal : formatNumber($transaction->subtotal);
             })->addColumn('fees', function ($transaction) {
-                return (($transaction->charge_percentage == 0) && ($transaction->charge_fixed == 0) ? '-' : ($transaction->currency->type != 'fiat' ? $transaction->charge_fixed : formatNumber($transaction->charge_percentage + $transaction->charge_fixed)));
+                return $transaction->charge_percentage == 0 && $transaction->charge_fixed == 0 ? '-' : formatNumber($transaction->charge_percentage + $transaction->charge_fixed, $transaction->currency_id);
             })->editColumn('total', function ($transaction) {
                 $total = isset($transaction->currency->type) && $transaction->currency->type != 'fiat' ? $transaction->total : formatNumber($transaction->total);
                 return '<td><span class="text-' . (($transaction->total > 0) ? 'green' : 'red') . '">' . $total . '</span></td>';

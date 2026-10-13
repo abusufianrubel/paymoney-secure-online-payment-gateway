@@ -91,6 +91,11 @@ class UsersRoleController extends Controller
         $data['settings_menu']   = 'user_role';
         
         if ($request->isMethod('post')) {
+            
+            if (checkDemoEnvironment() == true && ($request->id == '2' || $request->id == '3')) {
+                $this->helper->one_time_message('warning', __('User group update is not allowed in demo site.'));
+                return redirect(Config::get('adminPrefix').'/settings/edit_user_role/' . $request->id);
+            }
 
             $rules = array(
                 'name'         => 'required|max:30|unique:roles,name,'.$request->id,
@@ -148,6 +153,11 @@ class UsersRoleController extends Controller
 
     public function delete(Request $request)
     {
+        if (checkDemoEnvironment() == true && ($request->id == '2' || $request->id == '3')) {
+            $this->helper->one_time_message('warning', __('Demo group delete is not allowed in demo site.'));
+            return redirect(Config::get('adminPrefix').'/settings/user_role' );
+        }
+        
         Role::where('id', $request->id)->delete();
         PermissionRole::where('role_id', $request->id)->delete();
 

@@ -5,7 +5,6 @@ namespace App\DataTables\Admin;
 use Yajra\DataTables\Services\DataTable;
 use App\Http\Helpers\Common;
 use App\Models\ActivityLog;
-use Config, Auth;
 use Illuminate\Http\JsonResponse;
 
 class ActivityLogsDataTable extends DataTable
@@ -18,18 +17,22 @@ class ActivityLogsDataTable extends DataTable
                 return dateFormat($activityLog->created_at);
             })
             ->addColumn('username', function ($activityLog) {
-                if ($activityLog->type == 'Admin') {
-                    $name = getColumnValue($activityLog->admin);
-                    if ($name <> '-' && Common::has_permission(auth('admin')->user()->id, 'edit_admin')) {
-                        return '<a href="' . url(config('adminPrefix') . '/admin-user/edit/' . $activityLog->admin->id) . '">' . $name . '</a>';
-                    }
-                } else {
-                    $name = getColumnValue($activityLog->user);
-                    if ($name <> '-' && Common::has_permission(auth('admin')->user()->id, 'edit_user')) {
-                        return '<a href="' . url(config('adminPrefix') . '/users/edit/' . $activityLog->user->id) . '">' . $name . '</a>';
-                    }
+
+                $urlPostFix = $activityLog->type == 'Admin' ? '/admin-user/edit/' : '/users/edit/';
+                $url = $activityLog->admin ? 
+                    url(config('adminPrefix') . $urlPostFix . $activityLog->{strtolower($activityLog->type)}?->id) 
+                    : null;
+                
+                if (isActive('Agent') && ($activityLog->type == 'Agent')) {
+                    $url = isActive('Agent') ? route('admin.agents.agents.edit', $activityLog->agent?->id) : null;
                 }
-                return $name;
+
+                $permission = Common::has_permission(auth('admin')->user()->id, 'edit_'.strtolower($activityLog->type));
+                $name = getColumnValue($activityLog->{strtolower($activityLog->type)});
+                if ($name <> '-') {
+                    return $permission && $url ? '<a href="' . $url . '">' . $name . '</a>' : $name;
+                }
+                return '';
             })
             ->editColumn('browser_agent', function ($activityLog) {
                 $getBrowser = getBrowser($activityLog->browser_agent);

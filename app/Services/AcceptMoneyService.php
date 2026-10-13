@@ -13,13 +13,10 @@ use App\Http\Helpers\Common;
 use App\Exceptions\Api\V2\AcceptMoneyException;
 use App\Services\Mail\{
     AcceptMoneyCreatorMailService,
-    RequestMoneyReceiverCancelEmailService,
-    RequestMoneyCreatorCancelEmailService
 };
 use App\Services\Sms\{
     AcceptMoneyCreatorSmsService,
-    RequestMoneyCreatorCancelSmsService,
-    RequestMoneyReceiverCancelSmsService
+    RequestMoneyCancelSmsService,
 };
 use App\Models\{
     RequestPayment,
@@ -28,6 +25,7 @@ use App\Models\{
 };
 use Exception, DB;
 use App\Services\Mail\RequestMoney\NotifyAdminOnRequestMoneyMailService;
+use App\Services\Mail\RequestMoney\RequestCancelMailService;
 
 class AcceptMoneyService
 {
@@ -273,14 +271,14 @@ class AcceptMoneyService
             $phoneRegex = preg_match('%^(?:(?:\(?(?:00|\+)([1-4]\d\d|[1-9]\d?)\)?)?[\-\.\ \\\/]?)?((?:\(?\d{1,}\)?[\-\.\ \\\/]?){0,})(?:[\-\.\ \\\/]?(?:#|ext\.?|extension|x)[\-\.\ \\\/]?(\d+))?$%i', $requestPayment->phone);
         }
         if ($emailFilterValidate && "email" == $processedBy) {
-            return (new RequestMoneyReceiverCancelEmailService())->send($requestPayment);
+            return (new RequestCancelMailService())->send($requestPayment, ['auth_id' => auth()->user()->id, 'cancelled_by' => getColumnValue(auth()->user())]);
         } elseif ($phoneRegex && "phone" == $processedBy) {
-            return (new RequestMoneyReceiverCancelSmsService())->send($requestPayment);
+            return (new RequestMoneyCancelSmsService())->send($requestPayment, ['auth_id' => auth()->user()->id, 'cancelled_by' => getColumnValue(auth()->user())]);
         } elseif ("email_or_phone" == $processedBy) {
             if ($emailFilterValidate) {
-                return (new RequestMoneyReceiverCancelEmailService())->send($requestPayment);
+                return (new RequestCancelMailService())->send($requestPayment, ['auth_id' => auth()->user()->id, 'cancelled_by' => getColumnValue(auth()->user())]);
             } elseif ($phoneRegex) {
-                return (new RequestMoneyReceiverCancelSmsService())->send($requestPayment);
+                return (new RequestMoneyCancelSmsService())->send($requestPayment, ['auth_id' => auth()->user()->id, 'cancelled_by' => getColumnValue(auth()->user())]);
             }
         }
     }
@@ -303,14 +301,14 @@ class AcceptMoneyService
             $phoneRegex = preg_match('%^(?:(?:\(?(?:00|\+)([1-4]\d\d|[1-9]\d?)\)?)?[\-\.\ \\\/]?)?((?:\(?\d{1,}\)?[\-\.\ \\\/]?){0,})(?:[\-\.\ \\\/]?(?:#|ext\.?|extension|x)[\-\.\ \\\/]?(\d+))?$%i', $requestPayment->phone);
         }
         if ($emailFilterValidate && "email" == $processedBy) {
-            return (new RequestMoneyCreatorCancelEmailService())->send($requestPayment);
+            return (new RequestCancelMailService())->send($requestPayment, ['auth_id' => auth()->user()->id, 'cancelled_by' => getColumnValue(auth()->user())]);
         } elseif ($phoneRegex && "phone" == $processedBy) {
-            return (new RequestMoneyCreatorCancelSmsService())->send($requestPayment);
+            return (new RequestMoneyCancelSmsService())->send($requestPayment, ['auth_id' => auth()->user()->id, 'cancelled_by' => getColumnValue(auth()->user())]);
         } elseif ("email_or_phone" == $processedBy) {
             if ($emailFilterValidate) {
-                return (new RequestMoneyCreatorCancelEmailService())->send($requestPayment);
+                return (new RequestCancelMailService())->send($requestPayment, ['auth_id' => auth()->user()->id, 'cancelled_by' => getColumnValue(auth()->user())]);
             } elseif ($phoneRegex) {
-                return (new RequestMoneyCreatorCancelSmsService())->send($requestPayment);
+                return (new RequestMoneyCancelSmsService())->send($requestPayment, ['auth_id' => auth()->user()->id, 'cancelled_by' => getColumnValue(auth()->user())]);
             }
         }
         return true;

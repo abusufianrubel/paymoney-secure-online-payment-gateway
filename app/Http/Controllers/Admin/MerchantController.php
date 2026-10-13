@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Users\EmailController;
 use Common, Config, DB, Exception, Validator;
 use App\DataTables\Admin\MerchantsDataTable;
-use Intervention\Image\Facades\Image;
 use App\Http\Controllers\Controller;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\MerchantsExport;

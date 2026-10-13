@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\{Currency,
+    FeesLimit,
     Merchant,
     MerchantPayment,
     QrCode,
@@ -53,7 +54,6 @@ class QrCodeService
         return [
             'secret' => $qrCode->secret
         ];
-
     }
 
     public function userSendRequestDetails($secretText)
@@ -83,7 +83,7 @@ class QrCodeService
 
             $user    = User::where(['id' => $userId, 'status' => 'Active'])->first(['carrierCode', 'phone', 'defaultCountry']);
 
-            if(empty($user->phone) || empty($user->carrierCode) ||   empty($user->defaultCountry)){
+            if (empty($user->phone) || empty($user->carrierCode) || empty($user->defaultCountry)) {
                 throw new Exception(__("Please set your phone number"));
             }
 
@@ -103,14 +103,13 @@ class QrCodeService
             'userType'      => $userType,
             'receiverEmail' => $data[1],
         ];
-
     }
 
     public function merchantPaymentDetails($secretText)
     {
         $qrCode = QrCode::where(['secret' => $secretText, 'status' => 'Active'])
-                          ->whereIn('object_type', ['standard_merchant', 'express_merchant'])
-                          ->first(['status']);
+            ->whereIn('object_type', ['standard_merchant', 'express_merchant'])
+            ->first(['status']);
 
         if (empty($qrCode)) {
             throw new Exception(__("Invalid QR Code!"));
@@ -133,19 +132,16 @@ class QrCodeService
         }
 
         return $paymentDetails;
-
     }
 
-    public function standardPaymentReview($merchant_id, $currency_code, $amount) {
+    public function standardPaymentReview($merchant_id, $currency_code, $amount)
+    {
 
         $merchant = $this->getMerchant($merchant_id);
 
-        $fees = $amount * ($merchant->fee / 100);
-
         $currency = $this->getCurrency($currency_code);
 
-        $this->checkMerchantDefaultWallet($merchant->user_id, $currency);
-
+        $fees = $this->getMerchantPaymentFees($merchant, $currency, $amount);
         $wallet = $this->getWallet($currency);
 
         if ($amount > $wallet->balance) {
@@ -153,28 +149,32 @@ class QrCodeService
         }
 
         return [
-            'status'                                => 200,
-            'merchantBusinessName'                  => $merchant->business_name,
-            'merchantPaymentCurrencySymbol'         => $currency->symbol,
-            'merchantPaymentAmount'                 => $amount,
-            'merchantCalculatedChargePercentageFee' => $fees,
-            'merchantActualFee'                     => $merchant->fee,
-            'merchantCurrencyId'                    => $currency->id,
-            'merchantUserId'                        => $merchant->user_id,
+            'status'                        => 200,
+            'merchantBusinessName'          => $merchant->business_name,
+            'merchantPaymentCurrencySymbol' => $currency->symbol,
+            'merchantPaymentAmount'         => $amount,
+            'merchantCalculatedFee'         => $fees['totalFee'],
+            'merchantActualFee'             => $merchant->fee,
+            'depositPercent'                => $fees['depositPercent'],
+            'depositChargeFixed'            => $fees['chargeFixed'],
+            'depositTotalFee'               => $fees['depositTotalFee'],
+            'merchantCurrencyId'            => $currency->id,
+            'merchantUserId'                => $merchant->user_id,
+            'feeBearer'                     => $merchant->merchant_group?->fee_bearer
         ];
-
     }
 
     public function qrPaymentSubmit(
-        $merchant_user_id, $merchant_id, $currency_id, $amount, $fee
-    )
-    {
+        $merchant_user_id,
+        $merchant_id,
+        $currency_id,
+        $amount
+    ) {
         $arr = $this->setPaymentArray(
             $merchant_user_id,
             $merchant_id,
             $currency_id,
-            $amount,
-            $fee
+            $amount
         );
 
         try {
@@ -186,17 +186,15 @@ class QrCodeService
 
             $this->paymentReceivedTransaction($arr, $merchantPaymentId);
 
-            $this->senderWalletUpdate($currency_id, $amount);
+            $this->senderWalletUpdate($currency_id, $amount, $arr['fee'], $arr['feeBearer']);
 
             $this->merchantWalletUpdate($arr);
 
             DB::commit();
-
         } catch (Exception $e) {
             DB::rollBack();
             throw new Exception($e->getMessage());
         }
-
     }
 
     public function expressPaymentReview($merchant_id, $currency_code, $amount)
@@ -205,33 +203,35 @@ class QrCodeService
 
         $currency = $this->getCurrency($currency_code);
 
-        $this->checkMerchantDefaultWallet($merchant->user_id, $currency);
+        $fees = $this->getMerchantPaymentFees($merchant, $currency, $amount);
 
         $wallet = $this->getWallet($currency);
-
-        $fees = $amount * ($merchant->fee / 100);
 
         if ($amount > $wallet->balance) {
             throw new Exception(__("Sorry, not enough funds to perform the operation."));
         }
 
         return [
-            'status'                                       => 200,
-            'expressMerchantBusinessName'                  => $merchant->business_name,
-            'expressMerchantPaymentCurrencyId'             => $currency->id,
-            'expressMerchantPaymentCurrencySymbol'         => $currency->symbol,
-            'expressMerchantActualFee'                     => $fees,
-            'expressMerchantUserId'                        => $merchant->user_id,
+            'status'                               => 200,
+            'expressMerchantBusinessName'          => $merchant->business_name,
+            'expressMerchantPaymentCurrencyId'     => $currency->id,
+            'expressMerchantPaymentCurrencySymbol' => $currency->symbol,
+            'expressMerchantActualFee'             => $merchant->fee,
+            'expressMerchantCalculatedFee'         => $fees['totalFee'],
+            'depositPercent'                       => $fees['depositPercent'],
+            'depositChargeFixed'                   => $fees['chargeFixed'],
+            'depositTotalFee'                      => $fees['depositTotalFee'],
+            'expressMerchantUserId'                => $merchant->user_id,
+            'feeBearer'                            => $merchant->merchant_group?->fee_bearer
         ];
-
     }
 
 
     public function getMerchant($merchant_id)
     {
-        $merchant = Merchant::find($merchant_id, ['id', 'user_id', 'fee', 'business_name']);
+        $merchant = Merchant::with('merchant_group:id,fee_bearer')->find($merchant_id, ['id', 'user_id', 'fee', 'business_name', 'merchant_group_id']);
 
-        if (empty($merchant )) {
+        if (empty($merchant)) {
             throw new Exception(__("Merchant does not exist."));
         }
 
@@ -240,19 +240,17 @@ class QrCodeService
         }
 
         return $merchant;
-
     }
 
     public function getCurrency($currency_code)
     {
         $currency = Currency::where('code', $currency_code)->first(['id', 'symbol', 'code']);
 
-        if (empty($currency )) {
+        if (empty($currency)) {
             throw new Exception(__("Currency :x not found", ['x' => $currency_code]));
         }
 
         return $currency;
-
     }
 
     public function getWallet($currency)
@@ -273,13 +271,11 @@ class QrCodeService
         $merchant_user_id,
         $merchant_id,
         $currency_id,
-        $amount,
-        $fee
-    )
-    {
-
+        $amount
+    ) {
         $merchant = $this->getMerchant($merchant_id);
-        $fee = $amount * ($merchant->fee / 100);
+        $currency = Currency::find($currency_id);
+        $fees = $this->getMerchantPaymentFees($merchant, $currency, $amount);
 
         return [
             'merchant_user_id' => $merchant_user_id,
@@ -287,11 +283,11 @@ class QrCodeService
             'user_id' => auth()->id(),
             'currency_id' => $currency_id,
             'amount' => $amount,
-            'fee' =>  $fee,
+            'fee' =>  $fees['totalFee'],
             'unique_code' => unique_code(),
-            'charge_percentage' => $merchant->fee
+            'charge_percentage' => $merchant->fee,
+            'feeBearer' => $merchant->merchant_group?->fee_bearer
         ];
-
     }
 
     public function createMerchantPayment($arr)
@@ -313,7 +309,6 @@ class QrCodeService
         $merchantPayment->save();
 
         return $merchantPayment->id;
-
     }
 
     public function paymentSentTransaction($arr, $merchantPaymentId)
@@ -328,14 +323,13 @@ class QrCodeService
         $transaction->transaction_reference_id = $merchantPaymentId;
         $transaction->transaction_type_id      = Payment_Sent;
         $transaction->subtotal                 = $arr['amount'];
-        $transaction->percentage               = 0;
-        $transaction->charge_percentage        = 0;
+        $transaction->percentage               = $arr['feeBearer'] != 'Merchant' ? $arr['charge_percentage'] : 0;
+        $transaction->charge_percentage        = $arr['feeBearer'] != 'Merchant' ? $arr['fee'] : 0;
         $transaction->charge_fixed             = 0;
-        $transaction->total                    = '-' . $arr['amount'];
+        $transaction->total                    = '-' . ($arr['feeBearer'] != 'Merchant' ? $arr['amount'] + $arr['fee'] : $arr['amount']);
         $transaction->status                   = 'Success';
         $transaction->save();
         return true;
-
     }
 
     public function paymentReceivedTransaction($arr, $merchantPaymentId)
@@ -349,24 +343,24 @@ class QrCodeService
         $transaction->uuid                     = $arr['unique_code'];
         $transaction->transaction_reference_id = $merchantPaymentId;
         $transaction->transaction_type_id      = Payment_Received;
-        $transaction->subtotal                 = $arr['amount'] - $arr['fee'];
-        $transaction->percentage               = $arr['charge_percentage'];
-        $transaction->charge_percentage        = $arr['fee'];
+        $transaction->subtotal                 = $arr['feeBearer'] == 'Merchant' ? $arr['amount'] - $arr['fee'] : $arr['amount'];
+        $transaction->percentage               = $arr['feeBearer'] == 'Merchant' ? $arr['charge_percentage'] : 0;
+        $transaction->charge_percentage        = $arr['feeBearer'] == 'Merchant' ? $arr['fee'] : 0;
         $transaction->charge_fixed             = 0;
         $transaction->total                    = $arr['amount'];
         $transaction->status                   = 'Success';
         $transaction->save();
         return true;
-
     }
 
-    public function senderWalletUpdate($currency_id, $amount)
+    public function senderWalletUpdate($currency_id, $amount, $fee, $feeBearer)
     {
         $senderWallet          = Wallet::where([
             'user_id' => auth()->id(),
             'currency_id' => $currency_id
         ])->first(['id', 'balance', 'user_id']);
-        $senderWallet->balance = $senderWallet->balance - $amount;
+
+        $senderWallet->balance = $feeBearer == 'Merchant' ? $senderWallet->balance - $amount : $senderWallet->balance - ($amount + $fee);
         $senderWallet->save();
 
         return true;
@@ -378,7 +372,8 @@ class QrCodeService
             'user_id' => $arr['merchant_user_id'],
             'currency_id' => $arr['currency_id']
         ])->first(['id', 'balance']);
-        $merchantWallet->balance = $merchantWallet->balance + ($arr['amount'] - $arr['fee']);
+
+        $merchantWallet->balance = $arr['feeBearer'] == 'Merchant' ? $merchantWallet->balance + ($arr['amount'] - $arr['fee']) : $merchantWallet->balance + $arr['amount'];
         $merchantWallet->save();
 
         return true;
@@ -389,7 +384,7 @@ class QrCodeService
         $merchantWallet =  Wallet::where([
             'user_id' => $merchantId,
             'currency_id' => $currency->id,
-            'is_default'=> 'Yes'
+            'is_default' => 'Yes'
         ])->first(['id']);
 
         if (empty($merchantWallet)) {
@@ -397,7 +392,36 @@ class QrCodeService
         }
 
         return true;
-
     }
 
+    private function getMerchantPaymentFees($merchant, $currency, $amount) 
+    {
+
+        $feeInfo = FeesLimit::where(['transaction_type_id' => Deposit, 'currency_id' => $currency->id, 'payment_method_id' => 1])->first(['charge_percentage', 'charge_fixed', 'has_transaction']);
+
+        if (!empty($feeInfo) && $feeInfo->has_transaction == "Yes") {
+            $feeInfoChargePercentage          = $feeInfo->charge_percentage;
+            $feeInfoChargeFixed               = $feeInfo->charge_fixed;
+            $depositCalcPercentVal            = $amount * ($feeInfoChargePercentage / 100);
+            $depositTotalFee                  = $depositCalcPercentVal + $feeInfoChargeFixed;
+            $merchantCalcPercentValOrTotalFee = $amount * ($merchant->fee / 100);
+            $totalFee                         = $depositTotalFee + $merchantCalcPercentValOrTotalFee;
+        } else {
+            $feeInfoChargePercentage          = 0;
+            $feeInfoChargeFixed               = 0;
+            $depositCalcPercentVal            = 0;
+            $depositTotalFee                  = 0;
+            $merchantCalcPercentValOrTotalFee = $amount * ($merchant->fee / 100);
+            $totalFee                         = $depositTotalFee + $merchantCalcPercentValOrTotalFee;
+        }
+
+        return [
+            'merchantPercentOrTotalFee' => $merchantCalcPercentValOrTotalFee,
+            'chargePercentage' => $feeInfoChargePercentage,
+            'depositPercent' => $depositCalcPercentVal,
+            'depositTotalFee' => $depositTotalFee,
+            'chargeFixed' => $feeInfoChargeFixed,
+            'totalFee' => $totalFee,
+        ];
+    }
 }

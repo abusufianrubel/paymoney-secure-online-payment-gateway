@@ -43,6 +43,22 @@
         
         <form action="{{ url('merchant/payment/confirm') }}" method="get" id="expressPaymentConfirmForm">
             <div class="d-grid">
+
+                <div class="transaction-payment-method">
+                    <p>{{ __('Accepted payment methods') }}</p>
+                    <div class="d-flex flex-wrap gap-18 mt-2 radio-hide">
+                        @foreach($payment_methods as $value)
+                            @if(!in_array($value['id'], [Bank, Crypto]) && in_array($value['id'], $cpm))
+                                @if ($value['id'] == Mts)                                                           <input type="radio" name="method" value="{{ $value['name'] }}" id="{{ $value['id'] }}" {{ $value['name'] == 'Mts' ? 'checked' : '' }}>
+                                    <label for="{{ $value['id'] }}" class="gateway d-inline-flex flex-column justify-content-center align-items-center {{ $value['name'] == 'Mts' ? 'gateway-selected' : '' }}">
+                                        {!! ($value['name'] == 'Mts') ? getSystemLogo() : '<img src="' . asset('public/dist/images/gateways/payments/'.strtolower($value['name']).'.png') . '" alt="' . $value['name'] . '">' !!}
+                                    </label>
+                                @endif
+                            @endif
+                        @endforeach
+                    </div>
+                </div>
+
                 <button class="btn btn-lg btn-primary" type="submit" id="expressPaymentSubmitBtn">
                     <div class="spinner spinner-border text-white spinner-border-sm mx-2 d-none">
                         <span class="visually-hidden"></span>

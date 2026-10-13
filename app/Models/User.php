@@ -18,6 +18,8 @@ use App\Models\{RequestPayment,
     Wallet,
     Role
 };
+use Modules\TatumIo\Class\TatumIoTransaction;
+use Modules\TatumIo\Entities\CryptoToken;
 
 class User extends Authenticatable
 {
@@ -189,49 +191,48 @@ class User extends Authenticatable
         return $this->hasMany(CryptoAssetApiLog::class, 'object_id');
     }
     
-    public function createNewUser($request, $intiatedBy)
+    public function createNewUser($request, $initiatedBy)
     {
         $user = new self();
-        if ($intiatedBy == 'user')
-        {
+
+        if ($initiatedBy == 'user') {
             $user->type = $request->type;
+        } else {
+            $user->type = Role::where('id', $request->role)->first()->customer_type;
         }
+
         $user->first_name = $request->first_name;
         $user->last_name  = $request->last_name;
         $user->email      = $request->email;
-        $formattedPhone   = str_replace('+' . $request->carrierCode, "", $request->formattedPhone);
-        if (!empty($request->phone))
-        {
-            $user->phone          = preg_replace("/[\s-]+/", "", $formattedPhone);
+
+        if (!empty($request->phone)) {
+            $user->phone          = $request->phone;
             $user->defaultCountry = $request->defaultCountry;
             $user->carrierCode    = $request->carrierCode;
             $user->formattedPhone = $request->formattedPhone;
-        }
-        else
-        {
+        } else {
             $user->phone          = null;
             $user->defaultCountry = null;
             $user->carrierCode    = null;
             $user->formattedPhone = null;
         }
+
         $user->password = \Hash::make($request->password);
-        if ($intiatedBy == 'user')
-        {
-            if ($request->type == 'user')
-            {
+
+        if ($initiatedBy == 'user') {
+            if ($request->type == 'user') {
                 $role = Role::select('id')->where(['customer_type' => 'user', 'user_type' => 'User', 'is_default' => 'Yes'])->first(['id']);
-            }
-            else
-            {
+            } else {
                 $role = Role::select('id')->where(['customer_type' => 'merchant', 'user_type' => 'User', 'is_default' => 'Yes'])->first(['id']);
             }
+
             $user->role_id = $role->id;
-        }
-        else
-        {
+
+        } else {
             $user->role_id = $request->role;
             $user->status  = $request->status;
         }
+
         $user->save();
         return $user;
     }
@@ -271,8 +272,14 @@ class User extends Authenticatable
     {
         $currencies = explode(',', $allowedWalletCurrencies);
 
-        foreach($currencies as $currencyId) 
-        {
+        foreach($currencies as $currencyId) {
+
+            $currency = Currency::find($currencyId);
+
+            if (empty($currency)) {
+                continue;
+            }
+
             $wallet = new Wallet();
             $wallet->user_id     = $userId;
             $wallet->currency_id = $currencyId;
@@ -445,38 +452,6 @@ class User extends Authenticatable
         return $this->hasMany(CoinpaymentLogTrx::class, 'user_id');
     }
 
-    /**
-     * Create user's Crypto Currency/Currencies wallet address
-     * @param string $value [description]
-     */
-    public function generateUserBlockIoWalletAddress($user)
-    {
-        $response = [];
-        $response['status'] = 200;
-        $response['message'] = __('Success');
-
-        $availableBlockIoAssets = Currency::whereHas('cryptoAssetSetting', function($query) {
-            $query->where('payment_method_id', BlockIo);
-        })->where(['status' => 'Active', 'type' => 'crypto_asset'])->get(['id']);
-
-        foreach ($availableBlockIoAssets as $availableBlockIoAsset) {
-            $blockIoAssets = (new Currency())->getAllCurrencies(['id' => $availableBlockIoAsset->id, 'status' => 'Active', 'type' => 'crypto_asset'], ['id', 'code']);
-            foreach ($blockIoAssets as $blockIoAsset) {
-                $wallet = new Wallet();
-                $wallet->user_id = $user->id;
-                $wallet->currency_id = $blockIoAsset->id;
-                $wallet->is_default = 'No';
-                $wallet->save();
-
-                $response = (new \Modules\BlockIo\Classes\BlockIo)->getBlockIoAssetsApiLogOfWallet($wallet->id, $blockIoAsset->code, $user);
-                if ($response['status'] != 200) {
-                    return $response;
-                }
-            }
-        }
-
-        return $response;
-    }
 
     /**
      * Create user's Crypto Currency/Currencies wallet address
@@ -488,31 +463,73 @@ class User extends Authenticatable
         $response['status'] = 200;
         $response['message'] = __('Success');
 
-        $availableTatumIoAssets = Currency::whereHas('cryptoAssetSetting', function($query) {
-            $query->where('payment_method_id', TatumIo);
-        })->where(['status' => 'Active', 'type' => 'crypto_asset'])->get(['id']);
+        $availableTatumIoAssets = Currency::with('cryptoAssetSetting')
+                                    ->where('status', 'Active')
+                                    ->whereIn('type', ['crypto_asset', 'crypto_token'])
+                                    ->get(['id', 'code', 'type']);
 
         foreach ($availableTatumIoAssets as $availableTatumIoAsset) {
-            $tatumIoAssets = (new Currency())->getAllCurrencies(['id' => $availableTatumIoAsset->id, 'status' => 'Active', 'type' => 'crypto_asset'], ['id', 'code']);
-            foreach ($tatumIoAssets as $tatumIoAsset) {
-                $wallet = new Wallet();
-                $wallet->user_id = $user->id;
-                $wallet->currency_id = $tatumIoAsset->id;
-                $wallet->is_default = 'No';
-                $wallet->save();
 
-                $tatumIo = (new \Modules\TatumIo\Class\TatumIoTransaction($tatumIoAsset->code));
+            $wallet = new Wallet();
+            $wallet->user_id = $user->id;
+            $wallet->currency_id = $availableTatumIoAsset->id;
+            $wallet->is_default = 'No';
+            $wallet->save();
+
+            if (optional($availableTatumIoAsset->cryptoAssetSetting)->payment_method_id == TatumIo ) {
+                $tatumIo = new TatumIoTransaction($availableTatumIoAsset->code);
                 $tatumIo->tatumIoAsset();
-                $tatumIo->createCryptoWalletLog($wallet->id, $user->id, $tatumIoAsset->code);
-
-                if ($response['status'] != 200) {
-                    return $response;
-                }
+                $tatumIo->createCryptoWalletLog($wallet->id, $user->id, $availableTatumIoAsset->code);
             }
+
+            if ($response['status'] != 200) {
+                return $response;
+            }   
         }
 
         return $response;
     }
 
-    
+    /**
+     * Defines a relationship where this transaction has one Cashin instance.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function cashin()
+    {
+        return $this->hasOne(\Modules\Agent\Entities\Cashin::class);
+    }
+
+    /**
+     * Defines a relationship where this transaction has one Cashout instance.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function cashout()
+    {
+        return $this->hasOne(\Modules\Agent\Entities\Cashout::class);
+    }
+
+    /**
+     * Retrieves a user by their wallet address.
+     *
+     * @param string $address The wallet address of the user.
+     * @return string|null The user's full name or a link to their profile page if found, or null if not found.
+     */
+    public static function getUserByAddress($address)
+    {
+        $response = getReceiverAddressWalletUserId($address);
+        if (!$response) {
+            return '-';
+        }
+        
+        $response = json_decode($response);
+        $user = self::find($response->wallet?->user_id);
+        
+        if (!$user) {
+            return '-';
+        }
+
+        return '<a href="' . url(config('adminPrefix') . '/users/edit/' . $user->id) . '">' . getColumnValue($user) . '</a>';
+    }
 }

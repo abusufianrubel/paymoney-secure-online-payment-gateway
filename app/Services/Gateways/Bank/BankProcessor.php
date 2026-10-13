@@ -38,8 +38,10 @@ class BankProcessor extends PaymentProcessor
                 "attachment" => $file ? $file->id : null,
                 "type" => "bank",
                 "bank" => $data["bank_id"],
-                'redirect_url' => $data['redirect_url']
+                "redirect" => true,
+                "redirect_url" => $data['redirect_url'] . '?params=' . $data['params'] . '&attachment=' . ($file ? $file->id : null) . '&bank=' . $data["bank_id"]                
             ];
+
         } catch (Throwable $th) {
             throw new PaymentFailedException($th->getMessage());
         }
@@ -71,6 +73,18 @@ class BankProcessor extends PaymentProcessor
         } else {
             throw new GatewayInitializeFailedException(__("Bank attachment upload failed."));
         }
+    }
+
+    /**
+     * Method initiateGateway
+     *
+     * @param $data $data
+     *
+     * @return void
+     */
+    public function initiateGateway($data)
+    {
+        return view(('gateways.' . $this->gateway()), $data);
     }
 
     /**

@@ -14,11 +14,10 @@ class CreateMerchantAppsTable extends Migration
     public function up()
     {
         Schema::create('merchant_apps', function (Blueprint $table) {
-            $table->increments('id');
-            $table->integer('merchant_id')->unsigned()->index();
-            $table->foreign('merchant_id')->references('id')->on('merchants')->onUpdate('cascade')->onDelete('cascade');
-            $table->string('client_id',50)->unique();
-            $table->string('client_secret',191);
+            $table->id();
+            $table->foreignId('merchant_id')->constrained('merchants')->onUpdate('cascade')->onDelete('cascade');
+            $table->string('client_id', 50)->unique();
+            $table->string('client_secret', 191);
             $table->timestamps();
         });
     }

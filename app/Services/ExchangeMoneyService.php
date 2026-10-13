@@ -226,8 +226,12 @@ class ExchangeMoneyService
             throw new ExchangeMoneyException(__("Destination wallet currency not found."));
         }
 
-        if ($toCurrency->exchange_from == "api" && settings("exchange_enabled_api") != "Disabled" && ((settings("exchange_enabled_api") == "currency_converter_api_key" && !empty(settings("currency_converter_api_key")))  || (settings("exchange_enabled_api") == "exchange_rate_api_key" && !empty(settings("exchange_rate_api_key"))))) {
-            $conversionRate = getCurrencyRate($fromCurrency->code, $toCurrency->code);
+        if ($toCurrency->exchange_from == "api" && isEnabledExchangeApi()) {
+            $conversionRate = getApiCurrencyRate($fromCurrency->code, $toCurrency->code);
+
+            if ($conversionRate == 'error') {
+                throw new ExchangeMoneyException(__('Unable to retrieve the exchange rate at this moment'));
+            }
         } else {
             $defaultCurrency = Currency::where("default", 1)->first();
             $conversionRate = ($defaultCurrency->rate / $fromCurrency->rate) * $toCurrency->rate;

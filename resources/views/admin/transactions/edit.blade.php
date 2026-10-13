@@ -517,7 +517,7 @@
                                                 <label class="control-label col-sm-6 fw-bold text-sm-end">{{ __('Total') }}</label>
                                                 <input type="hidden" class="form-control" name="total" value="{{ ($transaction->total) }}">
                                                 <div class="col-sm-6">
-                                                    <p class="form-control-static">
+                                                    <p class="form-control-static"> 
                                                         {{  moneyFormat(optional($transaction->currency)->symbol, str_replace("-",'',formatNumber($transaction->total, optional($transaction->currency)->id)) ) }}
                                                     </p>
                                                 </div>

@@ -111,7 +111,7 @@
 @endsection
 
 @push('js')
-<script src="{{ asset('public/dist/plugins/html5-validation-1.0.0/validation.min.js') }}"></script>
+<script src="{{ asset('public/dist/plugins/html5-validation/validation.min.js') }}"></script>
 <script>
     'use strict';
     var token = $('[name="_token"]').val();

@@ -99,7 +99,7 @@
                         </a>
                     </li>
                 @endif
-                @if (module('BlockIo') && Common::has_permission(auth()->guard('admin')->id(), 'view_crypto_transactions'))
+                @if (Common::has_permission(auth()->guard('admin')->id(), 'view_crypto_transactions'))
                     <li class="child {{ isset($sub_menu) && $sub_menu == 'crypto-sent-transactions' ? 'active' : '' }}">
                         <a href="{{ route('admin.crypto_sent_transaction.index') }}">
                             <i class="fa fa-angle-double-right"></i><span>{{ __('Crypto Sent') }}</span>
@@ -111,6 +111,21 @@
                         </a>
                     </li>
                 @endif
+
+                @if (Common::has_permission(auth()->guard('admin')->id(), 'view_token_transactions'))
+                    <li class="child {{ isset($sub_menu) && $sub_menu == 'token-sent-transactions' ? 'active' : '' }}">
+                        <a href="{{ route('admin.token_sent_transaction.index') }}">
+                            <i class="fa fa-chevron-circle-right"></i><span>{{ __('Token Sent') }}</span>
+                        </a>
+                    </li>
+                    <li class="child {{ isset($sub_menu) && $sub_menu == 'token-received-transactions' ? 'active' : '' }}">
+                        <a href="{{ route('admin.token_received_transaction.index') }}">
+                            <i class="fa fa-chevron-circle-left"></i><span>{{ __('Token Received') }}</span>
+                        </a>
+                    </li>
+                @endif
+
+
             </ul>
         </li>
     @endif
@@ -144,25 +159,32 @@
     @endif
 
     <!--verifications-->
-    @if(Common::has_permission(auth()->guard('admin')->id(), 'view_identity_verfication') || Common::has_permission(auth()->guard('admin')->id(), 'view_address_verfication'))
-        <li class="treeview {{ (isset($menu) && $menu == 'proofs') ? 'menu-open active' : '' }}">
+    @if(Common::has_permission(auth()->guard('admin')->id(), 'view_kyc_provider') || Common::has_permission(auth()->guard('admin')->id(), 'view_kyc_verification') || Common::has_permission(auth()->guard('admin')->id(), 'view_kyc_setting'))
+        <li class="treeview {{ (isset($menu) && $menu == 'kyc_verification') ? 'menu-open active' : '' }}">
             <a href="#">
                 <i class="fa fa-check-square-o"></i><span>{{ __('Verifications') }}</span>
                 <span class="pull-right-container"><i class="fa fa-angle-left pull-right"></i></span>
             </a>
             <ul class="treeview-menu">
-                @if(Common::has_permission(auth()->guard('admin')->id(), 'view_identity_verfication'))
-                    <li class="child {{ isset($sub_menu) && $sub_menu == 'identity-proofs' ? 'active' : '' }}">
-                        <a href="{{ url(config('adminPrefix').'/identity-proofs') }}">
-                            <i class="fa fa-user-circle-o"></i><span>{{ __('Identity Verification') }}</span>
+                @if(Common::has_permission(auth()->guard('admin')->id(), 'view_kyc_provider'))
+                    <li class="child {{ isset($sub_menu) && $sub_menu == 'kyc_providers' ? 'active' : '' }}">
+                        <a href="{{ route('admin.kyc.providers.index') }}">
+                            <i class="fa fa-shield"></i><span>{{ __('Providers') }}</span>
                         </a>
                     </li>
                 @endif
 
-                @if(Common::has_permission(auth()->guard('admin')->id(), 'view_address_verfication'))
-                    <li class="child {{ isset($sub_menu) && $sub_menu == 'address-proofs' ? 'active' : '' }}">
-                        <a href="{{ url(config('adminPrefix').'/address-proofs') }}">
-                            <i class="fa fa-address-book"></i><span>{{ __('Address Verification') }}</span>
+                @if(Common::has_permission(auth()->guard('admin')->id(), 'view_kyc_verification'))
+                    <li class="child {{ isset($sub_menu) && $sub_menu == 'kyc_verifications' ? 'active' : '' }}">
+                        <a href="{{ route('admin.kyc.verifications.index') }}">
+                            <i class="fa fa-check"></i><span>{{ __('Verifications') }}</span>
+                        </a>
+                    </li>
+                @endif
+                @if(Common::has_permission(auth()->guard('admin')->id(), 'view_kyc_setting'))
+                    <li class="child {{ isset($sub_menu) && ($sub_menu == 'kyc_settings' || $sub_menu == 'credential_settings') ? 'active' : '' }}">
+                        <a href="{{ route('admin.kyc.settings.create') }}">
+                            <i class="fa fa-cogs"></i><span>{{ __('Settings') }}</span>
                         </a>
                     </li>
                 @endif
@@ -182,8 +204,17 @@
     <!-- Crypto Providers -->
     @if(Common::has_permission(auth()->guard('admin')->id(), 'view_crypto_provider'))
     <li class="child {{ isset($menu) && $menu == 'crypto_providers' ? 'active' : '' }}">
-        <a href="{{ route('admin.crypto_providers.list', 'BlockIo') }}">
+        <a href="{{ route('admin.crypto_providers.list', 'TatumIo') }}">
             <i class="fa fa-btc"></i><span>{{ __('Crypto Providers') }}</span>
+            <span class="pull-right-container"></span>
+        </a>
+    </li>
+    @endif
+
+    @if(Common::has_permission(auth()->guard('admin')->id(), 'view_crypto_token'))
+    <li class="child {{ isset($menu) && $menu == 'crypto_token' ? 'active' : '' }}">
+        <a href="{{ route('admin.tatumio.token')}}">
+            <i class="fa fa-try"></i><span>{{ __('Crypto Token') }}</span>
             <span class="pull-right-container"></span>
         </a>
     </li>

@@ -53,7 +53,7 @@ class MerchantPaymentController extends Controller
 
     public function merchantPaymentCsv()
     {
-        return Excel::download(new MerchantPaymentsExport(), 'merchant_payments_list_' . time() . '.xlsx');
+        return Excel::download(new MerchantPaymentsExport(), 'merchant_payments_list_' . time() . '.csv');
     }
 
     public function merchantPaymentPdf()

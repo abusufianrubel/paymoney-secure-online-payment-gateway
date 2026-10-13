@@ -3,9 +3,10 @@
 namespace App\Models;
 
 use App\Http\Controllers\Users\EmailController;
+use App\Http\Helpers\Common;
 use App\Services\Mail\ExchangeMoneyMailService;
 use Illuminate\Database\Eloquent\Model;
-use DB, Common, Exception;
+use DB, Exception;
 use App\Models\{Transaction,
     Currency,
     Wallet
@@ -28,11 +29,9 @@ class CurrencyExchange extends Model
     ];
 
     protected $helper;
-    protected $email;
     public function __construct()
     {
         $this->helper = new Common();
-        $this->email  = new EmailController();
     }
 
     public function currency()
@@ -134,7 +133,11 @@ class CurrencyExchange extends Model
         }
 
         if (!empty($from) && !empty($to)) {
-            $currencyExchanges->whereBetween('crypto_exchanges.created_at', [$from, $to]);
+
+            $currencyExchanges->where(function ($query) use ($from, $to)
+            {
+                $query->whereDate('created_at', '>=', $from)->whereDate('created_at', '<=', $to);
+            });
         }
 
         return $currencyExchanges->select('currency_exchanges.*');

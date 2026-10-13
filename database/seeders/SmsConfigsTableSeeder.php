@@ -2,34 +2,35 @@
 
 namespace Database\Seeders;
 
-use App\Models\SmsConfig;
+use Carbon\Carbon;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class SmsConfigsTableSeeder extends Seeder
 {
     /**
-     * Run the database seeds.
+     * Auto generated seed file
      *
      * @return void
      */
     public function run()
     {
-        SmsConfig::truncate();
-        SmsConfig::insert([
+        DB::table('sms_configs')->delete();
+        
+        DB::table('sms_configs')->insert([
             [
-                'id'         => 1,
-                'type'       => 'twilio',
-                'status'     => 'Inactive',
-                'created_at' => now()->toDateTimeString(),
-                'updated_at' => now()->toDateTimeString(),
+                'type' => 'twilio',
+                'credentials' => '',
+                'status' => 'Inactive',
+                'created_at' => Carbon::now()->subDays(700),
+                'updated_at' => Carbon::now()->subDays(700),
             ],
-
             [
-                'id'         => 2,
-                'type'       => 'nexmo',
-                'status'     => 'Inactive',
-                'created_at' => now()->toDateTimeString(),
-                'updated_at' => now()->toDateTimeString(),
+                'type' => 'nexmo',
+                'credentials' => '',
+                'status' => 'Inactive',
+                'created_at' => Carbon::now()->subDays(700),
+                'updated_at' => Carbon::now()->subDays(700),
             ],
         ]);
     }

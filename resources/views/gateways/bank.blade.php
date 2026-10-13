@@ -28,39 +28,49 @@
 
 
         <!-- Account Details -->
-        <div class="d-flex mt-3">
+        <div class="mt-3">
             <!-- Account Name -->
             @if ($bank['account_name'])
-            <div class="w-50">
-                <p class="form-label text-gray-100 gilroy-medium">{{ __('Account Name') }}</p>
-                <p class="form-label text-gray-100 gilroy-medium" id="account_name">{{  $bank['account_name'] }}</p>
+            <div class="row">
+                <div class="col-6">
+                    <label class="form-label text-gray-100 gilroy-medium">{{ __('Account Name') }} : </label>
+                </div>
+                <div class="col-6">
+                    <label class="form-label text-gray-100 gilroy-medium" id="account_name">{{  $bank['account_name'] }}</label>
+                </div>
             </div>
             @endif
 
             <!-- Account Number -->
             @if ($bank['account_number'])
-            <div class="ms-4 ms-sm-5 w-50">
-                <p class="form-label text-gray-100 gilroy-medium">{{ __('Account Number') }}</p>
-                <p class="form-label text-gray-100 gilroy-medium" id="account_number">{{  $bank['account_number'] }}</p>
+            <div class="row">
+                <div class="col-6">
+                    <label class="form-label text-gray-100 gilroy-medium">{{ __('Account Number') }} : </label>
+                </div>
+                <div class="col-6">
+                    <label class="form-label text-gray-100 gilroy-medium" id="account_number">{{  $bank['account_number'] }}</label>
+                </div>
             </div>
             @endif
-        </div>
 
-        <!-- Bank Name -->
-        <div class="d-flex r-mt-16 mt-2">
+            <!-- Bank Name -->
             @if ($bank['bank_name'])
-            <div class="w-50">
-                <p class="form-label text-gray-100 gilroy-medium">{{ __('Bank Name') }}</p>
-                <p class="form-label text-gray-100 gilroy-medium" id="bank_name">{{  $bank['bank_name'] }}</p>
+            <div class="row">
+                <div class="col-6">
+                    <label class="form-label text-gray-100 gilroy-medium">{{ __('Bank Name') }} : </label>
+                </div>
+                <div class="col-6">
+                    <label class="form-label text-gray-100 gilroy-medium" id="bank_name">{{  $bank['bank_name'] }}</label>
+                </div>
             </div>
             @endif
         </div>
 
         <!-- Attachment -->
-        <div class="mb-3attach-file attach-print">
-            <label for="formFileMultiple" class="form-label text-gray-100 gilroy-medium">{{ __('Attached File') }}</label>
+        <div class="mb-3 attach-file attach-print mt-4">
+            <label for="formFileMultiple" class="form-label text-gray-100 gilroy-medium">{{ __('Attached File') }} <span>{{ __('(ex: jpeg, jpg, png, svg)') }}</span></label>
             <input class="form-control upload-filed" type="file" id="formFileMultiple" name="file" multiple required data-value-missing="{{ __('This field is required.') }}">
-            <p class="form-label text-gray-100 gilroy-medium f-12">{{ __('Upload your documents (Max: :x MB)', ['x' => preference('file_size')]) }}</p>
+            <p class="form-label text-gray-100 gilroy-regular f-12 mt-2">{{ __('Upload your documents (Max: :x MB)', ['x' => preference('file_size')]) }}</p>
         </div>
 
     </div>
@@ -86,8 +96,8 @@
 
 @section('js')
 
-<script src="{{ asset('public/dist/plugins/jquery-validation-1.17.0/dist/jquery.validate.min.js') }}" type="text/javascript"></script>
-<script src="{{ asset('public/dist/plugins/jquery-validation-1.17.0/dist/additional-methods.min.js') }}" type="text/javascript"></script>
+<script src="{{ asset('public/dist/plugins/jquery-validation/dist/jquery.validate.min.js') }}" type="text/javascript"></script>
+<script src="{{ asset('public/dist/plugins/jquery-validation/dist/additional-methods.min.js') }}" type="text/javascript"></script>
 
 <script>
     "use strict";

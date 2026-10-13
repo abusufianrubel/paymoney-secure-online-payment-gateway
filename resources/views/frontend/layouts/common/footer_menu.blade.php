@@ -1,5 +1,5 @@
 <!-- Footer section -->
-	<div class="footer-sec {{ request()->is('login') || request()->is('forget-password') || request()->is('register') || request()->is('register/store-personal-info') || request()->is('2fa') || request()->is('google2fa') ? 'd-none' : '' }}">
+	<div class="footer-sec {{ request()->is('login') || request()->is('forget-password') || request()->is('register') || request()->is('register/store-personal-info') || request()->is('2fa') || request()->is('google2fa') || request()->is('password/resets/*') ? 'd-none' : '' }}">
 		<div class="px-240">
 			<div class="row">
 				<div class="col-md-5 pb-54 align-center">
@@ -19,7 +19,7 @@
 								</a>
 							@else
 								<a href="javascript:void(0)">
-									<img class="app-imgs" src="{{ url('public/uploads/app-store-logos/default-logo.jpg') }}">
+									<img class="app-imgs" src="{{ url('public/uploads/app-store-logos/default-logo.jpg') }}" alt="{{ __('playstore') }}">
 								</a>
 							@endif
 						@endforeach
@@ -66,7 +66,7 @@
 		</div>
 	</div>
 
-	<div class="{{ request()->is('login') || request()->is('forget-password') || request()->is('register') || request()->is('register/store-personal-info') || request()->is('2fa') || request()->is('google2fa') ? 'd-none' : '' }} bottom-footer">
+	<div class="{{ request()->is('login') || request()->is('forget-password') || request()->is('register') || request()->is('register/store-personal-info') || request()->is('2fa') || request()->is('google2fa') || request()->is('password/resets/*') ? 'd-none' : '' }} bottom-footer">
 		<div class="px-240 d-flex justify-content-between btn-footer align-center">
 			<div class="mt-18">
 				<p class="mb-0 OpenSans-600 text-white">

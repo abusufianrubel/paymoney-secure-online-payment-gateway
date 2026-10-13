@@ -2,98 +2,100 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Model;
 
 class DatabaseSeeder extends Seeder
 {
     /**
-     * Run the database seeds.
-     *
-     * @return void
+     * Seed the application's database.
      */
-    public function run()
+    public function run(): void
     {
         Model::unguard();
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
 
-        $this->call(NotificationTypesTableSeeder::class);
-        $this->command->info('Notification Types Seeded Successfully!');
-
-        $this->call(NotificationSettingsTableSeeder::class);
-        $this->command->info('Notification Settings Seeded Successfully!');
-
-        $this->call(AppStoreCredentialsTableSeeder::class);
-        $this->command->info('App Store Credentials Seeded Successfully!');
-
-        $this->call(CountriesTableSeeder::class);
-        $this->command->info('Countries Seeded Successfully!');
-
-        $this->call(CurrenciesTableSeeder::class);
-        $this->command->info('Currencies Seeded Successfully!');
-
-        $this->call(EmailConfigsTableSeeder::class);
-        $this->command->info('Email Configurations Seeded Successfully!');
-
-        $this->call(SmsConfigsTableSeeder::class);
-        $this->command->info('Sms Configurations Seeded Successfully!');
-
-        $this->call(EmailTemplatesTableSeeder::class);
-        $this->command->info('Email Templates Seeded Successfully!');
-
-        $this->call(LanguagesTableSeeder::class);
-        $this->command->info('Languages Seeded Successfully!');
-
-        $this->call(MetasTableSeeder::class); //not done
-        $this->command->info('Metas Seeded Successfully!');
-
-        $this->call(PaymentMethodsTableSeeder::class);
-        $this->command->info('Payment Methods Seeded Successfully!');
-
-        $this->call(MerchantGroupsTableSeeder::class);
-        $this->command->info('Merchant Groups Seeded Successfully!');
-
+        // core PayMoney seeders with minimal or no foreign key dependencies
         $this->call(RolesTableSeeder::class);
-        $this->command->info('Roles Seeded Successfully!');
-
-        $this->call(PermissionsTableSeeder::class);
-        $this->command->info('Permissions Seeded Successfully!');
-
-        $this->call(PermissionsRolesTableSeeder::class);
-        $this->command->info('Permissions Roles Seeded Successfully!');
-
-        $this->call(PreferencesTableSeeder::class);
-        $this->command->info('Preferences Seeded Successfully!');
-
-        $this->call(ReasonsTableSeeder::class);
-        $this->command->info('Reasons Seeded Successfully!');
-
-        $this->call(SettingsTableSeeder::class);
-        $this->command->info('Settings Seeded Successfully!');
-
-        $this->call(TicketStatusesTableSeeder::class);
-        $this->command->info('Ticket Statuses Seeded Successfully!');
-
-        $this->call(TimeZonesTableSeeder::class);
-        $this->command->info('TimeZones Seeded Successfully!');
-
-        $this->call(TransactionTypesTableSeeder::class);
-        $this->command->info('Transaction Types Seeded Successfully!');
-
-        $this->call(FeesLimitsTableSeeder::class); //new
-        $this->command->info('Fees Limit Seeded Successfully!');
-
-        $this->call(SocialsTableSeeder::class);
-        $this->command->info('Socials Seeded Successfully!');
-
+        $this->call(AppStoreCredentialsTableSeeder::class);
+        $this->call(CountriesTableSeeder::class);
+        $this->call(CryptoProvidersTableSeeder::class);
+        $this->call(CurrenciesTableSeeder::class);
+        $this->call(EmailConfigsTableSeeder::class);
+        $this->call(LanguagesTableSeeder::class);
+        $this->call(MerchantGroupsTableSeeder::class);
+        $this->call(MetasTableSeeder::class);
+        $this->call(NotificationTypesTableSeeder::class);
         $this->call(OauthClientsTableSeeder::class);
-        $this->command->info('Oauth Clients Seeded Successfully!');
-
         $this->call(OauthPersonalAccessClientsTableSeeder::class);
-        $this->command->info('Oauth Personal Access Clients Seeded Successfully!');
+        $this->call(PaymentMethodsTableSeeder::class);
+        $this->call(PermissionsTableSeeder::class);
+        $this->call(PermissionRoleTableSeeder::class);
+        $this->call(PreferencesTableSeeder::class);
+        $this->call(ReasonsTableSeeder::class);
+        $this->call(SettingsTableSeeder::class);
+        $this->call(SmsConfigsTableSeeder::class);
+        $this->call(SocialsTableSeeder::class);
+        $this->call(TicketStatusesTableSeeder::class);
+        $this->call(TransactionTypesTableSeeder::class);
+        $this->call(TimeZonesTableSeeder::class);
+        
+        if (checkDemoEnvironment() || app()->runningInConsole()) {
+            $this->call(AdminsTableSeeder::class);
+        }
 
-        Model::reguard();
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        // core PayMoney seeders with minimal or no foreign key dependencies for demo
+        if (checkDemoEnvironment()) {
+            $this->call(UsersTableSeeder::class);
+            $this->call(ActivityLogsTableSeeder::class);
+            $this->call(AddonsTableSeeder::class);
+            $this->call(AppTokensTableSeeder::class);
+            $this->call(BackupsTableSeeder::class);
+            $this->call(OauthAccessTokensTableSeeder::class);
+            $this->call(OauthAuthCodesTableSeeder::class);
+            $this->call(OauthRefreshTokensTableSeeder::class);
+            $this->call(PagesTableSeeder::class);
+            $this->call(PasswordResetsTableSeeder::class);
+            $this->call(FailedJobsTableSeeder::class);
+            $this->call(JobsTableSeeder::class);
+            $this->call(AppTransactionsInfosTableSeeder::class);
+            $this->call(CoinpaymentLogTrxesTableSeeder::class);
+            $this->call(PersonalAccessTokensTableSeeder::class);
+            $this->call(DeviceLogsTableSeeder::class);
+            $this->call(VerifyUsersTableSeeder::class);
+            $this->call(ParametersTableSeeder::class);
+        }
+
+        // core PayMoney seeders with foreign key dependencies
+        $this->call(EmailTemplatesTableSeeder::class);
+        $this->call(NotificationSettingsTableSeeder::class);
+        $this->call(RoleUserTableSeeder::class);
+        $this->call(FeesLimitsTableSeeder::class);
+
+        // core PayMoney seeders with foreign key dependencies for demo
+        if (checkDemoEnvironment()) {
+            $this->call(MerchantsTableSeeder::class);
+            $this->call(MerchantAppsTableSeeder::class);
+            $this->call(MerchantPaymentsTableSeeder::class);
+            $this->call(TicketsTableSeeder::class);
+            $this->call(TicketRepliesTableSeeder::class);
+            $this->call(UserDetailsTableSeeder::class);
+            $this->call(FilesTableSeeder::class);
+            $this->call(BanksTableSeeder::class);
+            $this->call(QrCodesTableSeeder::class);
+            $this->call(WalletsTableSeeder::class);
+            $this->call(PayoutSettingsTableSeeder::class);
+            $this->call(WithdrawalsTableSeeder::class);
+            $this->call(WithdrawalDetailsTableSeeder::class);
+            $this->call(TransfersTableSeeder::class);
+            $this->call(RequestPaymentsTableSeeder::class);
+            $this->call(DepositsTableSeeder::class);
+            $this->call(CurrencyExchangesTableSeeder::class);
+            $this->call(CurrencyPaymentMethodsTableSeeder::class);
+            $this->call(TransactionsTableSeeder::class);
+            $this->call(DisputesTableSeeder::class);
+            $this->call(DisputeDiscussionsTableSeeder::class);
+        }
     }
 }

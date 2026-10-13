@@ -15,21 +15,21 @@ class CreatePayoutSettingsTable extends Migration
     {
         Schema::create('payout_settings', function (Blueprint $table)
         {
-            $table->increments('id');
-            $table->integer('user_id')->unsigned();
+            $table->id();
+            $table->foreignId('user_id')->constrained('users')->onUpdate('cascade')->onDelete('cascade');
             $table->integer('type');
             $table->string('email', 191)->nullable();
-            $table->integer('currency_id')->nullable();
+            $table->foreignId('currency_id')->nullable()->constrained('currencies')->onUpdate('cascade')->onDelete('cascade');
             $table->string('crypto_address', 191)->nullable();
             $table->string('account_name',191)->nullable();
             $table->string('account_number',191)->nullable();
             $table->string('bank_branch_name',191)->nullable();
             $table->string('bank_branch_city',191)->nullable();
             $table->string('bank_branch_address', 191)->nullable();
-            $table->integer('country')->unsigned()->nullable();
+            $table->foreignId('country')->nullable()->constrained('countries')->onUpdate('cascade')->onDelete('cascade');
             $table->string('swift_code', 191)->nullable();
             $table->string('bank_name', 191)->nullable();
-            $table->tinyInteger('default_payout')->comment('0=not default, 1=default')->default('0');
+            $table->boolean('default_payout')->default(false)->comment('0=not default, 1=default');
             $table->timestamps();
         });
     }

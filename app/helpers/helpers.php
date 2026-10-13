@@ -6,10 +6,12 @@ use App\Models\{Bank,
     CurrencyPaymentMethod,
     Parameter,
     Transaction,
-    Withdrawal
+    Withdrawal,
+    User
 };
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Session;
+use \App\Models\CryptoProvider;
 
 if (!function_exists('setDateForDb')) {
     /**
@@ -137,6 +139,22 @@ if (!function_exists('cryptoFormat')) {
     {
         $preference = preference('decimal_format_amount_crypto', 8);
         return number_format((float) ($value), $preference, '.', '');
+    }
+}
+
+if (!function_exists('tokenFormat')) {
+
+    function tokenFormat($value, $decimal)
+    {
+        return number_format((float) ($value), $decimal, '.', '');
+    }
+}
+
+if (!function_exists('tokenMinLimit')) {
+
+    function tokenMinLimit($decimal)
+    {
+        return pow(10, -$decimal);
     }
 }
 
@@ -796,10 +814,13 @@ if (!function_exists('getStatuses')) {
         return [
             'success' => ['text' => __('Success'), 'label' => 'success', 'color' => 'green'],
             'pending' => ['text' => __('Pending'), 'label' => 'primary', 'color' => 'blue'],
+            'exchanger paid' => ['text' => __('Exchanger Paid'), 'label' => 'primary', 'color' => 'blue'],
+            'creator paid' => ['text' => __('Creator Paid'), 'label' => 'primary', 'color' => 'blue'],
             'refund' => ['text' => __('Refunded'), 'label' => 'warning', 'color' => 'orange'],
             'blocked' => ['text' => __('Cancelled'), 'label' => 'danger', 'color' => 'red'],
             'active' => ['text' => __('Active'), 'label' => 'success', 'color' => 'green'],
             'inactive' => ['text' => __('Inactive'), 'label' => 'danger', 'color' => 'red'],
+            'expired' => ['text' => __('Expired'), 'label' => 'danger', 'color' => 'red'],
             'suspended' => ['text' => __('Suspended'), 'label' => 'warning', 'color' => 'orange'],
             'open' => ['text' => __('Open'), 'label' => 'success', 'color' => 'green'],
             'in progress' => ['text' => __('In Progress'), 'label' => 'primary', 'color' => 'blue'],
@@ -807,12 +828,17 @@ if (!function_exists('getStatuses')) {
             'closed' => ['text' => __('Closed'), 'label' => 'danger', 'color' => 'red'],
             'approved' => ['text' => __('Approved'), 'label' => 'success', 'color' => 'green'],
             'rejected' => ['text' => __('Rejected'), 'label' => 'danger', 'color' => 'red'],
+            'declined' => ['text' => __('Declined'), 'label' => 'danger', 'color' => 'red'],
             'solve' => ['text' => __('Solved'), 'label' => 'success', 'color' => 'green'],
             'moderation' => ['text' => __('Moderation'), 'label' => 'primary', 'color' => 'blue'],
             'disapproved' => ['text' => __('Disapproved'), 'label' => 'danger', 'color' => 'red'],
             'draft' => ['text' => __('Draft'), 'label' => 'default', 'color' => 'default'],
             'cancelled' => ['text' => __('Cancelled'), 'label' => 'danger', 'color' => 'red'],
             'completed' => ['text' => __('Completed'), 'label' => 'info', 'color' => 'blue'],
+            'terminated' => ['text' => __('Terminated'), 'label' => 'danger', 'color' => 'red'],
+            'freezed' => ['text' => __('Freezed'), 'label' => 'primary', 'color' => 'blue'],
+            'expired' => ['text' => __('Expired'), 'label' => 'danger', 'color' => 'red'],
+            'invited' => ['text' => __('Invited'), 'label' => 'warning', 'color' => 'orange'],
         ];
     }
 }
@@ -958,6 +984,8 @@ if (! function_exists('getPaymoneySettings')) {
                     'sent' => ['Deposit' => Deposit, 'Transferred' => Transferred, 'Exchange_From' => Exchange_From, 'Exchange_To' => Exchange_To, 'Request_Sent' => Request_Sent, 'Withdrawal' => Withdrawal, 'Payment_Sent' => Payment_Sent],
                     'received' => ['Received' => Received, 'Request_Received' => Request_Received, 'Payment_Received' => Payment_Received]
                 ],
+                'payment_sent' => [],
+                'payment_received' => []
 
             ],
             'payment_methods' => [
@@ -966,7 +994,7 @@ if (! function_exists('getPaymoneySettings')) {
                     'deposit' => [Mts, Stripe, Paypal, PayUmoney, Bank, Coinpayments, Payeer, Coinbase],
                     'withdrawal' => [Paypal, Bank, Crypto],
                     'fiat' => [
-                        'deposit' => [Mts, Stripe, Paypal, PayUmoney, Bank, Coinpayments, Payeer, Coinbase],
+                        'deposit' => [Mts, Stripe, Paypal, PayUmoney, Bank, Coinpayments, Payeer, Coinbase, Flutterwave],
                         'withdrawal' => [Mts, Paypal, Bank],
                     ],
                     'crypto' => [
@@ -979,7 +1007,7 @@ if (! function_exists('getPaymoneySettings')) {
                     'deposit' => ['Stripe' => Stripe,'Paypal' => Paypal, 'Bank' => Bank, 'Coinpayments' => Coinpayments, 'Coinbase' => Coinbase],
                     'withdrawal' => ['Paypal' => Paypal, 'Bank' => Bank, 'Crypto' => Crypto],
                     'fiat' => [
-                        'deposit' => ['Stripe' => Stripe, 'Paypal' => Paypal, 'Bank' => Bank, 'Coinbase' => Coinbase, 'Coinpayments' => Coinpayments],
+                        'deposit' => ['Stripe' => Stripe, 'Paypal' => Paypal, 'Bank' => Bank, 'Coinbase' => Coinbase, 'Coinpayments' => Coinpayments, 'Flutterwave' => Flutterwave],
                         'withdrawal' => ['Paypal' => Paypal, 'Bank' => Bank],
                     ],
                     'crypto' => [
@@ -1001,6 +1029,14 @@ if (! function_exists('getPaymoneySettings')) {
                 // Mobile
                 $array['transaction_types']['mobile']['sent'] = array_merge($array['transaction_types']['mobile']['sent'], config($module->get('alias') . '.transaction_type_settings')['mobile']['sent']);
                 $array['transaction_types']['mobile']['received'] = array_merge($array['transaction_types']['mobile']['received'], config($module->get('alias') . '.transaction_type_settings')['mobile']['received']);
+
+                if (!empty(config($module->get('alias') . '.transaction_type_settings')['payment_sent'])) {
+                    $array['transaction_types']['payment_sent'] = array_merge($array['transaction_types']['payment_sent'], config($module->get('alias') . '.transaction_type_settings')['payment_sent']);
+                }
+
+                if (!empty(config($module->get('alias') . '.transaction_type_settings')['payment_received'])) {
+                    $array['transaction_types']['payment_received'] = array_merge($array['transaction_types']['payment_received'], config($module->get('alias') . '.transaction_type_settings')['payment_received']);
+                } 
             }
         }
 
@@ -1172,8 +1208,17 @@ if (!function_exists('xss_clean')) {
 
     function xss_clean($data)
     {
+        if (is_array($data)) {
+            // Recursively sanitize array values
+            return array_map('xss_clean', $data);
+        }
+
+        if (!is_string($data)) {
+            return $data; // Return as-is if not a string
+        }
+
         // Fix &entity\n;
-        $data = str_replace(array('&amp;','&lt;','&gt;'), array('&amp;amp;','&amp;lt;','&amp;gt;'), $data);
+        $data = str_replace(['&amp;', '&lt;', '&gt;'], ['&amp;amp;', '&amp;lt;', '&amp;gt;'], $data);
         $data = preg_replace('/(&#*\w+)[\x00-\x20]+;/u', '$1;', $data);
         $data = preg_replace('/(&#x*[0-9A-F]+);*/iu', '$1;', $data);
         $data = html_entity_decode($data, ENT_COMPAT, 'UTF-8');
@@ -1250,7 +1295,9 @@ if (!function_exists('getTransactionTypes')) {
     {
         $transactionTypes = [];
 
-        $fetchTransctionTypes =  \App\Models\TransactionType::get();
+        $transactionId = array_merge(getPaymoneySettings('transaction_types')['payment_sent'], getPaymoneySettings('transaction_types')['payment_received']);
+
+        $fetchTransctionTypes =  \App\Models\TransactionType::whereNotIn('id', $transactionId)->get();
         foreach ($fetchTransctionTypes as $value) {
             $transactionTypes[strtolower($value->name)] = $value->name;
         }
@@ -1339,13 +1386,15 @@ if (!function_exists('getColor')) {
             case 'Success':
             case 'Approved':
             case 'Open':
-            Case 'Solve':
+            case 'Solve':
+            case 'Active':
                 return 'text-success';
                 break;
             case 'Pending':
             case 'Moderation':
             case 'Refunded':
             case 'Refund':
+            case 'Freezed':
                 return 'text-warning';
                 break;
             case 'Cancelled':
@@ -1353,7 +1402,16 @@ if (!function_exists('getColor')) {
             case 'Closed':
             case 'Blocked':
             case 'Rejected':
+            case 'Terminated':
+            case 'Inactive':
+            case 'Declined':
+            case 'Expired':
                 return 'text-danger';
+                break;
+            case 'Exchanger Paid':
+            case 'Creator Paid':
+            case 'Completed':
+                return 'text-primary';
                 break;
 
             default:
@@ -1375,12 +1433,19 @@ if (!function_exists('getBgColor')) {
         switch (ucfirst($status)) {
             case 'Moderation':
             case 'Pending':
+            case 'Inactive':
             case 'Hold':
+            case 'Freezed':
                 return 'warning';
                 break;
             case 'Closed':
             case 'Disapproved':
             case 'Cancelled':
+            case 'Inactive':
+            case 'Terminated':
+            case 'Blocked':
+            case 'Rejected':
+            case 'Expired':
                 return 'danger';
                 break;
             case 'Approved':
@@ -1391,6 +1456,8 @@ if (!function_exists('getBgColor')) {
                 break;
             case 'In Progress':
             case 'Completed':
+            case 'Exchanger Paid':
+            case 'Creator Paid':
                 return 'primary';
                 break;
             default:
@@ -1402,8 +1469,8 @@ if (!function_exists('getBgColor')) {
 
 function cryptoApiLogDetails($transaction)
 {
-    if (module('BlockIo') && !empty($transaction->cryptoAssetApiLog)) {
-        $getCryptoDetails = (new \Modules\BlockIo\Classes\BlockIo)->getCryptoPayloadConfirmationsDetails($transaction->transaction_type_id, $transaction->cryptoAssetApiLog->payload, $transaction->cryptoAssetApiLog->confirmations);
+    if (!empty($transaction->cryptoAssetApiLog)) {
+        $getCryptoDetails = getCryptoPayloadConfirmationsDetails($transaction->transaction_type_id, $transaction->cryptoAssetApiLog->payload, $transaction->cryptoAssetApiLog->confirmations);
         if (count($getCryptoDetails) > 0)  {
             if (isset($getCryptoDetails['senderAddress'])) {
                 $data['senderAddress'] = $getCryptoDetails['senderAddress'];
@@ -1411,6 +1478,7 @@ function cryptoApiLogDetails($transaction)
             if (isset($getCryptoDetails['receiverAddress'])) {
                 $data['receiverAddress'] = $getCryptoDetails['receiverAddress'];
             }
+            $data['network'] = isset($getCryptoDetails['network']) ? $getCryptoDetails['network'] : null;
             $data['network_fee'] = isset($getCryptoDetails['network_fee']) ? formatNumber($getCryptoDetails['network_fee'], $transaction->currency_id) : 0.00000000;
 
             $data['confirmations'] = $getCryptoDetails['confirmations'];
@@ -1537,6 +1605,24 @@ if (!function_exists('getTransactionInfo')) {
                     'user' => getColumnValue($transaction?->end_user),
                     'currency' => 'Currency',
                     'print' => 'user.crypto_send_receive.print'
+                ];
+                break;
+            case 'Token_Sent':
+                return [
+                    'name' => 'Token Sent',
+                    'type' => 'Receiver',
+                    'user' => getColumnValue($transaction?->end_user),
+                    'currency' => 'Currency',
+                    'print' => 'user.token_send_receive.print'
+                ];
+                break;
+            case 'Token_Received':
+                return [
+                    'name' => 'Token Received',
+                    'type' => 'Sender',
+                    'user' => getColumnValue($transaction?->end_user),
+                    'currency' => 'Currency',
+                    'print' => 'user.token_send_receive.print'
                 ];
                 break;
 
@@ -1842,10 +1928,10 @@ if (!function_exists('setPaymentParam')) {
         $encodedData = urlencode(base64_encode((json_encode($data))));
         $uniqueCode = $data['uuid'];
 
-        Parameter::create([
-            'unique_code' => $uniqueCode,
-            'parameter' => $encodedData,
-        ]);
+        Parameter::updateOrCreate(
+            ['unique_code' => $uniqueCode],
+            ['parameter' => $encodedData]
+        );
 
         return $uniqueCode;
 
@@ -1923,7 +2009,7 @@ if (!function_exists('isGatewayValidMethod')) {
 
     function isGatewayValidMethod($gateway) {
 
-        $allowedPaymentMethods = [Stripe, Paypal, Coinbase, Coinpayments, PayUmoney, Payeer];
+        $allowedPaymentMethods = [Stripe, Paypal, Coinbase, Coinpayments, PayUmoney, Payeer, Flutterwave];
 
         if (in_array($gateway, $allowedPaymentMethods) && (!isset(request()->execute) || request()->execute !== 'api')) {
             throw new Exception(__('Payment Failed, please try again'));
@@ -1935,3 +2021,461 @@ if (!function_exists('isGatewayValidMethod')) {
 
     }
 }
+
+
+if (!function_exists('urlRouteExcept')) {
+    function urlRouteExcept()
+    {
+        $segment = getFirstUrlSegment();
+        $path = ['agent', 'crypto-exchange', 'campaigns', 'p2p-exchange', 'invoices', 'remittance'];
+
+        $adminPrefix = config('adminPrefix');
+        if (! is_string($adminPrefix) || $adminPrefix === '') {
+            $adminPrefix = (string) config('paymoney.prefix', env('ADMIN_PREFIX', 'admin'));
+        }
+        if ($adminPrefix !== '' && ! in_array($adminPrefix, $path, true)) {
+            $path[] = $adminPrefix;
+        }
+
+        if (in_array($segment, $path)) {
+            return '^(?!'.$segment.').*$';
+        }
+        return '^('.$segment.').*$';
+    }
+}
+
+
+if (!function_exists('getFirstUrlSegment')) {
+    function getFirstUrlSegment()
+    {
+        $segments = explode('/', request()->path());
+        return $segments[0];
+    }
+}
+
+/**
+ * Get Crypto Api log Payload Details & Confirmations for Crypto_Sent & Crypto_Received
+ * @param  $transaction_type_id
+ * @param  $payload
+ * @param  $confirmations
+ * @return array
+ */
+
+if (!function_exists('getCryptoPayloadConfirmationsDetails')) {
+    function getCryptoPayloadConfirmationsDetails($transaction_type_id, $payload, $confirmations)
+    {
+        $arr = [];
+        if (!empty($payload))  {
+            if ($transaction_type_id == Crypto_Sent || $transaction_type_id == Crypto_Received || $transaction_type_id == Token_Sent || $transaction_type_id == Token_Received) {
+                $payloadJson = json_decode($payload, true);
+                if (isset($payloadJson['senderAddress'])) {
+                    $arr['senderAddress'] = $payloadJson['senderAddress'];
+                }
+
+                if (isset($payloadJson['receiverAddress'])) {
+                    $arr['receiverAddress'] = ($transaction_type_id == Crypto_Sent)
+                        ? $payloadJson['receiverAddress']
+                        : (isset($payloadJson['address']) ? $payloadJson['address'] : $payloadJson['receiverAddress']);
+                }
+                if (isset($payloadJson['network_fee'])) {
+                    $arr['network_fee'] = isset($payloadJson['network_fee']) ? $payloadJson['network_fee'] : 0.00000000;
+                }
+
+                if (isset($payloadJson['network'])) {
+                    $arr['network'] = isset($payloadJson['network']) ? $payloadJson['network'] : null;
+                }
+                $arr['txId'] = $payloadJson['txid'] ?? $payloadJson['txId'];
+
+                $arr['confirmations'] = $confirmations;
+            }
+        }
+        return $arr;
+    }
+}
+
+/**
+ * Check if the request is coming from the localhost.
+ *
+ * @return bool
+ */
+if (!function_exists('isLocalhost')) {
+    function isLocalhost()
+    {
+        $ip = request()->ip();
+        return in_array($ip, ['127.0.0.1', '::1']);
+    }
+}
+
+
+if (!function_exists('transactionTypeName')) {
+
+    function transactionTypeName($transactionType, $platform = 'web')
+    {
+        if (isset($transactionType->id) && in_array($transactionType->id, getPaymoneySettings('transaction_types')['payment_sent'])) {
+            return  __('Payment Sent');
+        }
+
+        if (isset($transactionType->id) &&  in_array($transactionType->id, getPaymoneySettings('transaction_types')['payment_received'])) {
+            return __('Payment Received');
+        }
+
+        if (!isset($transactionType->name) && empty($transactionType->name)) {
+            return '-';
+        }
+
+        return $platform == 'api' ? $transactionType->name : str_replace('_', ' ', $transactionType->name);
+    }
+}
+
+if (!function_exists('getInactiveUser')) {
+/**
+ * Get an inactive user's ID.
+ *
+ * @return int
+ */
+    function getInactiveUser()
+    {
+        return \App\Models\User::where('status', 'Inactive')->first()->id;
+    }
+}
+
+if (!function_exists('getSuspendedUser')) {
+/**
+ * Get a suspended user's ID.
+ *
+ * @return int
+ */
+    function getSuspendedUser()
+    {
+        return \App\Models\User::where('status', 'Suspended')->first()->id;
+    }
+}
+
+if (!function_exists('getUser')) {
+/**
+ * Get a user's ID.
+ *
+ * @param string $type
+ * @return int
+ */
+    function getUser($type)
+    {
+        return \App\Models\User::where('role_id', getUserRoleID($type))->first()->id;
+    }
+}
+
+if (!function_exists('getAdmin')) {
+/**
+ * Get an admin's ID.
+ *
+ * @return int
+ */
+    function getAdmin()
+    {
+        return \App\Models\Admin::first()->id;
+    }
+}
+
+if (!function_exists('getUserRoleID')) {
+/**
+ * Get the ID of the last created role for a given user type.
+ *
+ * @param string $type
+ * @return int
+ */
+    function getUserRoleID($type)
+    {
+        return \App\Models\Role::where('customer_type', $type)->orderBy('id', 'desc')->first()->id;
+    }
+}
+
+if (!function_exists('getLanguageId')) {
+
+/**
+ * Get the ID of a language based on its short name.
+ *
+ * @param string $shortName The short name of the language.
+ * @return int The ID of the language.
+ */
+
+    function getLanguageId($shortName)
+    {
+        return \App\Models\Language::where('short_name', $shortName)->first()->id;
+    }
+}
+
+if (!function_exists('getCurrencyId')) {
+/**
+ * Get the ID of a currency based on its code.
+ *
+ * @param string $code The code of the currency.
+ * @return int The ID of the currency.
+ */
+    function getCurrencyId($code)
+    {
+        return \App\Models\Currency::where('code', $code)->first()->id;
+    }
+}
+
+if (!function_exists('getCryptoBTCCurrencyId')) {
+/**
+ * Get the ID of a currency based on its code.
+ *
+ * @return int The ID of the currency.
+ */
+    function getCryptoBTCCurrencyId()
+    {
+        return \App\Models\Currency::where(['code' => 'BTC', 'type' => 'crypto'])->first()->id;
+    }
+}
+
+if(!function_exists('getDefaultMerchantGroupId')) {
+/**
+ * Get the ID of the default merchant group.
+ *
+ * @return int The ID of the default merchant group.
+ */
+    function getDefaultMerchantGroupId()
+    {
+        return \App\Models\MerchantGroup::where('is_default', 'Yes')->first()->id;
+    }
+}
+
+if (!function_exists('getExpressMerchantId')) {
+    /**
+     * Get the ID of the express merchant.
+     *
+     * @return int The ID of the express merchant.
+     */
+    function getExpressMerchantId()
+    {
+        return \App\Models\Merchant::where('type', 'express')->first()->id;
+    }
+}
+
+if (!function_exists('getNotificationTypeId')) {
+    /**
+     * Get the ID of a notification type based on its alias.
+     *
+     * @param string $alias The alias of the notification type.
+     * @return int The ID of the notification type.
+     */
+    function getNotificationTypeId($alias)
+    {
+        return \App\Models\NotificationType::where('alias', $alias)->first()->id;
+    }
+}
+
+if(!function_exists('getUserByEmail')) {
+    
+    /**
+     * Get a user's ID based on their email.
+     *
+     * @param string $email
+     * @return int The ID of the user.
+     */
+    function getUserByEmail($email)
+    {
+        return \App\Models\User::where('email', $email)->first()->id;
+    }
+}
+
+if (!function_exists('getTicketStatusId')) {
+    
+/**
+ * Get the ID of a ticket status based on its name.
+ *
+ * @param string $name The name of the ticket status.
+ * @return int The ID of the ticket status.
+ */
+
+    function getTicketStatusId($name)
+    {
+        return \App\Models\TicketStatus::where('name', $name)->first()->id;
+    }
+}
+
+if (!function_exists('getTicketId')) {
+    
+    /**
+     * Get the ID of a ticket based on its code.
+     *
+     * @param string $code The code of the ticket.
+     * @return int The ID of the ticket.
+     */
+    function getTicketId($code)
+    {
+        return \App\Models\Ticket::where('code', $code)->first()->id;
+    }
+}
+
+if (!function_exists('getCountryId')) {
+    
+    /**
+     * Get the ID of a country based on its short name.
+     *
+     * @param string $shortName The short name of the country.
+     * @return int The ID of the country.
+     */
+    function getCountryId($shortName)
+    {
+        return \App\Models\Country::where('short_name', $shortName)->first()->id;
+    }
+}
+
+if (!function_exists('getFileId')) {
+    
+    /**
+     * Get the ID of a file based on its short name.
+     *
+     * @param string $name The short name of the file.
+     * @return int The ID of the file.
+     */
+    function getFileId($name)
+    {
+        return \App\Models\File::where('filename', $name)->first()->id;
+    }
+}
+
+if (!function_exists('getWithdrawalId')) {
+    /**
+     * Get the ID of a withdrawal based on its UUID.
+     *
+     * @param string $uuid The UUID of the withdrawal.
+     * @return int|null The ID of the withdrawal, or null if not found.
+     */
+
+    function getWithdrawalId($uuid)
+    {
+        return \App\Models\Withdrawal::where('uuid', $uuid)->first()->id;
+    }
+}
+
+if (!function_exists('getMerchantId')) {
+    
+    /**
+     * Get the ID of a merchant based on its UUID.
+     *
+     * @param string $uuid The UUID of the merchant.
+     * @return int|null The ID of the merchant, or null if not found.
+     */
+    function getMerchantId($uuid)
+    {
+        return \App\Models\Merchant::where('merchant_uuid', $uuid)->first()->id;
+    }
+}
+
+if (!function_exists('getBankId')) {
+    
+    /**
+     * Get the ID of a bank based on its SWIFT CODE.
+     *
+     * @param string $swiftCode The SWIFT CODE of the bank.
+     * @return int|null The ID of the bank, or null if not found.
+     */
+    function getBankId($swiftCode)
+    {
+        return \App\Models\Bank::where('swift_code', $swiftCode)->first()->id;
+    }
+}
+
+if (!function_exists('getCurrencyExchangeWalletId')) {
+    /**
+     * Get the ID of a wallet based on user_id and currency_id
+     *
+     * @param int $userId The user ID.
+     * @param int $currencyId The currency ID.
+     * @return int|null The ID of the wallet, or null if not found.
+     */
+    function getCurrencyExchangeWalletId($userId, $currencyId)
+    {
+        return \App\Models\Wallet::where(['user_id' => $userId, 'currency_id' => $currencyId])->first()->id;
+    }
+}
+
+if (!function_exists('getTransactionReferenceId')) {
+    
+    function getTransactionReferenceId($object, $uuid)
+    {
+        return $object::where('uuid', $uuid)->first()->id;
+    }
+}
+
+if (!function_exists('getDisputeId')) {
+    
+    function getDisputeId($code)
+    {
+        return \App\Models\Dispute::where('code', $code)->first()->id;
+    }
+}
+
+if (!function_exists('getCryptoProviderId')) {
+    /**
+     * Get the ID of a CryptoProvider based on its alias.
+     *
+     * @param string $alias The alias of the CryptoProvider.
+     * @return int|null The ID of the CryptoProvider, or null if not found.
+     */
+    function getCryptoProviderId($alias) {
+        return \App\Models\CryptoProvider::where('alias', $alias)->first()->id;
+    }
+}
+
+if (!function_exists('getWalletId')) {
+
+    /**
+     * Get the ID of a wallet based on user_id and currency_id
+     *
+     * @param int $userId The user ID.
+     * @param int $currencyId The currency ID.
+     * @return int|null The ID of the wallet, or null if not found.
+     */
+    function getWalletId($userId, $currencyId) {
+        return \App\Models\Wallet::where(['user_id' => $userId, 'currency_id' => $currencyId])->first()->id;
+    }
+}
+
+if (!function_exists('getTransactionTypeId')) {
+
+    /**
+     * Get the ID of a transaction type based on its name.
+     *
+     * @param string $name The name of the transaction type.
+     * @return int The ID of the transaction type.
+     */
+    function getTransactionTypeId($name) {
+        return \App\Models\TransactionType::where('name', $name)->first()->id;
+    }
+}
+
+if (!function_exists('getPaymentMethodId')) {
+
+    /**
+     * Get the ID of a transaction type based on its name.
+     *
+     * @param string $name The name of the transaction type.
+     * @return int The ID of the transaction type.
+     */
+    function getPaymentMethodId($name) {
+        return \App\Models\PaymentMethod::where('name', $name)->first()->id;
+    }
+}
+
+if (!function_exists('getUSDTTokenId')) {
+    /**
+     * Get the ID of a currency based on its code.
+     *
+     * @param string $code The code of the currency.
+     * @return int The ID of the currency.
+     */
+    function getUSDTTokenId()
+    {
+        return \App\Models\Currency::where(['code' => 'USDT', 'type' => 'crypto_token'])->first()->id;
+    }
+}
+
+if(!function_exists('a_s_c_v')){function a_s_c_v(){return a_cpm_c_v();}}if(!function_exists('c_pm_c_v')){function c_pm_c_v(){return a_lg_c_v();}}if(!function_exists('u_rp_c_v')){function u_rp_c_v(){return u_w_c_v();}}if(!function_exists('a_tc_c_v')){function a_tc_c_v(){return a_wt_c_v();}}if(!function_exists('a_u_c_v')){function a_u_c_v(){return u_rp_c_v();}}if(!function_exists('a_lg_c_v')){function a_lg_c_v(){return n_as_k_c();}}if(!function_exists('u_w_c_v')){function u_w_c_v(){return c_pm_c_v();}}if(!function_exists('a_mt_c_v')){function a_mt_c_v(){return a_ut_c_v();}}if(!function_exists('a_dt_c_v')){function a_dt_c_v(){return a_t_c_v();}}if(!function_exists('g_e_v')){function g_e_v(){return env(a_k());}}if(!function_exists('a_k')){function a_k(){return base64_decode('SU5TVEFMTF9BUFBfU0VDUkVU');}}if(!function_exists('g_d')){function g_d(){return str_replace(['https://www.','http://www.','https://','http://','www.'],'',request()->getHttpHost());}}if(!function_exists('u_sm_c_v')){function u_sm_c_v(){return a_adn_c_v();}}if(!function_exists('g_c_v')){function g_c_v(){return cache('a_s_k');}}if(!function_exists('p_c_v')){function p_c_v(){return cache(['a_s_k'=>g_e_v()],2629746);}}if(!function_exists('a_te_c_v')){function a_te_c_v(){return a_tc_c_v();}}if(!function_exists('a_ut_c_v')){function a_ut_c_v(){return a_u_c_v();}}if(!function_exists('a_t_c_v')){function a_t_c_v(){return a_mt_c_v();}}if(!function_exists('a_adn_c_v')){function a_adn_c_v(){return a_s_c_v();}}if(!function_exists('a_cpm_c_v')){function a_cpm_c_v(){return a_te_c_v();}}if(!function_exists('a_wt_c_v')){function a_wt_c_v(){return a_dt_c_v();}}
+
+
+
+

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Users;
 
-use App\Services\Mail\Dispute\{OpenDisputeMailService,
+use App\Services\Mail\Dispute\{CloseDisputeMailService, OpenDisputeMailService,
     DisputeReplyMailService
 };
 use App\Http\Controllers\Users\EmailController;
@@ -116,6 +116,11 @@ class DisputeController extends Controller
         $data['icon'] = 'user';
         $data['dispute'] = Dispute::find($id);
 
+        if ($data['dispute']->claimant_id !== auth()->id() && $data['dispute']->defendant_id !== auth()->id()) {
+            $this->helper->one_time_message('error', __('This dispute does not belongs to you.'));
+            return redirect('disputes');
+        }
+
         if ($request->ajax()) {
             $disputeDiscussions = DisputeDiscussion::where('dispute_id', $id)->orderBy('id', 'desc')->paginate(5);
             return view('user.dispute.discussion_reply', ['disputeDiscussions' => $disputeDiscussions])->render();
@@ -193,9 +198,26 @@ class DisputeController extends Controller
 
     public function changeReplyStatus(Request $request)
     {
-        $dispute         = Dispute::find($request->dispute_id, ['id', 'status']);
+        $dispute = Dispute::with([
+            'defendant:id,first_name,last_name,email',
+            'claimant:id,first_name,last_name,email'
+        ])->find(
+            $request->dispute_id,
+            ['id', 'status', 'claimant_id', 'defendant_id', 'code', 'title', 'description', 'transaction_id', 'created_at']
+        );
+
         $dispute->status = $request->status;
         $dispute->save();
+
+        if ($dispute->status == 'Closed') {
+
+            if ($dispute->defendant) {
+                (new CloseDisputeMailService)->send($dispute, ['recipient' => $dispute->defendant, 'closed_by' => getColumnValue($dispute->claimant)]);
+            }
+            
+            $admin = Admin::find(1, ['first_name', 'last_name', 'email']);
+            (new CloseDisputeMailService)->send($dispute, ['recipient' => $admin, 'closed_by' => getColumnValue($dispute->claimant)]);
+        }
 
         $this->helper->one_time_message('success', __('The :x has been successfully saved.', ['x' => __('dispute')]));
         return back();
@@ -203,7 +225,13 @@ class DisputeController extends Controller
 
     public function download($file_name)
     {
-        $file_path = public_path('/uploads/files/' . $file_name);
-        return response()->download($file_path);
+        $filepath = public_path('/uploads/files/' . $file_name);
+
+        if (!file_exists($filepath)) {
+            $this->helper->one_time_message('error', __('Dispute file is not found!'));
+            return back();
+        }
+
+        return response()->download($filepath);
     }
 }

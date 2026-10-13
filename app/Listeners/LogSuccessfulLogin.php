@@ -2,38 +2,30 @@
 
 namespace App\Listeners;
 
+use App\Models\User;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Http\Request;
 
 class LogSuccessfulLogin
 {
-    /**
-     * Create the event listener.
-     *
-     * @return void
-     */
-    public function __construct(Request $request)
+    public function __construct(protected Request $request)
     {
-        $this->request = $request;
-        //
     }
 
     /**
-     * Handle the event.
-     *
-     * @param  Login  $event
-     * @return void
+     * Persist last login on user_details (columns do not exist on users table).
      */
-    public function handle(Login $event)
+    public function handle(Login $event): void
     {
-        $user                = $event->user;
-        $user->last_login_at = date('Y-m-d H:i:s');
-        $user->last_login_ip = $this->request->ip();
-        $user->save();
+        $user = $event->user;
 
-        //saving last_login_at and last_login_ip of user_detail at the same time
-        // $user->user_detail->last_login_at = date('Y-m-d H:i:s');
-        // $user->user_detail->last_login_ip = $this->request->ip();
-        // $user->user_detail->save();
+        if (! $user instanceof User) {
+            return;
+        }
+
+        $user->user_detail()->update([
+            'last_login_at' => now()->toDateTimeString(),
+            'last_login_ip' => $this->request->ip(),
+        ]);
     }
 }

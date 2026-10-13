@@ -1,32 +1,27 @@
 <?php
 
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+use Modules\TatumIo\Http\Controllers\Api\CryptoSendController;
+use Modules\TatumIo\Http\Controllers\Api\TokenSendController;
 
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| is assigned the "api" middleware group. Enjoy building your API!
-|
-*/
+Route::group(['prefix' => 'crypto/send/tatumio', 'middleware' => ['auth:api-v2', 'check-user-suspended']], function () {
 
-
- /**
-     * Block.io Crypto Send
-     */
-    Route::group(['prefix' => 'crypto/send/tatumio', 'middleware' => ['auth:api-v2', 'check-user-suspended']], function () {
-        Route::get('provider-status', 'CryptoSendController@providerStatus');
-
-        Route::get('validate-address', 'CryptoSendController@validateCryptoAddress');
-
-        Route::get('user-address/{walletCurrencyCode}', 'CryptoSendController@userCryptoAddress');
-
-        Route::get('validate-user-balance', 'CryptoSendController@validateUserBalanceAgainstAmount');
-
-        Route::post('confirm', 'CryptoSendController@cryptoSendConfirm');
-
-        Route::get('provider-status', 'CryptoSendController@providerStatus');
+    Route::controller(CryptoSendController::class)->group(function () {
+        Route::get('provider-status', 'providerStatus');
+        Route::get('validate-address', 'validateCryptoAddress');
+        Route::get('user-address/{walletCurrencyCode}', 'userCryptoAddress');
+        Route::get('validate-user-balance', 'validateUserBalanceAgainstAmount');
+        Route::post('confirm', 'cryptoSendConfirm');
     });
+});
+
+Route::group(['prefix' => 'token/send/tatumio', 'middleware' => ['auth:api-v2', 'check-user-suspended']], function () {
+    Route::controller(TokenSendController::class)->group(function () {
+        Route::get('provider-status', 'providerStatus');
+        Route::get('validate-address', 'validateCryptoAddress');
+        Route::get('user-address/{walletCurrencyCode}/{walletId}', 'userCryptoAddress');
+        Route::get('validate-user-balance', 'validateUserBalanceAgainstAmount');
+        Route::post('confirm', 'cryptoSendConfirm');
+    });
+});
+

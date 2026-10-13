@@ -3,7 +3,7 @@
 
 @section('head_style')
     <!-- bootstrap-toggle -->
-    <link rel="stylesheet" href="{{ asset('public/dist/plugins/bootstrap-toggle-2.2.0/css/bootstrap-toggle.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('public/dist/plugins/bootstrap-toggle/css/bootstrap-toggle.min.css') }}">
 @endsection
 
 @section('page_content')
@@ -83,14 +83,15 @@
 
 @push('extra_body_scripts')
     <!-- bootstrap-toggle -->
-    <script src="{{ asset('public/dist/plugins/bootstrap-toggle-2.2.0/js/bootstrap-toggle.min.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('public/dist/plugins/bootstrap-toggle/js/bootstrap-toggle.min.js') }}" type="text/javascript"></script>
 
     <!-- jquery.validate -->
-    <script src="{{ asset('public/dist/plugins/jquery-validation-1.17.0/dist/jquery.validate.min.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('public/dist/plugins/jquery-validation/dist/jquery.validate.min.js') }}" type="text/javascript"></script>
 
     <script type="text/javascript">
 
         var investment = "{{ isActive('Investment') ? true : false }}";
+        var p2pExchange = "{{ isActive('P2PXchange') ? true : false }}";
 
         $.validator.setDefaults({
             highlight: function(element) {
@@ -197,6 +198,17 @@
                         var statusCheck = $('input[name="notification[email][investment][status]"]:checked').length;
                         if(statusCheck == 1) {
                             return $("#email_investment").val() == "";
+                        } else {
+                            return false;
+                        }
+                    },
+                },
+                "notification[email][p2p_exchange][recipient]": {
+                    email: p2pExchange ? true : false,
+                    required: function(element) {
+                        var statusCheck = $('input[name="notification[email][p2p_exchange][status]"]:checked').length;
+                        if(statusCheck == 1) {
+                            return $("#email_p2p_exchange").val() == "";
                         } else {
                             return false;
                         }

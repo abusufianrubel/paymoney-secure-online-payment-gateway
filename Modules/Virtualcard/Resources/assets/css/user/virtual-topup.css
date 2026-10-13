@@ -1,0 +1,30 @@
+.virtualCardDisplay {
+    background-color: #f3f2ff !important;
+    font-size: 20px !important;
+    color: var(--bs-dark) !important;
+    font-family: "Gilroy-Medium";
+    transition: 0.2s;
+}
+.dark .virtualCardDisplay{
+    background-color: #2e2f44 !important;
+    color: var(--bs-muted) !important;
+}
+.virtualcard-input input:focus {
+    outline: none;
+}
+
+@media only screen and (max-width: 1480px) {
+.virtualCardDisplay {
+    padding: 0px !important;
+    font-size: 14px !important;
+}
+.param-ref .virtual-input-container{
+    padding: 3px 8px 3px 16px !important;
+}
+}
+@media only screen and (max-width: 600px) {
+    .param-ref .virtual-input-container {
+        padding:  6px 12px !important;
+        font-size: 14px !important;
+    }
+}

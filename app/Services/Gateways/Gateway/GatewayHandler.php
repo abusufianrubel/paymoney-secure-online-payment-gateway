@@ -26,11 +26,12 @@ class GatewayHandler
      */
     public static function gatewayIssue($gateway)
     {
-        $gatewayConcrete = "App\Services\Gateways\\" . ucfirst($gateway) . "\\" . ucfirst($gateway) . "Processor";
+        $gateway = ($gateway == 'payumoney') ? 'PayUmoney' : ucfirst($gateway);
+        $gatewayConcrete = "App\Services\Gateways\\" . $gateway . "\\" . $gateway . "Processor";
         if (class_exists($gatewayConcrete)) {
             app()->bind(PaymentProcessor::class, $gatewayConcrete);
         } else {
-            throw new InvalidGatewayException(__(":x Gateway processor not found.", ["x" => ucfirst($gateway)]));
+            throw new InvalidGatewayException(__(":x Gateway processor not found.", ["x" => $gateway]));
         }
     }
 }

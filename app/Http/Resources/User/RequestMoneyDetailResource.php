@@ -15,7 +15,7 @@ class RequestMoneyDetailResource extends JsonResource
     public function toArray($request)
     {
         return [
-            'email'          => optional($this)->email,
+            'email'          => optional($this->user)->email,
             'phone'          => optional($this)->phone,
             'amount'         => optional($this)->amount,
             'note'           => optional($this)->note,

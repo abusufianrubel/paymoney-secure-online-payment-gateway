@@ -49,8 +49,8 @@ class TransactionsExport implements FromQuery, WithHeadings, WithMapping, Should
 
             $this->user($transaction),
 
-            isset($transaction->transaction_type->name) ? str_replace('_', ' ', $transaction->transaction_type->name) : '',
-
+            transactionTypeName($transaction->transaction_type),
+            
             // amount
             formatNumber($transaction->subtotal, $transaction->currency_id),
             // fees
@@ -73,7 +73,7 @@ class TransactionsExport implements FromQuery, WithHeadings, WithMapping, Should
         if (in_array($transaction->transaction_type_id, $transactionTypes['sent'])) {
             if (isset($transaction->user->first_name) && !empty($transaction->user->first_name)) {
                 $user = $transaction->user->first_name . ' ' . $transaction->user->last_name;
-            } elseif (module('CryptoExchange') && isset($transaction->crypto_exchange) && !empty($transaction->crypto_exchange)) {
+            } elseif (moduleExists('CryptoExchange') && isset($transaction->crypto_exchange) && !empty($transaction->crypto_exchange)) {
                 $user = (isset($transaction->crypto_exchange->email_phone) && !empty($transaction->crypto_exchange->email_phone)) ? $transaction->crypto_exchange->email_phone : '-';
             } 
         } elseif (in_array($transaction->transaction_type_id, $transactionTypes['received'])) {
@@ -97,9 +97,9 @@ class TransactionsExport implements FromQuery, WithHeadings, WithMapping, Should
             case Exchange_From:
             case Exchange_To:
             case Withdrawal:
-            case (module('CryptoExchange') ? Crypto_Buy : false ):
-            case (module('CryptoExchange') ? Crypto_Sell : false ):
-            case (module('CryptoExchange') ? Crypto_Swap : false ):
+            case (moduleExists('CryptoExchange') ? Crypto_Buy : false ):
+            case (moduleExists('CryptoExchange') ? Crypto_Sell : false ):
+            case (moduleExists('CryptoExchange') ? Crypto_Swap : false ):
                 $receiver = isset($transaction->end_user->first_name) && !empty($transaction->end_user->first_name) ? $transaction->end_user->first_name . ' ' . $transaction->end_user->last_name : "-";
                 break;
             case Transferred:

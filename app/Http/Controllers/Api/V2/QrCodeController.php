@@ -98,7 +98,7 @@ class QrCodeController extends Controller
             extract($request->all());
             return $this->okResponse(
                 $this->service->qrPaymentSubmit(
-                    $merchant_user_id, $merchant_id, $currency_id, $amount, $fee
+                    $merchant_user_id, $merchant_id, $currency_id, $amount
                 )
             );
 
@@ -120,22 +120,5 @@ class QrCodeController extends Controller
         } catch (Exception $e) {
             return $this->unprocessableResponse([], $e->getMessage());
         }
-
     }
-
-    public function expressMerchantPaymentSubmit(QrCodePaymentSubmitRequest $request)
-    {
-        try {
-            extract($request->all());
-            return $this->okResponse(
-                $this->service->qrPaymentSubmit(
-                    $merchant_user_id, $merchant_id, $user_id, $currency_id, $amount, $fee
-                )
-            );
-        } catch (Exception $e) {
-            return $this->unprocessableResponse([], $e->getMessage());
-        }
-
-    }
-
 }

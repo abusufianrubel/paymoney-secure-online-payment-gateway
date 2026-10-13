@@ -16,13 +16,9 @@ class CreateDocumentVerificationsTable extends Migration
     {
         Schema::create('document_verifications', function (Blueprint $table)
         {
-            $table->increments('id');
-            $table->integer('user_id')->unsigned()->index()->nullable();
-            $table->foreign('user_id')->references('id')->on('users')->onUpdate('cascade')->onDelete('cascade');
-
-            $table->integer('file_id')->unsigned()->index()->nullable();
-            $table->foreign('file_id')->references('id')->on('files')->onUpdate('cascade')->onDelete('cascade');
-
+            $table->id();
+            $table->foreignId('user_id')->constrained('users')->onUpdate('cascade')->onDelete('cascade');
+            $table->foreignId('file_id')->nullable()->constrained('files')->onUpdate('cascade')->onDelete('cascade');
             $table->string('verification_type', 11)->nullable()->comment('address, identity');
             $table->string('identity_type', 17)->nullable()->comment('driving_license, passport, national_id');
             $table->string('identity_number')->nullable();

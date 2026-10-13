@@ -519,9 +519,6 @@ $(function () {
 	datasets: [
 		{
 		label: "Deposit" + " " + "({!! $defaultCurrency->symbol !!})",
-		// fillColor: "rgba(66,155,206, 1)",
-		// strokeColor: "rgba(66,155,206, 1)",
-		// pointColor: "rgba(66,155,206, 1)",
 
 		fillColor: "#78BEE6",
 		strokeColor: "#78BEE6",
@@ -535,10 +532,6 @@ $(function () {
 		{
 		label: "Payout" + " " + "({!! $defaultCurrency->symbol !!})",
 
-		// fillColor: "rgba(255,105,84,1)",
-		// strokeColor: "rgba(255,105,84,1)",
-		// pointColor: "#F56954",
-
 		fillColor: "#FBB246",
 		strokeColor: "#FBB246",
 		pointColor: "#FBB246",
@@ -550,10 +543,6 @@ $(function () {
 		},
 		{
 		label: "Transfer" + " " + "({!! $defaultCurrency->symbol !!})",
-
-		// fillColor: "rgba(47, 182, 40,0.9)",
-		// strokeColor: "rgba(47, 182, 40,0.8)",
-		// pointColor: "#2FB628",
 
 		fillColor: "#67FB4A",
 		strokeColor: "#67FB4A",

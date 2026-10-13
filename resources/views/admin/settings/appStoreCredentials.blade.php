@@ -207,10 +207,10 @@
 @push('extra_body_scripts')
 
 <!-- jquery.validate -->
-<script src="{{ asset('public/dist/plugins/jquery-validation-1.17.0/dist/jquery.validate.min.js') }}" type="text/javascript"></script>
+<script src="{{ asset('public/dist/plugins/jquery-validation/dist/jquery.validate.min.js') }}" type="text/javascript"></script>
 
 <!-- jquery.validate additional-methods -->
-<script src="{{ asset('public/dist/plugins/jquery-validation-1.17.0/dist/additional-methods.min.js') }}" type="text/javascript"></script>
+<script src="{{ asset('public/dist/plugins/jquery-validation/dist/additional-methods.min.js') }}" type="text/javascript"></script>
 
 <!-- sweetalert -->
 <script src="{{ asset('public/dist/libraries/sweetalert/sweetalert.min.js')}}" type="text/javascript"></script>
@@ -309,7 +309,6 @@
                 },
                 type : "POST",
                 url : SITE_URL+"/"+ADMIN_PREFIX+"/settings/app-store-credentials/delete-playstore-logo",
-                // async : false,
                 data: {
                   'playstoreLogo' : playstoreLogo,
                   'playstorecompany' : playstorecompany,
@@ -351,7 +350,6 @@
                 },
                 type : "POST",
                 url : SITE_URL+"/"+ADMIN_PREFIX+"/settings/app-store-credentials/delete-appstore-logo",
-                // async : false,
                 data: {
                   'appleStoreLogo' : appleStoreLogo,
                   'appstorecompany' : appstorecompany,

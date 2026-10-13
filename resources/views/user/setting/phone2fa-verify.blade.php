@@ -63,7 +63,7 @@
                                     <div class="col-12">
                                         <div class="form-group">
                                             <label class="form-label verification"><span>{{ __('Verification code') }}</span>
-                                                <a href="#" class="btn resend-code">
+                                                <a href="javascript:void(0)" class="btn resend-code">
                                                     <img src="{{ asset('public/frontend/templates/images/2fa/refresh.svg') }}" alt="refresh" class="img-fluid ref-light">
                                                     <img src="{{ asset('public/frontend/templates/images/2fa/refresh-dark.svg') }}" alt="refresh" class="img-fluid ref-dark d-none">
                                                     <span class="px-1">{{ __('Resend code') }}</span>
@@ -110,6 +110,7 @@
         var dashboardUrl = "{{ route('user.dashboard') }}";
         var submitBtnText = "{{ __('Submitting...') }}";
         var btnText = "{{ __('Verify') }}";
+        let resend2faUrl = "{{ route('2fa-resend') }}";
     </script>
     <script src="{{ asset('public/user/customs/js/settings.min.js') }}"></script>
 @endsection

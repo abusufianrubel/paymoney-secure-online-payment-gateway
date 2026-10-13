@@ -3,27 +3,46 @@
 namespace App\Http\Middleware;
 
 use Closure;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Redirect;
+use Symfony\Component\HttpFoundation\Response;
 
 class RedirectIfAuthenticated
 {
     /**
-     * Handle an incoming request.
+     * Send guests to the next handler; redirect authenticated users away from guest-only routes.
      */
-    public function handle($request, Closure $next, $role = null)
+    public function handle(Request $request, Closure $next, ?string $role = null): mixed
     {
-        if (Auth::guard($role)->check())
-        {
-            if ($role == 'users')
-            {
-                return redirect('dashboard');
-            }
-            elseif ($role == 'admin')
-            {
-                return redirect()->route('dashboard');
-            }
+        if (! is_string($role) || $role === '' || ! Auth::guard($role)->check()) {
+            return $next($request);
         }
-        return $next($request);
+
+        return $this->redirectForGuard($role) ?? $next($request);
+    }
+
+    private function redirectForGuard(string $role): ?Response
+    {
+        return match ($role) {
+            'users' => Redirect::to('dashboard'),
+            'admin' => Redirect::route('dashboard'),
+            'agent' => $this->agentDashboardRedirect(),
+            default => null,
+        };
+    }
+
+    /**
+     * Only redirect agents when guard config uses provider name "agent" (legacy convention).
+     */
+    private function agentDashboardRedirect(): ?Response
+    {
+        $provider = config('auth.guards.agent.provider');
+
+        if ($provider !== 'agent') {
+            return null;
+        }
+
+        return Redirect::route('agent.dashboard');
     }
 }

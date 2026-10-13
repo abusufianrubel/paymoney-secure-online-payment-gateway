@@ -2,43 +2,39 @@
 
 namespace Database\Seeders;
 
-use App\Models\TicketStatus;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Seeder;
 
 class TicketStatusesTableSeeder extends Seeder
 {
     /**
-     * Run the database seeds.
+     * Auto generated seed file
      *
      * @return void
      */
     public function run()
     {
-        //Seeding updated on july 15,2018
-        TicketStatus::truncate();
-        TicketStatus::insert([
+        DB::table('ticket_statuses')->delete();
+        
+        DB::table('ticket_statuses')->insert([
             [
-                'id'         => 1,
-                'name'       => 'Open',
-                'color'      => '00a65a',
+                'name' => 'Open',
+                'color' => '00a65a',
                 'is_default' => 0,
             ],
             [
-                'id'         => 2,
-                'name'       => 'In Progress',
-                'color'      => '3c8dbc',
+                'name' => 'In Progress',
+                'color' => '3c8dbc',
                 'is_default' => 1,
             ],
             [
-                'id'         => 3,
-                'name'       => 'Hold',
-                'color'      => 'f39c12',
+                'name' => 'Hold',
+                'color' => 'f39c12',
                 'is_default' => 0,
             ],
             [
-                'id'         => 4,
-                'name'       => 'Closed',
-                'color'      => 'dd4b39',
+                'name' => 'Closed',
+                'color' => 'dd4b39',
                 'is_default' => 0,
             ],
         ]);

@@ -89,22 +89,7 @@
                                                         {!! svgIcons('wallet_arrow_up') !!}
                                                     </a>
                                                 </div>
-                                            @endif
-
-                                        @elseif (optional($wallet->currency)->type == 'crypto_asset' && $provider_status == 'Active' && isActive('BlockIo') && (optional($wallet->cryptoAssetApiLogs)->payment_method_id == BlockIo))
-                                            @if(Common::has_permission(auth()->id(),'manage_crypto_send_receive'))
-                                                <div class="d-flex flex-wrap pt-5p wallet-svg show-tooltip" data-bs-toggle="tooltip" data-color="primary-bottom" data-bs-placement="bottom" title="{{ __('Crypto Send') }}">
-                                                    <a href="{{ route('user.crypto_send.create', [$walletCurrencyCode, $walletId, $provider]) }}" title="deposit">
-                                                        {!! svgIcons('wallet_arrow_up') !!}
-                                                    </a>
-                                                </div>
-                                                <div class="hr-40"></div>
-                                                <div class="d-flex flex-wrap pt-5p wallet-svg show-tooltip" data-bs-toggle="tooltip" data-color="primary-bottom" data-bs-placement="bottom" title="{{ __('Crypto Receive') }}">
-                                                    <a href="{{ route('user.crypto_receive.create', [$walletCurrencyCode, $walletId, $provider]) }}" class="mt-1p" >
-                                                        {!! svgIcons('wallet_arrow_down') !!}
-                                                    </a>
-                                                </div>
-                                            @endif
+                                            @endif                                  
                                         @elseif (optional($wallet->currency)->type == 'crypto_asset' && $tatum_provider_status == 'Active' && isActive('TatumIo') && (optional($wallet->cryptoAssetApiLogs)->payment_method_id == TatumIo) && (optional($wallet->currency)->status == 'Active'))
                                             @if(Common::has_permission(auth()->id(),'manage_crypto_send_receive'))
                                                 <div class="d-flex flex-wrap pt-5p wallet-svg show-tooltip" data-bs-toggle="tooltip" data-color="primary-bottom" data-bs-placement="bottom" title="{{ __('Crypto Send') }}">
@@ -118,8 +103,25 @@
                                                         {!! svgIcons('wallet_arrow_down') !!}
                                                     </a>
                                                 </div>
+                                            @endif                           
+                                        @elseif (optional($wallet->currency)->type == 'crypto_token' && $tatum_provider_status == 'Active' && isActive('TatumIo')  && (optional($wallet->currency)->status == 'Active'))
+                                            @if(Common::has_permission(auth()->id(),'manage_crypto_send_receive'))
+                                                <div class="d-flex flex-wrap pt-5p wallet-svg show-tooltip" data-bs-toggle="tooltip" data-color="primary-bottom" data-bs-placement="bottom" title="{{ __('Token Send') }}">
+                                                    <a href="{{ route('tatumio.user.token_send.create', [$walletCurrencyCode, $walletId]) }}" title="deposit">
+                                                        {!! svgIcons('wallet_arrow_up') !!}
+                                                    </a>
+                                                </div>
+                                                <div class="hr-40"></div>
+                                                <div class="d-flex flex-wrap pt-5p wallet-svg show-tooltip" data-bs-toggle="tooltip" data-color="primary-bottom" data-bs-placement="bottom" title="{{ __('Token Receive') }}">
+                                                    <a href="{{ route('tatumio.user.token_receive.create', [$walletCurrencyCode, $walletId]) }}" class="mt-1p" >
+                                                        {!! svgIcons('wallet_arrow_down') !!}
+                                                    </a>
+                                                </div>
                                             @endif
+                                        
                                         @endif
+
+
                                     </div>
                                 </div>
                             </div>

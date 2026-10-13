@@ -131,11 +131,10 @@ class AuthService
 
     public function emailVerification($user)
     {
-        if ('Enabled' == preference('verification_mail')) {
-            if (0 == optional($user->user_detail)->email_verification) {
+        if ('Enabled' == preference('verification_mail') && 0 == optional($user->user_detail)->email_verification) {
                 (new VerifyUser())->createVerifyUser($user->id);
                 (new UserVerificationMailService())->send($user);
-            }
+                throw new LoginException(__("We sent you an activation code. Check your email and click on the link to verify."));
         }
     }
 

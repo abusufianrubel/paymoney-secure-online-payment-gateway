@@ -1,8 +1,3 @@
-@php
-updateTatumAssetCredentials();
-$activeCryptoProviders = getProviderActiveStatus($providers);
-@endphp
-
 @extends('admin.layouts.master')
 
 @section('title', __('Crypto Providers'))
@@ -18,8 +13,8 @@ $activeCryptoProviders = getProviderActiveStatus($providers);
             <ul class="nav nav-tabs cus f-14" role="tablist">
                 @foreach ($providers as $cryptoProvider)
                     @if (isset($activeCryptoProviders[$cryptoProvider->alias]) && $activeCryptoProviders[$cryptoProvider->alias])
-                        <li class="{{ $cryptoProvider->alias == $selected_provider ? 'active' : 'nav-item' }}">
-                            <a class="nav-link {{ $cryptoProvider->alias == $selected_provider ? 'active' : '' }}" href="{{ route('admin.crypto_providers.list', $cryptoProvider->alias) }}">{{ $cryptoProvider->alias }}</a>
+                        <li class="{{ $cryptoProvider->name == $selected_provider ? 'active' : 'nav-item' }}">
+                            <a class="nav-link {{ $cryptoProvider->name == $selected_provider ? 'active' : '' }}" href="{{ route('admin.crypto_providers.list', $cryptoProvider->alias) }}">{{ $cryptoProvider->name }}</a>
                         </li>
                     @endif
                 @endforeach
@@ -31,8 +26,8 @@ $activeCryptoProviders = getProviderActiveStatus($providers);
     <!-- Provider header -->
     <div class="crypto-header">
         <div class="box-body box-body-navbar">
-            <div class="d-flex justify-content-between">
-                <div class="d-flex flex-row crypto-name-status">
+            <div class="d-flex justify-content-between flex-wrap">
+                <div class="d-flex flex-row crypto-name-status justify-content-between flex-wrap">
                     <div class="top-bar-title padding-bottom pull-left">
                         {{ $provider->name }}
                         <strong class="{{ $provider->status == 'Active' ?'crypto-text-success' : 'crypto-text-danger' }}">
@@ -78,76 +73,82 @@ $activeCryptoProviders = getProviderActiveStatus($providers);
                 <div class="col-md-12">
                     <div class="panel panel-info">
                         <div class="panel-body">
-                            <div class="table-responsive">
-                                <div class="card-grid-container">
+                            <div>
+                                <div class="row">
                                     @if (Common::has_permission(auth('admin')->user()->id, 'view_crypto_asset'))
                                         @foreach ($provider->cryptoAssetSettings as $cryptoAsset)
                                             @php
                                                 $networkCredentials = json_decode($cryptoAsset->network_credentials);
                                             @endphp
-                                            @if ($provider->name == 'TatumIo')
-                                            <div class="crypto-card mt-20">
-                                                <div class="dropdown">
-                                                    <span data-bs-toggle="dropdown">
-                                                        <span class="crypto-dropdown">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" width="5" height="22"
-                                                                viewBox="0 0 5 22" fill="none">
-                                                                <circle cx="2.5" cy="2.5" r="2.5" fill="#C4C4C4" />
-                                                                <circle cx="2.5" cy="10.8333" r="2.5" fill="#C4C4C4" />
-                                                                <circle cx="2.5" cy="19.1667" r="2.5" fill="#C4C4C4" />
-                                                            </svg>
+                                            @if ($provider->name == 'TatumIo' && optional($cryptoAsset->currency)->type == 'crypto_asset' )
+                                           <div class="mt-20 col-xxl-3 col-md-6 col-12">
+                                                <div class="crypto-cards">
+                                                    <div class="dropdown">
+                                                        <span data-bs-toggle="dropdown">
+                                                            <span class="crypto-dropdown">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="5" height="22"
+                                                                    viewBox="0 0 5 22" fill="none">
+                                                                    <circle cx="2.5" cy="2.5" r="2.5" fill="#C4C4C4" />
+                                                                    <circle cx="2.5" cy="10.8333" r="2.5" fill="#C4C4C4" />
+                                                                    <circle cx="2.5" cy="19.1667" r="2.5" fill="#C4C4C4" />
+                                                                </svg>
+                                                            </span>
                                                         </span>
-                                                    </span>
-                                                    <ul class="dropdown-menu pull-right crypto-dropdown-list xss f-14 p-0">
-                                                        @if (Common::has_permission(auth('admin')->user()->id, 'edit_crypto_asset'))
+                                                        <ul class="dropdown-menu pull-right crypto-dropdown-list xss f-14 p-0">
+                                                            @if (Common::has_permission(auth('admin')->user()->id, 'edit_crypto_asset'))
+                                                                <li class="px-2 py-1">
+                                                                    <a class="px-2 py-1 d-block" href="{{ url(config('adminPrefix') . '/' . strtolower($provider->name) . '/edit/' . encrypt($cryptoAsset->network)) }}">{{ __('Edit') }}</a>
+                                                                </li>
+                                                            @endif
                                                             <li class="px-2 py-1">
-                                                                <a class="px-2 py-1 d-block" href="{{ url(config('adminPrefix') . '/' . strtolower($provider->name) . '/edit/' . encrypt($cryptoAsset->network)) }}">{{ __('Edit') }}</a>
+                                                                <a href="javascript:void(0)" class="network px-2 py-1 d-block" data-network={{ encrypt($cryptoAsset->network) }}  data-status={{ $cryptoAsset->status == 'Active' ? 'Inactive' : 'Active' }}  >{{ $cryptoAsset->status == 'Active' ? __('Mark as Inactive') : __('Mark as Active')}}</a>
                                                             </li>
-                                                        @endif
-                                                        <li class="px-2 py-1">
-                                                            <a href="#" class="network px-2 py-1 d-block" data-network={{ encrypt($cryptoAsset->network) }}  data-status={{ $cryptoAsset->status == 'Active' ? 'Inactive' : 'Active' }}  >{{ $cryptoAsset->status == 'Active' ? __('Mark as Inactive') : __('Mark as Active')}}</a>
-                                                        </li>
-                                                        <li class="px-2 py-1">
-                                                            <a href="#" data-bs-toggle="modal" data-bs-target="#addressValidationModal" data-network={{ $cryptoAsset->network }} class="validate-network px-2 py-1 d-block">{{ __('Validate Address') }}</a>
-                                                        </li>
+                                                            <li class="px-2 py-1">
+                                                                <a href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#addressValidationModal" data-network={{ $cryptoAsset->network }} class="validate-network px-2 py-1 d-block">{{ __('Validate Address') }}</a>
+                                                            </li>
 
-                                                    </ul>
-                                                </div>
-                                                <div class="crypto-card-header">
-                                                    <span class="crypto-logo text-center">
-                                                        @if (!empty(optional($cryptoAsset->currency)->logo) && fileExistCheck($cryptoAsset->currency->logo, 'currency'))
-                                                            <img src="{{ image($cryptoAsset->currency->logo, 'currency') }}" alt="{{ __('Currency Logo') }}" class="img-w64">
-                                                        @else
-                                                            <img src='{{ image(null, 'currency') }}' class="img-w64">
-                                                        @endif
-                                                    </span>
-                                                    <h3 class="crypto-name text-center"> {{ optional($cryptoAsset->currency)->name }} <span class="label label-{{ $cryptoAsset->status == 'Active' ? 'success' : 'danger' }}">{{ $cryptoAsset->status }}</span></h3>
-                                                </div>
-                                                <div class="crypto-information">
-                                                    <div class="crypto-address">
-                                                        <span class="address">{{ __('Merchant Address') }}</span>
-                                                        <span class="address-name">{{ $networkCredentials->address }}</span>
+                                                            <li class="px-2 py-1">
+                                                                <a class="px-2 py-1 d-block" href="{{ url(config('adminPrefix') . '/' . strtolower($provider->name) . '/webhook/' . encrypt($cryptoAsset->network)) }}">{{ __('Webhook') }}</a>
+                                                            </li>
+
+                                                        </ul>
                                                     </div>
-                                                    <div class="account-bottom-border"></div>
-                                                    <div class="crypto-information-align crypto-border">
-                                                        <div class="crypto-balance">
-                                                            <h4 class="text-light">{{ __('Acount Balance') }}</h4>
-                                                            <span class="text-deep"> {{ optional($cryptoAsset->currency)->symbol }} {{ formatNumber($networkCredentials->balance, $cryptoAsset->currency_id) }}</span>
+                                                    <div class="crypto-card-header">
+                                                        <span class="crypto-logo text-center">
+                                                            @if (!empty(optional($cryptoAsset->currency)->logo) && fileExistCheck($cryptoAsset->currency->logo, 'currency'))
+                                                                <img src="{{ image($cryptoAsset->currency->logo, 'currency') }}" alt="{{ __('Currency Logo') }}" class="img-w64">
+                                                            @else
+                                                                <img src='{{ image(null, 'currency') }}' class="img-w64">
+                                                            @endif
+                                                        </span>
+                                                        <h3 class="crypto-name text-center"> {{ optional($cryptoAsset->currency)->name }} <span class="label label-{{ $cryptoAsset->status == 'Active' ? 'success' : 'danger' }}">{{ $cryptoAsset->status }}</span></h3>
+                                                    </div>
+                                                    <div class="crypto-information">
+                                                        <div class="crypto-address">
+                                                            <span class="address">{{ __('Merchant Address') }}</span>
+                                                            <span class="address-name">{{ $networkCredentials->address }}</span>
                                                         </div>
+                                                        <div class="account-bottom-border"></div>
+                                                        <div class="crypto-information-aligns crypto-border">
+                                                            <div class="crypto-balance">
+                                                                <h3 class="text-light">{{ __('Acount Balance') }}</h3>
+                                                                <p class="text-deep mb-0"> {{ optional($cryptoAsset->currency)->symbol }} {{ formatNumber($networkCredentials->balance, $cryptoAsset->currency_id) }}</p>
+                                                            </div>
 
-                                                        <div >
-                                                            <h4 class="text-light">{{ __('Network Code') }}</h4>
-                                                            <span class="text-deep">{{ optional($cryptoAsset->currency)->code }}</span>
+                                                            <div >
+                                                                <h3 class="text-light text-end">{{ __('Network Code') }}</h3>
+                                                                <p class="text-deep text-end mb-0">{{ optional($cryptoAsset->currency)->code }}</p>
+                                                            </div>
+
                                                         </div>
+                                                    </div>
 
+                                                    <div class="crypto-btn-container">
+                                                        <a href="{{ route('admin.tatum.crypto_send.create', encrypt($cryptoAsset->network)) }}" class="crypto-send-btn">{{ __('Send') }}</a>
+                                                        <a href="{{ route('admin.tatum.crypto_receive.create', encrypt($cryptoAsset->network)) }}" class="crypto-rec-btn">{{ __('Receive') }}</a>
                                                     </div>
                                                 </div>
-
-                                                <div class="crypto-btn-container">
-                                                    <a href="{{ route('admin.tatum.crypto_send.create', encrypt($cryptoAsset->network)) }}" class="crypto-send-btn">{{ __('Send') }}</a>
-                                                    <a href="{{ route('admin.tatum.crypto_receive.create', encrypt($cryptoAsset->network)) }}" class="crypto-rec-btn">{{ __('Receive') }}</a>
-                                                </div>
-                                            </div>
+                                           </div>
                                             @endif
                                         @endforeach
                                     @endif
@@ -221,6 +222,7 @@ $activeCryptoProviders = getProviderActiveStatus($providers);
         var validateAddressUrl = '{{ route("admin.tatumio_asset.validate_address") }}';
         var updateText = '{{ __("Updated") }}';
         var notFound = '{{ __("Not Found") }}';
+        var restricted = '{{ __("Restricted") }}';
         var wrongInput = '{{ __("Wrong Input") }}';
         var wentWrong = '{{ __("Something went wrong.") }}';
         var checking = '{{ __("Checking...") }}';

@@ -39,7 +39,9 @@ class CurrenciesDataTable extends DataTable
                 $type = $currency->type == 'fiat' ? 'stripe' : 'coinpayments';
 
                 if ($currency->type == 'crypto_asset') {
-                    $edit = (Common::has_permission(auth('admin')->user()->id, 'edit_currency')) ? '<a href="' . url(config('adminPrefix').'/'.strtolower(optional($currency->cryptoAssetSetting)->cryptoProvider->name).'/edit/' . encrypt($currency->code)) . '" class="btn btn-xs btn-primary"><i class="fa fa-edit"></i></a>' : '';
+                    $edit = (Common::has_permission(auth('admin')->user()->id, 'edit_currency')) ? '<a href="' . url(config('adminPrefix').'/'.strtolower(optional($currency->cryptoAssetSetting)->cryptoProvider?->name).'/edit/' . encrypt($currency->code)) . '" class="btn btn-xs btn-primary"><i class="fa fa-edit"></i></a>' : '';
+                } elseif ($currency->type == 'crypto_token') {
+                    $edit = (Common::has_permission(auth('admin')->user()->id, 'edit_crypto_token')) ? '<a href="' . route('admin.tatumio.token.edit',  encrypt(optional($currency->cryptoToken)->id)) . '" class="btn btn-xs btn-primary"><i class="fa fa-edit"></i></a>' : '';
                 } else {
                     $edit = (Common::has_permission(auth('admin')->user()->id, 'edit_currency')) ? '<a href="' . url(config('adminPrefix').'/settings/edit_currency/' . $currency->id) . '" class="btn btn-xs btn-primary"><i class="fa fa-edit"></i></a>&nbsp;' : '';
                 }
@@ -60,7 +62,7 @@ class CurrenciesDataTable extends DataTable
 
     public function query()
     {
-        $query = Currency::with('cryptoAssetSetting:id,currency_id,crypto_provider_id', 'cryptoAssetSetting.cryptoProvider:id,name')->select('id', 'type', 'name', 'code', 'symbol', 'rate', 'logo', 'status', 'default');
+        $query = Currency::with('cryptoAssetSetting:id,currency_id,crypto_provider_id', 'cryptoAssetSetting.cryptoProvider:id,name', 'cryptoToken:id,currency_id')->select('id', 'type', 'name', 'code', 'symbol', 'rate', 'logo', 'status', 'default');
         return $this->applyScopes($query);
     }
 

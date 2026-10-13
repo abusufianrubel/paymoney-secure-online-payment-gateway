@@ -4,7 +4,7 @@ namespace Modules\TatumIo\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-
+use App\Models\CryptoProvider;
 
 class TatumAssetStoreRequest extends FormRequest
 {
@@ -15,14 +15,16 @@ class TatumAssetStoreRequest extends FormRequest
      */
     public function rules()
     {
+        $providerId = CryptoProvider::getIdByAlias('TatumIo');
+        
         return [
             'name' => 'required|max:50',
             'network' => [
                 'required',
                 'string',
                 'max:10',
-                Rule::unique('crypto_asset_settings')->where(function ($query) {
-                    return $query->where('crypto_provider_id', 2);
+                Rule::unique('crypto_asset_settings')->where(function ($query) use ($providerId) {
+                    return $query->where('crypto_provider_id', $providerId);
                 }),
             ],
             'symbol' => 'required|max:5',

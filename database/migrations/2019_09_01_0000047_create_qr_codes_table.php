@@ -15,13 +15,13 @@ class CreateQrCodesTable extends Migration
     {
         Schema::create('qr_codes', function (Blueprint $table)
         {
-            $table->increments('id');
+            $table->id();
             
-            $table->integer('object_id')->index()->nullable()->default(NULL);
+            $table->integer('object_id')->index()->nullable()->default(null);
 
-            $table->string('object_type', 20)->nullable()->default(NULL);
-            $table->string('secret', 191)->nullable()->default(NULL);
-            $table->string('qr_image', 50)->nullable()->default(NULL);
+            $table->string('object_type', 20)->nullable()->default(null);
+            $table->string('secret', 191)->nullable()->default(null);
+            $table->string('qr_image', 50)->nullable()->default(null);
             $table->string('status', 16);
 
             $table->timestamps();

@@ -18,7 +18,8 @@ use App\Services\Mail\MerchantPayment\{
 
 class MerchantPaymentController extends Controller
 {
-    protected $helper, $merchantService;
+    protected $helper;
+    protected $merchantService;
 
     public function __construct()
     {
@@ -103,6 +104,7 @@ class MerchantPaymentController extends Controller
             'payment_type' => 'deposit',
             'payment_method' =>  $methodId,
             'redirectUrl' => route('gateway.payment.success'),
+            'success_url' => route('merchant.payment.success'),
             'cancel_url' => url('payment/fail'),
             'gateway' => strtolower($request->method),
             'uuid' => unique_code()
@@ -141,6 +143,10 @@ class MerchantPaymentController extends Controller
                 throw new Exception(__('Merchant not found!'));
             }
 
+            if (!is_null($sender) && $merchantCheck->user_id == $sender) {
+                throw new Exception(__('Merchant cannot make payment to himself!'));
+            }
+
             $successPaymentMethods = [Stripe, Paypal, Mts];
 
             $status = in_array($payment_method_id, $successPaymentMethods) ? 'Success' : 'Pending';
@@ -156,10 +162,6 @@ class MerchantPaymentController extends Controller
 
 
             if (!is_null($sender)) {
-
-                if ($merchantCheck->user_id == $sender) {
-                    throw new Exception(__('Merchant cannot make payment to himself!'));
-                }
 
                 $this->merchantService->makeUserTransaction($request, $merchantCheck, $feesLimit,  $currencyId, $uniqueCode, $merchantPayment, $status);
 

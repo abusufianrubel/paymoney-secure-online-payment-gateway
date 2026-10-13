@@ -39,9 +39,8 @@ class AcceptMoneyCreatorMailService extends TechVillageMail
      */
     public function send($requestPayment, $optional = [])
     {
-        $alias = Str::slug('Request Payment Acceptance');
         try {
-            $response = $this->getEmailTemplate($alias);
+            $response = $this->getEmailTemplate('notify-request-sender-on-money-received');
             if (!$response['status']) {
                 return $response;
             }
@@ -50,8 +49,8 @@ class AcceptMoneyCreatorMailService extends TechVillageMail
             $creatorName  = !empty($requestPayment->user_id) ? optional($requestPayment->user)->full_name : $requestPayment->email;
             $acceptorName  = !empty($requestPayment->receiver_id ) ? optional($requestPayment->receiver)->full_name : optional($requestPayment->receiver)->email;
             $data = [
-                '{creator}'      => $creatorName,
-                '{acceptor}'     => $acceptorName,
+                '{request_sender}'      => $creatorName,
+                '{request_receiver}'     => $acceptorName,
                 '{uuid}'         => $requestPayment->uuid,
                 '{amount}'       => moneyFormat(optional($requestPayment->currency)->symbol, formatNumber($requestPayment->amount)),
                 '{accept_amount}'=> moneyFormat(optional($requestPayment->currency)->symbol, formatNumber($requestPayment->accept_amount)),
@@ -60,6 +59,7 @@ class AcceptMoneyCreatorMailService extends TechVillageMail
                 '{soft_name}'    => settings('name'),
             ];
             $message = str_replace(array_keys($data), $data, $response['template']->body);
+
             $this->email->sendEmail($creatorEmail, $response['template']->subject, $message);
         } catch (Exception $e) {
             $this->mailResponse = ['status' => false, 'message' => $e->getMessage()];

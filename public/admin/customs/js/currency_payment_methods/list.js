@@ -55,10 +55,25 @@ $('#currencyPaymentMethod_form').validate({
         "cash[merchant_reference]": {
             required: true,
         },
-        cash_status:{
+        "cash[payment_number]": {
             required: true,
         },
-        "cash[payment_number]": {
+        "flutterwave[public_key]": {
+            required: true,
+        },
+        "flutterwave[secret_key]": {
+            required: true,
+        },
+        "reloadly[client_id]": {
+            required: true,
+        },
+        "reloadly[client_secret]":{
+            required: true,
+        },
+        "reloadly[mode]":{
+            required: true,
+        },
+        cash_status:{
             required: true,
         },
         mobile_status:{
@@ -75,8 +90,15 @@ $('#currencyPaymentMethod_form').validate({
         },
         "payUmoney[mode]": {
             required: modeRequire
+        },
+        "reloadly[mode]": {
+            required: modeRequire
         }
     },
+    highlight: function (element, errorClass, validClass) {
+        $(element).removeClass(errorClass);  // Prevent adding the error class to the input element
+    },
+    
     submitHandler: function(form)
     {
         $("#paymentMethodList_update").attr("disabled", true);
@@ -641,6 +663,10 @@ function getPaymentMethodsDetails()
                 $('#paypal_client_secret').val(JSON.parse(data.currencyPaymentMethod.method_data).client_secret);
                 $('#paypal_mode').val(JSON.parse(data.currencyPaymentMethod.method_data).mode);
 
+                $('#reloadly_client_id').val(JSON.parse(data.currencyPaymentMethod.method_data).client_id);
+                $('#reloadly_client_secret').val(JSON.parse(data.currencyPaymentMethod.method_data).client_secret);
+                $('#reloadly_mode').val(JSON.parse(data.currencyPaymentMethod.method_data).mode);
+
                 $('#payUMoney_key').val(JSON.parse(data.currencyPaymentMethod.method_data).key);
                 $('#payUMoney_salt').val(JSON.parse(data.currencyPaymentMethod.method_data).salt);
                 $('#payUMoney_mode').val(JSON.parse(data.currencyPaymentMethod.method_data).mode);
@@ -657,6 +683,11 @@ function getPaymentMethodsDetails()
                 $('#cash_merchant_reference').val(JSON.parse(data.currencyPaymentMethod.method_data).merchant_reference);
 
                 $('#mobile_payment_number').val(JSON.parse(data.currencyPaymentMethod.method_data).payment_number);
+
+                // flutterwave currency payment method data
+                $('#flutterwave_public_key').val(JSON.parse(data.currencyPaymentMethod.method_data).public_key);
+                $('#flutterwave_secret_key').val(JSON.parse(data.currencyPaymentMethod.method_data).secret_key);
+                $('#flutterwave_secret_hash').val(JSON.parse(data.currencyPaymentMethod.method_data).secret_hash);
 
                 $('#processing_time').val(data.currencyPaymentMethod.processing_time);
 
@@ -676,6 +707,8 @@ function getPaymentMethodsDetails()
                     $('#payeer_status').val('Active');
                     $('#cash_status').val('Active');
                     $('#mobile_status').val('Active');
+                    $('#flutterwave_status').val('Active');
+                    $('#reloadly_status').val('Active');
                 } else {
                     $('#stripe_status').val('Inactive');
                     $('#paypal_status').val('Inactive');
@@ -684,6 +717,8 @@ function getPaymentMethodsDetails()
                     $('#payeer_status').val('Inactive');
                     $('#cash_status').val('Inactive');
                     $('#mobile_status').val('Inactive');
+                    $('#flutterwave_status').val('Inactive');
+                    $('#reloadly_status').val('Inactive');
                 }
             } else {
                 $('#id').val('');
@@ -693,6 +728,10 @@ function getPaymentMethodsDetails()
                 $('#paypal_client_id').val('');
                 $('#paypal_client_secret').val('');
                 $('#paypal_mode').val('');
+
+                $('#reloadly_client_id').val('');
+                $('#reloadly_client_secret').val('');
+                $('#reloadly_mode').val('');
 
                 $('#payUMoney_key').val('');
                 $('#payUMoney_salt').val('');
@@ -711,6 +750,11 @@ function getPaymentMethodsDetails()
 
                 $('#mobile_payment_number').val('');
 
+                // flutterwave currency payment method data
+                $('#flutterwave_public_key').val('');
+                $('#flutterwave_secret_key').val('');
+                $('#flutterwave_secret_hash').val('');
+
                 $('#processing_time').val('');
 
                 $('#stripe_status').val('');
@@ -720,6 +764,8 @@ function getPaymentMethodsDetails()
                 $('#payeer_status').val('');
                 $('#cash_status').val('');
                 $('#mobile_status').val('');
+                $('#flutterwave_status').val('');
+                $('#reloadly_status').val('');
                 $('input:checkbox').prop('checked', false);
             }
         },
@@ -805,6 +851,10 @@ function getPaymentMethodsSpecificCurrencyDetails()
                 $('#paypal_client_secret').val(JSON.parse(data.currencyPaymentMethod.method_data).client_secret);
                 $('#paypal_mode').val(JSON.parse(data.currencyPaymentMethod.method_data).mode);
 
+                $('#reloadly_client_id').val(JSON.parse(data.currencyPaymentMethod.method_data).client_id);
+                $('#reloadly_client_secret').val(JSON.parse(data.currencyPaymentMethod.method_data).client_secret);
+                $('#reloadly_mode').val(JSON.parse(data.currencyPaymentMethod.method_data).mode);
+
                 $('#payUMoney_key').val(JSON.parse(data.currencyPaymentMethod.method_data).key);
                 $('#payUMoney_salt').val(JSON.parse(data.currencyPaymentMethod.method_data).salt);
                 $('#payUMoney_mode').val(JSON.parse(data.currencyPaymentMethod.method_data).mode);
@@ -821,6 +871,11 @@ function getPaymentMethodsSpecificCurrencyDetails()
                 $('#cash_merchant_reference').val(JSON.parse(data.currencyPaymentMethod.method_data).merchant_reference);
 
                 $('#mobile_payment_number').val(JSON.parse(data.currencyPaymentMethod.method_data).payment_number);
+
+                // flutterwave currency payment method data
+                $('#flutterwave_public_key').val(JSON.parse(data.currencyPaymentMethod.method_data).public_key);
+                $('#flutterwave_secret_key').val(JSON.parse(data.currencyPaymentMethod.method_data).secret_key);
+                $('#flutterwave_secret_hash').val(JSON.parse(data.currencyPaymentMethod.method_data).secret_hash);
 
                 $('#processing_time').val(data.currencyPaymentMethod.processing_time);
 
@@ -840,6 +895,8 @@ function getPaymentMethodsSpecificCurrencyDetails()
                     $('#payeer_status').val('Active');
                     $('#cash_status').val('Active');
                     $('#mobile_status').val('Active');
+                    $('#flutterwave_status').val('Active');
+                    $('#reloadly_status').val('Active');
                 } else {
                     $('#stripe_status').val('Inactive');
                     $('#paypal_status').val('Inactive');
@@ -848,6 +905,8 @@ function getPaymentMethodsSpecificCurrencyDetails()
                     $('#payeer_status').val('Inactive');
                     $('#cash_status').val('Inactive');
                     $('#mobile_status').val('Inactive');
+                    $('#flutterwave_status').val('Inactive');
+                    $('#reloadly_status').val('Inactive');
                 }
             } else {
                 $('#id').val('');
@@ -860,6 +919,10 @@ function getPaymentMethodsSpecificCurrencyDetails()
                 $('#paypal_client_id').val('');
                 $('#paypal_client_secret').val('');
                 $('#paypal_mode').val('');
+
+                $('#reloadly_client_id').val('');
+                $('#reloadly_client_secret').val('');
+                $('#reloadly_mode').val('');
 
                 $('#payUMoney_key').val('');
                 $('#payUMoney_salt').val('');
@@ -879,6 +942,11 @@ function getPaymentMethodsSpecificCurrencyDetails()
 
                 $('#processing_time').val('');
 
+                // flutterwave currency payment method data
+                $('#flutterwave_public_key').val('');
+                $('#flutterwave_secret_key').val('');
+                $('#flutterwave_secret_hash').val('');
+
                 $('#stripe_status').val('');
                 $('#paypal_status').val('');
                 $('#payUMoney_status').val('');
@@ -886,6 +954,8 @@ function getPaymentMethodsSpecificCurrencyDetails()
                 $('#payeer_status').val('');
                 $('#cash_status').val('');
                 $('#mobile_status').val('');
+                $('#flutterwave_status').val('');
+                $('#reloadly_status').val('');
                 $('input:checkbox').prop('checked', false);
             }
         },
@@ -944,6 +1014,20 @@ $(document).on('click', '#coinbase_commerce_copy_button', function(e) {
     swal({
         title: linkCopiedText,
         text: coinbaseCopyText,
+        type: "success",
+        icon: "success",
+        closeOnClickOutside: false,
+        closeOnEsc: false,
+    });
+})
+
+$(document).on('click', '#flutterwave_copy_button', function (e) {
+    e.preventDefault();
+    $('.flutterwave_ipn_url').select();
+    document.execCommand('copy');
+    swal({
+        title: copyTitle,
+        text: flutterwaveCopyText,
         type: "success",
         icon: "success",
         closeOnClickOutside: false,

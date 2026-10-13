@@ -68,6 +68,5 @@
     <!-- js -->
     @include('user.layouts.partials.script')
     <!-- end js -->
-
   </body>
 </html>

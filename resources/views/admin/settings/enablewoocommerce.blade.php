@@ -143,7 +143,7 @@
 @push('extra_body_scripts')
 
     <!-- jquery.validate -->
-    <script src="{{ asset('public/dist/plugins/jquery-validation-1.17.0/dist/jquery.validate.min.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('public/dist/plugins/jquery-validation/dist/jquery.validate.min.js') }}" type="text/javascript"></script>
 
     <script type="text/javascript">
 
@@ -232,7 +232,6 @@
             }
             else
             {
-              // $('#plugin').val('');
               $('.file-validation-error').html('');
               $('#woocommerce-submit').attr("disabled", false);
             }
@@ -252,18 +251,6 @@
                 baseUrlContainSlashInTheLast : true 
                 }
           },
-          // submitHandler: function (form) {
-          //     $("#send_money").attr("disabled", true);
-          //     $(".fa-spin").show();
-          //     $("#send_text").text('Sending...');
-          //     var pretxt=$("#send_text").text();
-          //     form.submit();
-          //     setTimeout(function(){
-          //         $("#send_money").removeAttr("disabled");
-          //         $(".fa-spin").hide();
-          //         $("#send_text").text(pretxt);
-          //     },2000);
-          // }
         });
     </script>
 @endpush

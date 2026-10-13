@@ -44,6 +44,14 @@ class LtcNetwork implements NetworkInterface
             ->ltcGenerateAddressPrivateKey($argPrivKeyRequest);
     }
 
+    public function getTransactionDetails($hash)
+    {
+        return $this->sdk->{$this->getEnvironment()}()
+            ->api()
+            ->dogecoin()
+            ->ltcGetRawTransaction($hash);
+    }
+
     public function getBalanceOfAddress($address)
     {
         try {

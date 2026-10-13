@@ -3,13 +3,20 @@
 namespace App\Http\Controllers\Admin;
 
 use App\DataTables\Admin\PagesDataTable;
-use Intervention\Image\Facades\Image;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
+use Intervention\Image\Encoders\GifEncoder;
+use Intervention\Image\Encoders\JpegEncoder;
+use Intervention\Image\Encoders\PngEncoder;
+use Intervention\Image\Encoders\WebpEncoder;
+use Intervention\Image\Exceptions\DecoderException;
 use App\Http\Controllers\Controller;
 use Validator, Config, Common;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use DOMDocument;
-use App\Models\{Meta,
+use App\Models\{
+    Meta,
     Pages
 };
 
@@ -43,18 +50,15 @@ class PagesController extends Controller
             'content' => 'required',
         ]);
 
-        if ($validation->fails())
-        {
+        if ($validation->fails()) {
             return redirect()->back()->withErrors($validation->errors());
         }
 
         $position = [];
-        if ($request->header)
-        {
+        if ($request->header) {
             $position[] = 'header';
         }
-        if ($request->footer)
-        {
+        if ($request->footer) {
             $position[] = 'footer';
         }
 
@@ -76,22 +80,70 @@ class PagesController extends Controller
         libxml_use_internal_errors(false);
         $images = $dom->getElementsByTagName('img');
 
-        foreach ($images as $img)
-        {
+        $directory = public_path('uploads/page-images');
+
+        if (!file_exists($directory)) {
+            mkdir($directory, 0755, true);
+        }
+
+        $manager = new ImageManager(new Driver(), decodeAnimation: false);
+
+        foreach ($images as $img) {
             $src = $img->getAttribute('src');
             // if the img source is 'data-url'
-            if (preg_match('/data:image/', $src))
-            {
-                // get the mimetype
-                preg_match('/data:image\/(?<mime>.*?)\;/', $src, $groups);
-                $mimetype = $groups['mime'];
-                // Generating a random filename
+            if (preg_match('/data:image/', $src)) {
+                preg_match('#data:image/(?<mime>[^;,]+)#i', $src, $groups);
+                $mimetype = strtolower(explode(';', $groups['mime'] ?? 'png')[0]);
+
+                if (str_starts_with($mimetype, 'svg')) {
+                    continue;
+                }
+
                 $filename = uniqid();
-                $filepath = "/uploads/page-images/$filename.$mimetype";
-                $image    = Image::make($src)
-                    ->encode($mimetype, 100)
-                    ->save(public_path($filepath));
-                $new_src = url("public/uploads/page-images/$filename.$mimetype");
+                $srcNormalized = preg_replace('/\s+/', '', $src);
+
+                try {
+                    $image = $manager->read($srcNormalized);
+                } catch (DecoderException) {
+                    $comma = strpos($srcNormalized, ',');
+                    if ($comma === false) {
+                        continue;
+                    }
+                    $payload = strtr(substr($srcNormalized, $comma + 1), '-_', '+/');
+                    $decoded = base64_decode($payload, true);
+                    if ($decoded === false) {
+                        continue;
+                    }
+
+                    $filepath = public_path("uploads/page-images/{$filename}.{$mimetype}");
+                    file_put_contents($filepath, $decoded);
+                    $new_src = url("public/uploads/page-images/{$filename}.{$mimetype}");
+                    $img->removeAttribute('src');
+                    $img->setAttribute('src', $new_src);
+
+                    continue;
+                }
+
+                $originMime = $image->origin()->mediaType();
+                $ext = match ($originMime) {
+                    'image/jpeg' => in_array($mimetype, ['jpg', 'jpeg'], true) ? $mimetype : 'jpeg',
+                    'image/png' => 'png',
+                    'image/webp' => 'webp',
+                    'image/gif' => 'gif',
+                    default => in_array($mimetype, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true) ? $mimetype : 'jpg',
+                };
+                $filepath = public_path("uploads/page-images/{$filename}.{$ext}");
+
+                $encoder = match ($originMime) {
+                    'image/jpeg' => new JpegEncoder(quality: 100),
+                    'image/png' => new PngEncoder(),
+                    'image/webp' => new WebpEncoder(quality: 100),
+                    'image/gif' => new GifEncoder(),
+                    default => new JpegEncoder(quality: 100),
+                };
+
+                $image->encode($encoder)->save($filepath);
+                $new_src = url("public/uploads/page-images/{$filename}.{$ext}");
                 $img->removeAttribute('src');
                 $img->setAttribute('src', $new_src);
             }
@@ -107,7 +159,7 @@ class PagesController extends Controller
         $meta->save();
 
         $this->helper->one_time_message('success', __('The :x has been successfully saved.', ['x' => __('page')]));
-        return redirect()->intended(config('adminPrefix')."/settings/pages");
+        return redirect()->intended(config('adminPrefix') . "/settings/pages");
     }
 
     public function edit($page_id)
@@ -126,18 +178,15 @@ class PagesController extends Controller
             'content' => 'required',
         ]);
 
-        if ($validation->fails())
-        {
+        if ($validation->fails()) {
             return redirect()->back()->withErrors($validation->errors());
         }
 
         $position = [];
-        if ($request->header)
-        {
+        if ($request->header) {
             $position[] = 'header';
         }
-        if ($request->footer)
-        {
+        if ($request->footer) {
             $position[] = 'footer';
         }
 
@@ -157,20 +206,69 @@ class PagesController extends Controller
 
         libxml_use_internal_errors(false);
         $images = $dom->getElementsByTagName('img');
-        foreach ($images as $img)
-        {
+
+        $directory = public_path('uploads/page-images');
+
+        if (!file_exists($directory)) {
+            mkdir($directory, 0755, true);
+        }
+
+        $manager = new ImageManager(new Driver(), decodeAnimation: false);
+
+        foreach ($images as $img) {
             $src = $img->getAttribute('src');
-            if (preg_match('/data:image/', $src))
-            {
-                preg_match('/data:image\/(?<mime>.*?)\;/', $src, $groups);
-                $mimetype = $groups['mime'];
-                // Generating a random filename
+            if (preg_match('/data:image/', $src)) {
+                preg_match('#data:image/(?<mime>[^;,]+)#i', $src, $groups);
+                $mimetype = strtolower(explode(';', $groups['mime'] ?? 'png')[0]);
+
+                if (str_starts_with($mimetype, 'svg')) {
+                    continue;
+                }
+
                 $filename = uniqid();
-                $filepath = public_path("uploads/page-images/$filename.$mimetype");
-                $image    = Image::make($src)
-                    ->encode($mimetype, 100)
-                    ->save($filepath);
-                $new_src = url("public/uploads/page-images/$filename.$mimetype");
+                $srcNormalized = preg_replace('/\s+/', '', $src);
+
+                try {
+                    $image = $manager->read($srcNormalized);
+                } catch (DecoderException) {
+                    $comma = strpos($srcNormalized, ',');
+                    if ($comma === false) {
+                        continue;
+                    }
+                    $payload = strtr(substr($srcNormalized, $comma + 1), '-_', '+/');
+                    $decoded = base64_decode($payload, true);
+                    if ($decoded === false) {
+                        continue;
+                    }
+
+                    $filepath = public_path("uploads/page-images/{$filename}.{$mimetype}");
+                    file_put_contents($filepath, $decoded);
+                    $new_src = url("public/uploads/page-images/{$filename}.{$mimetype}");
+                    $img->removeAttribute('src');
+                    $img->setAttribute('src', $new_src);
+
+                    continue;
+                }
+
+                $originMime = $image->origin()->mediaType();
+                $ext = match ($originMime) {
+                    'image/jpeg' => in_array($mimetype, ['jpg', 'jpeg'], true) ? $mimetype : 'jpeg',
+                    'image/png' => 'png',
+                    'image/webp' => 'webp',
+                    'image/gif' => 'gif',
+                    default => in_array($mimetype, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true) ? $mimetype : 'jpg',
+                };
+                $filepath = public_path("uploads/page-images/{$filename}.{$ext}");
+
+                $encoder = match ($originMime) {
+                    'image/jpeg' => new JpegEncoder(quality: 100),
+                    'image/png' => new PngEncoder(),
+                    'image/webp' => new WebpEncoder(quality: 100),
+                    'image/gif' => new GifEncoder(),
+                    default => new JpegEncoder(quality: 100),
+                };
+                $image->encode($encoder)->save($filepath);
+                $new_src = url("public/uploads/page-images/{$filename}.{$ext}");
                 $img->removeAttribute('src');
                 $img->setAttribute('src', $new_src);
             }
@@ -179,19 +277,18 @@ class PagesController extends Controller
         $page->save();
 
         $this->helper->one_time_message('success', __('The :x has been successfully saved.', ['x' => __('page')]));
-        return redirect()->intended(config('adminPrefix')."/settings/pages");
+        return redirect()->intended(config('adminPrefix') . "/settings/pages");
     }
 
     public function delete($page_id)
     {
         $page = Pages::find($page_id);
         $meta = Meta::where('url', $page->url)->first();
-        if ($meta)
-        {
+        if ($meta) {
             $meta->delete();
         }
         $page->delete();
         $this->helper->one_time_message('success', __('The :x has been successfully deleted.', ['x' => __('page')]));
-        return redirect()->intended(config('adminPrefix')."/settings/pages");
+        return redirect()->intended(config('adminPrefix') . "/settings/pages");
     }
 }

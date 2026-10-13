@@ -20,7 +20,7 @@
         <!-- Email or Phone -->
         <div class="mt-28 label-top">
             <label class="gilroy-medium text-gray-100 mb-2 f-15" for="email">{{ __('Recipent') }}</label>
-            <input type="text" name="emailOrPhone" id="emailOrPhone" class="form-control input-form-control apply-bg" value="{{ ($requestPayment->phone) ? $$requestPayment->user?->email : $requestPayment->user?->email }}" readonly required data-value-missing="{{ __('This field is required.') }}">
+            <input type="text" name="emailOrPhone" id="emailOrPhone" class="form-control input-form-control apply-bg" value="{{ $requestPayment->phone ? $requestPayment->phone : $requestPayment->email }}" readonly required data-value-missing="{{ __('This field is required.') }}">
             <span class="custom-error requestEmailOrPhoneError"></span>
             <small id="emailHelp" class="form-text text-danger"></small>
             @error('emailOrPhone')
@@ -34,7 +34,7 @@
             <!-- Currency -->
             <div class="col-md-6">
                 <div class="param-ref mt-20">
-                    <label class="gilroy-medium text-gray-100 mb-2 f-15" id="currency_id">{{ __('Currency') }}</label>
+                    <label class="gilroy-medium text-gray-100 mb-2 f-15" for="currency">{{ __('Currency') }}</label>
                     <input class="form-control input-form-control apply-bg" name="currency" data-type="{{ $requestPayment->currency->type }}" data-rel="{{$requestPayment->currency->id}}" id="currency" type="text" value="{{$requestPayment->currency->code}}" readonly>
                     @error('currency')
                         <span class="custom-error">{{ $message }}</span>
@@ -88,8 +88,8 @@
 @include('common.restrict_number_to_pref_decimal')
 @include('common.restrict_character_decimal_point')
 
-<script src="{{ asset('public/dist/plugins/html5-validation-1.0.0/validation.min.js') }}"></script>
-<script src="{{ asset('public/dist/plugins/debounce-1.1/jquery.ba-throttle-debounce.min.js') }}"></script>
+<script src="{{ asset('public/dist/plugins/html5-validation/validation.min.js') }}"></script>
+<script src="{{ asset('public/dist/plugins/debounce/jquery.ba-throttle-debounce.min.js') }}"></script>
 <script type="text/javascript">
     'use strict';
     let token = $('[name="_token"]').val();

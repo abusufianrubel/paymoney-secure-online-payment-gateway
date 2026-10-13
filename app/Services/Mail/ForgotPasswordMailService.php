@@ -31,7 +31,7 @@ class ForgotPasswordMailService extends TechVillageMail
     public function send($user)
     {
         try {
-            $response = $this->getEmailTemplate('password-reset');
+            $response = $this->getEmailTemplate('forgot-password-notice');
             if (!$response['status']) {
                 return $response;
             }

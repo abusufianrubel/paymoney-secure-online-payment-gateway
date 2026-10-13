@@ -110,6 +110,37 @@ p {
 .navbar-light .navbar-toggler-icon:after{
 	top: 0.5rem;
 }
+
+body.dark .light-logo {
+	display: none !important;
+}
+body.dark .dark-logo {
+	display: block !important;
+}
+
+.light-logo {
+	display: block !important;
+}
+.dark-logo {
+	display: none !important;
+}
+
+/* Show correct sun/moon icon immediately based on theme */
+/* Light mode: show moon, hide sun */
+body:not(.dark) img.moon.img-none {
+	display: inline !important;
+}
+body:not(.dark) img.sun.img-none {
+	display: none !important;
+}
+/* Dark mode: show sun, hide moon */
+body.dark img.sun.img-none {
+	display: inline !important;
+}
+body.dark img.moon.img-none {
+	display: none !important;
+}
+
 .navbar-toggler[aria-expanded="true"] .navbar-toggler-icon:after {
 	transform: rotate(45deg);
 }
@@ -456,13 +487,13 @@ body.dark .learn-btn{
 	background-color: #635BFE !important;
 }
 
-.dark .bg-pattern{
+body.dark .bg-pattern{
 	background-image: url(../images/home/bg-pattern-dark.svg);
 }
-.dark .input-form-control {
+body.dark .input-form-control {
 	color: #CDCCD0 !important;
 }
-.dark .input-form-control {
+body.dark .input-form-control {
 	border: 1px solid #3f405b!important;
 	background-color: #2e2f44!important;
 	color: #CDCCD0 important;
@@ -485,7 +516,7 @@ body.dark .user-selected {
 	background-color: #3f405b !important;
 	border: 1px solid #635BFE !important;
 }
-body.dark .forgot-link a{
+body.dark .forgot-link a, body.dark .demo-text{
 	color: #CDCCD0;
 }
 body.dark .transaction-details-module {
@@ -1017,7 +1048,7 @@ body.dark .back-direction a{
 body.dark .star{
 	color: #FFAF30 !important;
 }
-.dark .input-form-control:hover {
+body.dark .input-form-control:hover {
 	border: 1px solid #c1bfdf;
 }
 body.dark{
@@ -2000,7 +2031,6 @@ body.dark .not-focus-bg {
 	line-height: 20px !important;
 	color: #3f405b !important;
 	font-family: "Gilroy-Medium";
-	transition: 0.2s;
 }
 .not-focus-bg {
 	background-color: #f3f2ff !important;
@@ -2129,9 +2159,9 @@ body.dark .not-focus-bg {
 .signin-top{
 	margin-top: 135px;
 }
-.forgot-link a{
+.forgot-link a, .demo-text{
 	font-size: 15px;
-  line-height: 18px;
+  	line-height: 18px;
 	font-family: "Gilroy-Regular";
 }
 .type-text{
@@ -2253,7 +2283,6 @@ body.dark .not-focus-bg {
 	font-family: "Gilroy-Semibold";
 	text-transform: uppercase;
 }
-
 .transaction-order-quantity{
 	position: relative;
   padding-bottom: 12px;
@@ -2328,7 +2357,7 @@ body.dark .not-focus-bg {
 	color: #3F405B;
 	margin-bottom: 16px;
 }
-.gateway{
+.gateway, .gateways{
 	width: 136px;
 	height: 64px;
   display: inline-flex;
@@ -3075,17 +3104,15 @@ div.code-toolbar>.toolbar {
 }
 .option-container ul li::before{
   position: absolute;
-	content: url('../images/ticmark.png');
 	left: -26px;
 	top: 1px;
 }
-.gateway img{
+.gateway img, .gateways img{
 	width: 127px;
 	height: 27px;
 	object-fit: contain;
 }
 .copy-to-clipboard-button::before{
-	content: url('../images/copy.png');
 	position: absolute;
 	top: 5px;
 	left: 0;
@@ -4456,7 +4483,7 @@ input[type="tel"]:hover {
 		width: 100%;
 		margin-top: 2px;
 	}
-	.forgot-link a{
+	.forgot-link a, .demo-text{
 		font-size: 14px;
 		line-height: 17px;
 	}
@@ -4969,7 +4996,7 @@ input[type="tel"]:hover {
 		margin-top: 30px;
 	}
 	.desktop-mobile-view{
-		display: none;
+		display: none !important;
 	}
 	#main #faq .accordion-item .accordion-header .btn-header-link.collapsed {
 		font-size: 12px;
@@ -5362,4 +5389,76 @@ body.dark .alert-animate .text-dark {
 body.dark .alert-animate .text-gray-100 {
 	color: #e8e7ea !important;
 }
+.f-13{
+	font-size: 13px;
+	line-height: 16px;
+}
+.crypto-coin{
+	width: 80px;
+	height: 80px;
+}
+.mx-14rem{
+	margin-left: 14rem;
+	margin-right: 14rem;
+}
+.w-3 {
+    width: 0.75rem;
+}
+.h-3 {
+    height: 0.75rem ;
+}
+.max-w-910p{
+	max-width:910px
+}
+.trc-coin{
+	width: 119px;
+	height: 103px;
+}
+.trc-coinp{
+	margin-top: -16px;
+}
+@media (max-width: 767px) {
+    .token-font {
+        font-size: 14px !important;
+        line-height: 24px !important;
+    }
+	.crypto-coin{
+		width: 50px;
+		height: 50px;
+	}
+	.trc-coin{
+		width: 77px;
+		height: 65px;
+	}
+	.-mt-8p{
+		margin-top: -8px;
+	}
+	.trc-coinp{
+		margin-top: -3px;
+	}
+}
+@media (max-width: 1200px) {
+    .token-font {
+        font-size: 14px !important;
+        line-height: 24px !important;
+    }
+	.mx-14rem{
+		margin-left: auto;
+		margin-right: auto;
+	}
+	
+}
+.trc-p{
+	margin-top: -8px;
+}
+.my-85p{
+	margin-top: 105px;
+	margin-bottom: 85px;
+}
 /* alert css end */
+.hr-border-color{
+    border: 1px solid #6a6b87 !important;
+}
+body.dark .hr-border-color{
+	border: 1px solid #dee2e6 !important;
+}

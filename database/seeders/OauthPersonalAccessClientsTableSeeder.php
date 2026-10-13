@@ -2,32 +2,35 @@
 
 namespace Database\Seeders;
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Seeder;
-use App\Models\OauthPersonalAccessClient;
 
 class OauthPersonalAccessClientsTableSeeder extends Seeder
 {
     /**
-     * Run the database seeds.
+     * Auto generated seed file
      *
      * @return void
      */
     public function run()
     {
-
-        OauthPersonalAccessClient::truncate();
-        OauthPersonalAccessClient::insert([
+        DB::table('oauth_personal_access_clients')->delete();
+        
+        DB::table('oauth_personal_access_clients')->insert([
             [
-                'id'                     => 1,
-                'client_id'                => 1,
+                'client_id' => 1,
+                'created_at' => null,
+                'updated_at' => null,
             ],
             [
-                'id'                     => 2,
-                'client_id'                => 2,
+                'client_id' => 2,
+                'created_at' => null,
+                'updated_at' => null,
             ],
             [
-                'id'                     => 3,
-                'client_id'                => 3,
+                'client_id' => 3,
+                'created_at' => null,
+                'updated_at' => null,
             ],
         ]);
     }

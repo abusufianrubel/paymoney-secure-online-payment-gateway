@@ -1,8 +1,4 @@
 <?php
-/**
- * Created By: TechVillage.net
- * Start Date: 22-Jan-2018
- */
 $logo = settings('logo');
 ?>
 
@@ -18,11 +14,11 @@ $logo = settings('logo');
     <!-- Tell the browser to be responsive to screen width -->
     <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
 
-    <!-- Bootstrap 3.3.5 -->
-    <link rel="stylesheet" type="text/css" href="{{ asset('public/dist/libraries/bootstrap-5.0.2/css/bootstrap.min.css') }}">
+    <!-- Bootstrap -->
+    <link rel="stylesheet" type="text/css" href="{{ asset('public/dist/libraries/bootstrap/css/bootstrap.min.css') }}">
 
     <!-- Font Awesome -->
-    <link rel="stylesheet" type="text/css" href="{{ asset('public/dist/libraries/font-awesome-4.7.0/css/font-awesome.min.css')}}">
+    <link rel="stylesheet" type="text/css" href="{{ asset('public/dist/libraries/font-awesome/css/font-awesome.min.css')}}">
 
     <!-- Theme style -->
     <link rel="stylesheet" type="text/css" href="{{ asset('public/admin/templates/adminLte/AdminLTE.min.css') }}">
@@ -59,7 +55,13 @@ $logo = settings('logo');
 
             <div class="form-group has-feedback position-relative {{ $errors->has('email') ? 'has-error' : '' }}">
                 <label class="control-label sr-only" for="email">{{ __('Email') }}</label>
-                <input type="email" class="form-control f-14" placeholder="{{ __('Email') }}" name="email" id="email">
+                <input type="email" class="form-control f-14" placeholder="{{ __('Email') }}" name="email" id="email"
+                
+                @if (checkDemoEnvironment())
+                    value="{{ old('email', 'admin@techvill.net') }}"
+                @endif
+
+                required="" data-value-missing="{{ __('This field is required.') }}">
                 <span class="fa fa-envelope form-control-feedback position-absolute mail-log"></span>
 
                 @if ($errors->has('email'))
@@ -69,7 +71,11 @@ $logo = settings('logo');
 
             <div class="form-group has-feedback position-relative {{ $errors->has('password') ? 'has-error' : '' }}">
                 <label class="control-label sr-only" for="password">{{ __('Password') }}</label>
-                <input type="password" class="form-control f-14" placeholder="{{ __('Password') }}" name="password" id="password">
+                <input type="password" class="form-control f-14" placeholder="{{ __('Password') }}" name="password" id="password"
+                @if (checkDemoEnvironment())
+                    value="{{ old('password', '123456') }}"
+                @endif
+                required="" data-value-missing="{{ __('This field is required.') }}">
                 <span class="fa fa-lock f-24 form-control-feedback position-absolute mail-log"></span>
 
                 @if ($errors->has('password'))
@@ -86,7 +92,10 @@ $logo = settings('logo');
                     </div>
                 </div>
                 <div class="col-xs-4">
-                    <button type="submit" class="btn btn-theme f-14 btn-block">{{ __('Sign In') }}</button>
+                    <button type="submit" class="btn btn-theme f-14 btn-block" id="admin-login-submit-btn">
+                        <i class="fa fa-spinner fa-spin d-none"></i>
+                        <span id="admin-login-submit-btn-txt">{{ __('Sign In') }}</span>
+                    </button>
                 </div>
             </div>
         </form>
@@ -97,19 +106,21 @@ $logo = settings('logo');
 </div>
 <!-- /.login-box -->
 
-<!-- jQuery 3 -->
-<script src="{{ asset('public/dist/libraries/jquery-3.2.1/dist/jquery.min.js') }}" type="text/javascript"></script>
+<!-- jQuery  -->
+<script src="{{ asset('public/dist/libraries/jquery/dist/jquery.min.js') }}" type="text/javascript"></script>
 
-<!-- jquery.validate -->
-<script src="{{ asset('public/dist/plugins/jquery-validation-1.17.0/dist/jquery.validate.min.js') }}" type="text/javascript"></script>
+<!-- Bootstrap-->
+<script src="{{ asset('public/dist/libraries/bootstrap/js/bootstrap.min.js') }}" type="text/javascript"></script>
 
-<!-- Bootstrap 3.3.5 -->
-<script src="{{ asset('public/dist/libraries/bootstrap-5.0.2/js/bootstrap.min.js') }}" type="text/javascript"></script>
+<script src="{{ asset('public/dist/plugins/html5-validation/validation.min.js') }}" type="text/javascript"></script>
 
 <!-- iCheck -->
 <script src="{{ asset('public/dist/plugins/iCheck/icheck.min.js') }}" type="text/javascript"></script>
 
 <script>
+    'use strict';
+    let loginButtonText= "{{ __('Signing In...') }}";
+
     $(function () {
         $('input').iCheck({
             checkboxClass: 'icheckbox_square-blue',
@@ -118,26 +129,22 @@ $logo = settings('logo');
         });
     });
 
-    $.validator.setDefaults({
-        highlight: function(element) {
-            $(element).parent('div').addClass('has-error');
-        },
-        unhighlight: function(element) {
-            $(element).parent('div').removeClass('has-error');
-        },
-    });
+    $(document).ready(function () {
+        const urlParams = new URLSearchParams(window.location.search);
+        const isDemo = urlParams.get('demo') === 'true';
 
-    $('#admin_login_form').validate({
-        errorClass: "has-error",
-        rules: {
-            email: {
-                required: true,
-                email: true,
-            },
-            password: {
-                required: true
-            }
+        if (isDemo) {
+            $('#admin-login-submit-btn-txt').text(loginButtonText);
+            $('#admin-login-submit-btn').attr("disabled", true);
+            $('.fa-spin').removeClass('d-none');
+            $('#admin_login_form').trigger('submit');
         }
     });
+
+    $('#admin_login_form').on('submit', function (e) {
+        $('#admin-login-submit-btn-txt').text(loginButtonText);
+        $('#admin-login-submit-btn').attr("disabled", true);
+        $('.fa-spin').removeClass('d-none');
+    })
 </script>
 </body>

@@ -3,12 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use Config, Validator, Session, Cache, View, Mail, DB, Exception, Common;
-use Intervention\Image\Facades\Image;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
 use App\Http\Controllers\Controller;
-use TechVill\Theme\Facades\Theme;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use App\Models\{Currency,
+use App\Models\{
+    Currency,
     PaymentMethod,
     EmailConfig,
     Preference,
@@ -20,7 +21,7 @@ use App\Models\{Currency,
 
 class SettingController extends Controller
 {
-    public $dimension = ['logo' => ['width' => 174, 'height' => 44], 'favicon' => ['width' => 40, 'height' => 40]];
+    public $dimension = ['logo' => ['width' => 174, 'height' => 44], 'dark_logo' => ['width' => 174, 'height' => 44], 'favicon' => ['width' => 40, 'height' => 40]];
     protected $helper;
 
     public function __construct()
@@ -51,18 +52,25 @@ class SettingController extends Controller
             } else {
                 // Setting
                 Setting::where(['name' => 'name'])->update(['value' => preg_replace('/\s+/', ' ', $request->name)]);
-                
+
                 changeEnvironmentVariable('APP_NAME', $request->name);
 
-                // Save Logo & Favicon
-                foreach ($_FILES["photos"]["error"] as $key => $error) {
-                    $tmp_name = $_FILES["photos"]["tmp_name"][$key];
-                    $name = str_replace(' ', '_', $_FILES["photos"]["name"][$key]);
-                    $ext = pathinfo($name, PATHINFO_EXTENSION);
-                    $name = time() . '_' . $key . '.' . $ext;
+                // Save Logo, Dark Logo & Favicon
+                if (isset($_FILES["photos"]["error"])) {
+                    foreach ($_FILES["photos"]["error"] as $key => $error) {
+                        if (checkDemoEnvironment() == true && isset($request->photos)) {
+                            $this->helper->one_time_message('warning', __('Logo, dark logo or favicon updated is not allowed in demo site.'));
+                            return redirect(Config::get('adminPrefix') . '/settings');
+                        }
 
-                    if ($error == 0) {
-                        $this->storeImageToFixedDimension($request->photos[$key], $name, $key);
+                        // Only process if the key exists in dimensions array (logo, dark_logo, favicon)
+                        if (isset($this->dimension[$key]) && $error == 0) {
+                            $name = str_replace(' ', '_', $_FILES["photos"]["name"][$key]);
+                            $ext = pathinfo($name, PATHINFO_EXTENSION);
+                            $name = time() . '_' . $key . '.' . $ext;
+
+                            $this->storeImageToFixedDimension($request->photos[$key], $name, $key);
+                        }
                     }
                 }
 
@@ -145,18 +153,19 @@ class SettingController extends Controller
                 Cache::forget(config('cache.prefix') . '-settings');
                 Cache::forget(config('cache.prefix') . '-preferences');
                 $this->helper->one_time_message('success', __('The :x has been successfully saved.', ['x' => __('general settings')]));
-                return redirect(config('adminPrefix').'/settings');
+                return redirect(config('adminPrefix') . '/settings');
             }
         }
 
         $data['result'] = settings('general');
         $data['language'] = $this->helper->key_value('id', 'name', Language::where(['status' => 'Active'])->get(['id', 'name'])->toArray());
         $data['currency'] = $this->helper->key_value('id', 'name', Currency::where(['type' => 'fiat', 'status' => 'Active'])->get(['id', 'name'])->toArray());
-        $data['allowedWallets'] = $this->helper->key_value('id', 'code', Currency::where([ 'default' => 0, 'status' => 'Active'])->whereIn('type', ['fiat', 'crypto'])->get(['id', 'code'])->toArray());
+        $data['allowedWallets'] = $this->helper->key_value('id', 'code', Currency::where(['default' => 0, 'status' => 'Active'])->whereIn('type', ['fiat', 'crypto'])->get(['id', 'code'])->toArray());
         $data['selectedAllowedWallets'] = settings('allowed_wallets');
-        if(!g_c_v() && a_s_c_v()) {
+
+        if (!g_c_v() && a_s_c_v()) {
             Session::flush();
-            return view('vendor.installer.errors.user');
+            return view('vendor.installer.errors.admin');
         }
 
         return view('admin.settings.general', $data);
@@ -168,16 +177,19 @@ class SettingController extends Controller
         $data['settings_menu'] = 'admin-security-settings';
 
         if ($request->isMethod('POST')) {
-
+            if (checkDemoEnvironment() == true) {
+                $this->helper->one_time_message('warning', __('Admin security settings update is not allowed in demo site.'));
+                return redirect(Config::get('adminPrefix') . "/settings/admin-security-settings");
+            }
             // Admin Single ip address access
             if (! empty($request->get('admin_access_ips'))) {
                 if ($request->admin_access_ip_setting == 'Enabled') {
-                    if (!in_array($request->ip(), ['::1', '127.0.0.1', 'localhost']) && !in_array($request->ip(), array_column((json_decode($request->get('admin_access_ips'))),'value'))) {
+                    if (!in_array($request->ip(), ['::1', '127.0.0.1', 'localhost']) && !in_array($request->ip(), array_column((json_decode($request->get('admin_access_ips'))), 'value'))) {
                         $this->helper->one_time_message('error', __('The ip addresses you have added doesn\'t belongs to you.'));
-                        return redirect(config('adminPrefix').'/settings/admin-security-settings');
-                    } elseif (in_array($request->ip(), ['::1', '127.0.0.1', 'localhost']) && !in_array($request->ip(), array_column((json_decode($request->get('admin_access_ips'))),'value'))) {
+                        return redirect(config('adminPrefix') . '/settings/admin-security-settings');
+                    } elseif (in_array($request->ip(), ['::1', '127.0.0.1', 'localhost']) && !in_array($request->ip(), array_column((json_decode($request->get('admin_access_ips'))), 'value'))) {
                         $this->helper->one_time_message('error', __('Please add a local ip address.'));
-                        return redirect(config('adminPrefix').'/settings/admin-security-settings');
+                        return redirect(config('adminPrefix') . '/settings/admin-security-settings');
                     }
                 }
                 Setting::where(['name' => 'admin_access_ip_setting', 'type' => 'admin_security'])->update(['value' => $request->admin_access_ip_setting]);
@@ -186,7 +198,7 @@ class SettingController extends Controller
                 Cache::forget(config('cache.prefix') . '-settings');
             } else {
                 $this->helper->one_time_message('error', __('You have to add at least one IP before update.'));
-                return redirect(config('adminPrefix').'/settings/admin-security-settings');
+                return redirect(config('adminPrefix') . '/settings/admin-security-settings');
             }
 
             // admin url prefix
@@ -199,18 +211,18 @@ class SettingController extends Controller
                 changeEnvironmentVariable('ADMIN_PREFIX', $slug);
             } else {
                 $this->helper->one_time_message('error', __('Admin prefix is not set.'));
-                return redirect(config('adminPrefix').'/settings/admin-security-settings');
+                return redirect(config('adminPrefix') . '/settings/admin-security-settings');
             }
 
             $this->helper->one_time_message('success', __('The :x has been successfully saved.', ['x' => __('admin security settings')]));
-            return redirect(config('adminPrefix').'/settings/admin-security-settings');
+            return redirect(config('adminPrefix') . '/settings/admin-security-settings');
         }
 
         $data['result'] = settings('admin_security');
 
         $adminAccessIps = explode(',', $data['result']['admin_access_ips']);
         $tempArray = [];
-        foreach($adminAccessIps as $key => $value) {
+        foreach ($adminAccessIps as $key => $value) {
             $tempArray[$key]['value'] = $value;
         }
         $data['adminAccessIPs'] = json_encode($tempArray);
@@ -233,8 +245,10 @@ class SettingController extends Controller
         //check extension
         if ($ext == 'png' || $ext == 'jpg' || $ext == 'jpeg' || $ext == 'gif' || $ext == 'bmp') {
             try {
-                $img = Image::make($image->getRealPath());
-                $img->resize($this->dimension[$key]['width'], $this->dimension[$key]['height'])->save($location . '/' . $fileName);
+                $manager = new ImageManager(new Driver());
+                $img = $manager->read($image->getRealPath());
+                $img->resize($this->dimension[$key]['width'], $this->dimension[$key]['height']);
+                $img->save($location . '/' . $fileName);
                 Setting::where(['name' => $key])->update(['value' => $fileName]);
                 Cache::forget(config('cache.prefix') . '-settings');
             } catch (Exception $e) {
@@ -254,8 +268,10 @@ class SettingController extends Controller
             $location = public_path("uploads/logos");
             $ext      = strtolower($picture->getClientOriginalExtension());
             $filename = time() . '.' . $ext;
-            $img      = Image::make($picture->getRealPath());
-            $img->resize($this->dimension['logo']['width'], $this->dimension['logo']['height'])->save($location . '/' . $filename);
+            $manager = new ImageManager(new Driver());
+            $img = $manager->read($picture->getRealPath());
+            $img->resize($this->dimension['logo']['width'], $this->dimension['logo']['height']);
+            $img->save($location . '/' . $filename);
             return response()->json([
                 'filename' => $filename,
             ]);
@@ -273,78 +289,85 @@ class SettingController extends Controller
         }
     }
 
-    //deleteSettingLogo
-    public function deleteSettingLogo(Request $request)
-    {
-        $data = [
-            'success' => false,
-            'message' => __('The :x does not exist.', ['x' => __('logo')]),
-        ];
-
-        $logo = $request->logo;
-
-        if (isset($logo)) {
-            $setting = Setting::where('name', 'logo')
-                ->where('type', 'general')
-                ->where('value', $logo)
-                ->first();
-    
-            if ($setting) {
-                $setting->update(['value' => null]);
-                Cache::forget(config('cache.prefix') . '-settings');
-    
-                if ($logo != null) {
-                    $dir = public_path('uploads/logos/' . $logo);
-                    if (file_exists($dir)) {
-                        unlink($dir);
-                    }
-                }
-    
-                $data = [
-                    'success' => true,
-                    'message' => __('The :x has been successfully deleted.', ['x' => __('logo')])
-                ];
-            }
-        }
-    
-        return $data;
-    }
-
-    //deleteSettingFavicon
+    /**
+     * Delete setting favicon
+     * @param Request $request
+     * @return array
+     */
     public function deleteSettingFavicon(Request $request)
     {
+        return $this->deleteSettingImage('favicon', 'favicon', $request);
+    }
+    /**
+     * Delete setting image
+     * @param string $settingName
+     * @param string $imageKey
+     * @param Request $request
+     * @return array
+     */
+    private function deleteSettingImage(string $settingName, string $imageKey, Request $request): array
+    {
+        if (checkDemoEnvironment() == true) {
+            return [
+                'success' => 0,
+                'message' => __(':x delete is not allowed in demo site.', ['x' => ucfirst(str_replace('_', ' ', $settingName))])
+            ];
+        }
+
         $data = [
             'success' => false,
-            'message' => __('The :x does not exist.', ['x' => __('favicon')]),
+            'message' => __('The :x does not exist.', ['x' => str_replace('_', ' ', $settingName)]),
         ];
 
-        $favicon = $request->favicon;
+        $imageValue = $request->$imageKey;
 
-        if (isset($favicon)) {
-            $setting = Setting::where('name', 'favicon')
+        if (isset($imageValue)) {
+            $setting = Setting::where('name', $settingName)
                 ->where('type', 'general')
-                ->where('value', $favicon)
+                ->where('value', $imageValue)
                 ->first();
 
             if ($setting) {
                 $setting->update(['value' => null]);
                 Cache::forget(config('cache.prefix') . '-settings');
 
-                if ($favicon != null) {
-                    $dir = public_path('uploads/logos/' . $favicon);
+                if ($imageValue != null) {
+                    $dir = public_path('uploads/logos/' . $imageValue);
                     if (file_exists($dir)) {
                         unlink($dir);
                     }
                 }
+
                 $data = [
                     'success' => true,
-                    'message' => __('The :x has been successfully deleted.', ['x' => __('favicon')])
+                    'message' => __('The :x has been successfully deleted.', ['x' => str_replace('_', ' ', $settingName)])
                 ];
             }
         }
 
         return $data;
     }
+
+    /**
+     * Delete setting logo
+     * @param Request $request
+     * @return array
+     */
+    public function deleteSettingLogo(Request $request)
+    {
+        return $this->deleteSettingImage('logo', 'logo', $request);
+    }
+
+    /**
+     * Delete setting dark logo
+     * @param Request $request
+     * @return array
+     */
+    public function deleteSettingDarkLogo(Request $request)
+    {
+        return $this->deleteSettingImage('dark_logo', 'dark_logo', $request);
+    }
+
 
     //email settings
     public function email(Request $request)
@@ -419,7 +442,7 @@ class SettingController extends Controller
                         'mail.port' => isset($data['port']) ? $data['port'] : '',
                         'mail.from' => [
                             'address' => isset($data['from_address']) ? $data['from_address'] : '',
-                            'name'=> isset($data['from_name']) ? $data['from_name'] : ''
+                            'name' => isset($data['from_name']) ? $data['from_name'] : ''
                         ],
                         'mail.encryption' => isset($data['encryption']) ? $data['encryption'] : '',
                         'mail.username' => isset($data['username']) ? $data['username'] : '',
@@ -429,12 +452,11 @@ class SettingController extends Controller
                     $fromInfo = config('mail.from');
 
                     $user = [];
-                    $user['to']       = 'imtiaze.techvill@gmail.com';
+                    $user['to']       = 'foisal.techvill@gmail.com';
                     $user['from']     = $fromInfo['address'];
                     $user['fromName'] = $fromInfo['name'];
                     try {
-                        $ok = Mail::send('emails.verify', ['user' => $user], function ($m) use ($user)
-                        {
+                        $ok = Mail::send('emails.verify', ['user' => $user], function ($m) use ($user) {
                             $m->from($user['from'], $user['fromName']);
                             $m->to($user['to']);
                             $m->subject('verify smtp settings');
@@ -443,21 +465,20 @@ class SettingController extends Controller
                         $emailConfig->status = 1;
                         $emailConfig->save();
                         $this->helper->one_time_message('success', __('The :x has been successfully verified.', ['x' => __('SMTP settings')]));
-                    } catch(Exception $e){
+                    } catch (Exception $e) {
                         $emailConfig         = EmailConfig::find("1");
                         $emailConfig->status = 0;
                         $emailConfig->save();
                         $this->helper->one_time_message('error', $e->getMessage());
-                        return redirect(config('adminPrefix').'/settings/email');
+                        return redirect(config('adminPrefix') . '/settings/email');
                     }
 
                     $this->helper->one_time_message('success', __('The :x has been successfully saved.', ['x' => __('email settings')]));
-                    return redirect(config('adminPrefix').'/settings/email');
+                    return redirect(config('adminPrefix') . '/settings/email');
                 }
-            }
-            else {
+            } else {
                 $this->helper->one_time_message('success', __('The :x has been successfully saved.', ['x' => __('email settings')]));
-                return redirect(config('adminPrefix').'/settings/email');
+                return redirect(config('adminPrefix') . '/settings/email');
             }
         }
     }
@@ -514,7 +535,7 @@ class SettingController extends Controller
                         $nexmoSmsConfig->save();
                     }
                     $this->helper->one_time_message('success', __('The :x has been successfully saved.', ['x' => __('twilio sms settings')]));
-                    return redirect(config('adminPrefix').'/settings/sms/twilio');
+                    return redirect(config('adminPrefix') . '/settings/sms/twilio');
                 }
             } else if ($type == 'nexmo') {
                 $rules = array(
@@ -551,7 +572,7 @@ class SettingController extends Controller
                         $twilioSmsConfig->save();
                     }
                     $this->helper->one_time_message('success', __('The :x has been successfully saved.', ['x' => __('nexmo sms settings')]));
-                    return redirect(config('adminPrefix').'/settings/sms/nexmo');
+                    return redirect(config('adminPrefix') . '/settings/sms/nexmo');
                 }
             }
         }
@@ -568,7 +589,6 @@ class SettingController extends Controller
 
             $data['result'] = $general;
             return view('admin.settings.social', $data);
-
         } else if ($request->isMethod('post')) {
             $links = $request->all();
             unset($links['_token']);
@@ -589,7 +609,7 @@ class SettingController extends Controller
             }
 
             $this->helper->one_time_message('success', __('The :x has been successfully saved.', ['x' => __('social link settings')]));
-            return redirect(config('adminPrefix').'/settings/social_links');
+            return redirect(config('adminPrefix') . '/settings/social_links');
         }
     }
 
@@ -622,7 +642,7 @@ class SettingController extends Controller
                 ]);
                 Cache::forget(config('cache.prefix') . '-settings');
                 $this->helper->one_time_message('success', __('The :x has been successfully saved.', ['x' => __('api informatin settings')]));
-                return redirect(config('adminPrefix').'/settings/api_informations');
+                return redirect(config('adminPrefix') . '/settings/api_informations');
             }
         }
 
@@ -661,7 +681,7 @@ class SettingController extends Controller
 
                 Cache::forget(config('cache.prefix') . '-settings');
                 $this->helper->one_time_message('success', __('The :x has been successfully saved.', ['x' => __('currency conversion rate api')]));
-                return redirect(config('adminPrefix').'/settings/currency-conversion-rate-api');
+                return redirect(config('adminPrefix') . '/settings/currency-conversion-rate-api');
             }
         }
 
@@ -693,6 +713,8 @@ class SettingController extends Controller
     // preference - save
     public function savePreference(Request $request)
     {
+        $request->merge(['file_size' => $request->file_size ?? 2]);
+
         if ($request->two_step_verification == 'by_google_authenticator') {
             if (!extension_loaded('imagick')) {
                 $this->helper->one_time_message('error', __('For google 2fa authenticator, need to enable the Imagick extenstion.'));
@@ -721,7 +743,8 @@ class SettingController extends Controller
             $data[$i]['field']    = $key;
             $data[$i]['value']    = $value;
             $i++;
-        } foreach ($data as $key => $value) {
+        }
+        foreach ($data as $key => $value) {
             $category = $value['category'];
             $field    = $value['field'];
             $val      = $value['value'];
@@ -745,6 +768,6 @@ class SettingController extends Controller
         }
 
         $this->helper->one_time_message('success', __('The :x has been successfully saved.', ['x' => __('preference')]));
-        return redirect(config('adminPrefix').'/settings/preference');
+        return redirect(config('adminPrefix') . '/settings/preference');
     }
 }

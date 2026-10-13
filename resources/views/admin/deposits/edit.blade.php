@@ -138,8 +138,16 @@
                                 </div>
 
                                 <!-- Status -->
+                                @if (moduleExists('Agent') && !is_null($deposit->agent_id))
+                                    <div class="form-group row">
+                                        <label class="control-label col-sm-3 fw-bold text-sm-end" for="status">{{ __('Change Status') }}</label>
+                                        <div class="col-sm-6">
+                                            <p class="form-control-static"><span class="label label-danger space-none" id="status">{{ __('Agent Deposit Status Cannot Be Changed') }}</span></p>
+                                        </div>
+                                    </div>
+                                @else
                                 <div class="form-group row align-items-center">
-                                    <label class="control-label fw-bold f-14 text-sm-end col-sm-3" for="status">{{ __('Change Status') }}</label>
+                                    <label class="control-label fw-bold f-14 text-sm-end col-sm-3" for="status">{{ __('Change Status') }} </label>
                                     <div class="col-sm-6">
                                         <select class="form-control select2 w-60" name="status" id="status">
                                             <option value="Success" {{ $deposit->status ==  'Success'? 'selected':"" }}>{{ __('Success') }}</option>
@@ -157,6 +165,7 @@
                                         </button>
                                     </div>
                                 </div>
+                                @endif
                             </div>
                         </div>
                     </div>

@@ -96,10 +96,10 @@ class PaypalProcessor extends PaymentProcessor
                 "message" => __("Order Created."),
                 "type" => 'paypal',
                 "orderId" =>  $order->id,
-                "href" => $approve->href
+                "redirect" => true,
+                "redirect_url" => $approve->href
             ];
 
-            return $approve;
 
         } catch (Exception $th) {
             throw new PaymentFailedException($th->getMessage());
@@ -152,7 +152,7 @@ class PaypalProcessor extends PaymentProcessor
         $rules = [
             'amount' => 'required',
             'currency_id' => 'required',
-            'payment_method_id' => 'required', 'exists:payment_methods,id',
+            'payment_method' => 'required', 'exists:payment_methods,id',
             'redirectUrl' => 'required',
             'transaction_type' =>'required',
             'payment_type' => 'required'

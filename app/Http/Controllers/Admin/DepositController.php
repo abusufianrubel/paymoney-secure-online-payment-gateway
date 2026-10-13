@@ -65,7 +65,7 @@ class DepositController extends Controller
 
     public function depositCsv()
     {
-        return Excel::download(new DepositsExport(), 'deposit_list_'. time() .'.xls');
+        return Excel::download(new DepositsExport(), 'deposit_list_'. time() .'.csv');
     }
 
     public function depositPdf()
@@ -101,6 +101,7 @@ class DepositController extends Controller
 
     public function update(Request $request)
     {
+        try {
         if ($request->transaction_type == 'Deposit')
         {
             if ($request->status == 'Pending')
@@ -123,17 +124,8 @@ class DepositController extends Controller
                         'status' => $request->status,
                     ]);
 
-                    $current_balance = Wallet::where([
-                        'user_id'     => $request->user_id,
-                        'currency_id' => $request->currency_id,
-                    ])->select('balance')->first();
+                    Wallet::deductAmountFromWallet($request->user_id, $request->currency_id, $request->amount);
 
-                    Wallet::where([
-                        'user_id'     => $request->user_id,
-                        'currency_id' => $request->currency_id,
-                    ])->update([
-                        'balance' => $current_balance->balance - $request->amount,
-                    ]);
                     $this->helper->one_time_message('success', __('The :x has been successfully saved.', ['x' => __('deposit')]));
                     return redirect(config('adminPrefix').'/deposits');
                 }
@@ -173,17 +165,7 @@ class DepositController extends Controller
                         'status' => $request->status,
                     ]);
 
-                    $current_balance = Wallet::where([
-                        'user_id'     => $request->user_id,
-                        'currency_id' => $request->currency_id,
-                    ])->select('balance')->first();
-
-                    Wallet::where([
-                        'user_id'     => $request->user_id,
-                        'currency_id' => $request->currency_id,
-                    ])->update([
-                        'balance' => $current_balance->balance + $request->amount,
-                    ]);
+                    Wallet::incrementWalletBalance($request->user_id, $request->currency_id, $request->amount);
 
                     $this->helper->one_time_message('success', __('The :x has been successfully saved.', ['x' => __('deposit')]));
                     return redirect(config('adminPrefix').'/deposits');
@@ -201,17 +183,7 @@ class DepositController extends Controller
                         'status' => $request->status,
                     ]);
 
-                    $current_balance = Wallet::where([
-                        'user_id'     => $request->user_id,
-                        'currency_id' => $request->currency_id,
-                    ])->select('balance')->first();
-
-                    Wallet::where([
-                        'user_id'     => $request->user_id,
-                        'currency_id' => $request->currency_id,
-                    ])->update([
-                        'balance' => $current_balance->balance + $request->amount,
-                    ]);
+                    Wallet::incrementWalletBalance($request->user_id, $request->currency_id, $request->amount);
 
                     $this->helper->one_time_message('success', __('The :x has been successfully saved.', ['x' => __('deposit')]));
                     return redirect(config('adminPrefix').'/deposits');
@@ -252,21 +224,16 @@ class DepositController extends Controller
                         'status' => $request->status,
                     ]);
 
-                    $current_balance = Wallet::where([
-                        'user_id'     => $request->user_id,
-                        'currency_id' => $request->currency_id,
-                    ])->select('balance')->first();
+                    Wallet::deductAmountFromWallet($request->user_id, $request->currency_id, $request->amount);
 
-                    Wallet::where([
-                        'user_id'     => $request->user_id,
-                        'currency_id' => $request->currency_id,
-                    ])->update([
-                        'balance' => $current_balance->balance - $request->amount,
-                    ]);
                     $this->helper->one_time_message('success', __('The :x has been successfully saved.', ['x' => __('deposit')]));
                     return redirect(config('adminPrefix').'/deposits');
                 }
             }
+        }
+        } catch (\Exception $e) {
+            $this->helper->one_time_message('danger', $e->getMessage());
+            return redirect(config('adminPrefix').'/deposits');
         }
     }
 }

@@ -68,7 +68,7 @@ class ExchangeController extends Controller
 
     public function exchangeCsv()
     {
-        return Excel::download(new CurrencyExchangesExport(), 'exchanges_list_' . time() . '.xlsx');
+        return Excel::download(new CurrencyExchangesExport(), 'exchanges_list_' . time() . '.csv');
     }
 
     public function exchangePdf()

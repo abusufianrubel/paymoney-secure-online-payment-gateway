@@ -168,8 +168,15 @@ class TicketController extends Controller
         return redirect()->route('user.tickets.reply', $ticket->id);
     }
 
-    public function download($file_name) {
-        $file_path = public_path('/uploads/ticketFile/'.$file_name);
-        return response()->download($file_path);
+    public function download($file_name)
+    {
+        $filePath = public_path('/uploads/ticketFile/' . $file_name);
+
+        if (!file_exists($filePath)) {
+            $this->helper->one_time_message('error', __('Ticket file is not found!'));
+            return back();
+        }
+        
+        return response()->download($filePath);
       }
 }

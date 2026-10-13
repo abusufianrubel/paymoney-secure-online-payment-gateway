@@ -35,8 +35,8 @@ class RequestMoneyController extends Controller
     {
         try {
             $response = $service->checkRequestSenderEmail(auth()->user()->id, request('receiverEmail'));
-            if ($response) {
-                return $this->okResponse([], __("Email is ok"));
+            if ($response['status']) {
+                return $this->okResponse($response, __("Email is ok"));
             }
         } catch (RequestMoneyException $e) {
             return $this->unprocessableResponse([], $e->getMessage());
@@ -56,8 +56,9 @@ class RequestMoneyController extends Controller
     {
         try {
             $response = $service->checkRequestSenderPhone(auth()->user()->id, request('receiverPhone'));
-            if ($response) {
-                return $this->okResponse([], __("Phone number is ok"));
+
+            if ($response['status']) {
+                return $this->okResponse($response, __("Phone number is ok"));
             }
         } catch (RequestMoneyException $e) {
             return $this->unprocessableResponse([], $e->getMessage());

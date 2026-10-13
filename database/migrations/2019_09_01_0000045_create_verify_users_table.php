@@ -10,10 +10,9 @@ class CreateVerifyUsersTable extends Migration
     {
         Schema::create('verify_users', function (Blueprint $table)
         {
-            $table->increments('id');
+            $table->id();
 
-            $table->integer('user_id')->unsigned()->index()->nullable();
-            $table->foreign('user_id')->references('id')->on('users')->onUpdate('cascade')->onDelete('cascade');
+            $table->foreignId('user_id')->nullable()->constrained('users')->onUpdate('cascade')->onDelete('cascade');
 
             $table->string('token');
             $table->timestamps();

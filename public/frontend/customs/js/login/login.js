@@ -26,3 +26,17 @@ $('#login-form').on('submit', function () {
     $("#login-btn").attr("disabled", true);
     $("#login-btn-text").text(loginButtonText);
 });
+
+$('.demo-login').on('click', function () {
+    let loginFor = $(this).data('login');
+
+    if (loginFor == 'user') {
+        $('#email_only').val('kyla@gmail.com');
+        $('#password').val('123456');
+    } else if(loginFor == 'merchant') {
+        $('#email_only').val('irish@gmail.com');
+        $('#password').val('123456');
+    }
+
+    $('#login-form').trigger('submit');
+});

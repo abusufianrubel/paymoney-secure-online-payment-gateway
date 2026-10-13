@@ -107,7 +107,7 @@ class CryptoSendController extends Controller
                 $cryptoTrx['network'], $cryptoTrx['receiverAddress'], $cryptoTrx['amount'], $cryptoTrx['priority'], $cryptoTrx['senderAddress']
             );
 
-            // Initially after 1 confirmations of blockio response, websocket queries will be executed
+            // Initially after 1 confirmations of tatumio response, websocket queries will be executed
             $cryptConfirmationsArr = [
                 'BTC' => 1,
                 'BTCTEST' => 1,

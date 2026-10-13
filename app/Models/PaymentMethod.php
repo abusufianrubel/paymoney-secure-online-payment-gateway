@@ -37,6 +37,16 @@ class PaymentMethod extends Model
     {
         return $this->hasOne(FeesLimit::class, 'payment_method_id');
     }
+
+    public function feesLimits()
+    {
+        return $this->hasMany(FeesLimit::class, 'payment_method_id');
+    }
+
+    public function remittance()
+    {
+        return $this->hasOne(\Modules\Remittance\Entities\Remittance::class);
+    }
     /**
      * To get payment gateways credentials by specific id and currency
      * @param [int] $id 

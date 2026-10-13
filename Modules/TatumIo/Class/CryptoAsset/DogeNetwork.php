@@ -60,7 +60,8 @@ class DogeNetwork implements NetworkInterface
     public function getBalanceOfAddress($address)
     {
         try {
-            $url = "https://api.tatum.io/v3/dogecoin/address/balance/" . $address;
+            $url = tatumApiUrl('dogecoin/address/balance/' . $address);
+            
             $response = Http::withHeaders([
                 "x-api-key" => $this->apiKey,
             ])->get($url);

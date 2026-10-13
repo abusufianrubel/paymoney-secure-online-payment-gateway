@@ -74,7 +74,7 @@ class Wallet extends Model
                     'curr_type' => optional($wallet->currency)->type,
                     'curr_code' => optional($wallet->currency)->code,
                     'curr_symbol' => optional($wallet->currency)->symbol,
-                    'provider' => (optional($wallet->cryptoAssetApiLogs)->payment_method_id == TatumIo) ? 'tatumio' : ((optional($wallet->cryptoAssetApiLogs)->payment_method_id == BlockIo) ? 'blockio' : ''),
+                    'provider' => (optional($wallet->cryptoAssetApiLogs)->payment_method_id == TatumIo) ? 'tatumio' : '',
                 ];
                 return $walletInfo;
             });
@@ -120,10 +120,16 @@ class Wallet extends Model
      */
     public static function deductAmountFromWallet(int $userId, int $currencyId, float $amount): void
     {
-        Wallet::where([
+        $wallet = Wallet::where([
             'user_id' => $userId,
             'currency_id' => $currencyId,
-        ])->decrement('balance', $amount);
+        ])->first();
+    
+        if ($wallet->balance < $amount) {
+            throw new \Exception("Insufficient balance.");
+        }
+    
+        $wallet->decrement('balance', $amount);
     }
 
     /**

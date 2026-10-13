@@ -58,7 +58,7 @@ class CurrencyPaymentMethodController extends Controller
 
     public function updatePaymentMethodCredentials(Request $request)
     {
-        $paymentMethods = ['stripe', 'paypal', 'payUmoney', 'coinpayments', 'payeer', 'coinbase'];
+        $paymentMethods = ['stripe', 'paypal', 'payUmoney', 'coinpayments', 'payeer', 'coinbase', 'flutterwave', 'reloadly'];
 
         $activateFor = currencyTransactionTypes($request['transaction_type']);
 

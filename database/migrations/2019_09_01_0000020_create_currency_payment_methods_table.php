@@ -15,12 +15,10 @@ class CreateCurrencyPaymentMethodsTable extends Migration
     {
         Schema::create('currency_payment_methods', function (Blueprint $table)
         {
-            $table->increments('id');
-            $table->integer('currency_id')->unsigned()->index();
-            $table->foreign('currency_id')->references('id')->on('currencies')->onUpdate('cascade')->onDelete('cascade');
+            $table->id();
+            $table->foreignId('currency_id')->constrained('currencies')->onUpdate('cascade')->onDelete('cascade');
 
-            $table->integer('method_id')->unsigned()->index();
-            $table->foreign('method_id')->references('id')->on('payment_methods')->onUpdate('cascade')->onDelete('cascade');
+            $table->foreignId('method_id')->constrained('payment_methods')->onUpdate('cascade')->onDelete('cascade');
 
             $table->text('activated_for')->nullable()->comment('transaction types like deposit, withdrawal, investment etc.');
             $table->string('method_data', 255)->comment('input field\'s title and value like client_id, client_secret etc');

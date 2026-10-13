@@ -4,13 +4,13 @@
 
 @section('head_style')
     <!-- Bootstrap daterangepicker -->
-    <link rel="stylesheet" type="text/css" href="{{ asset('public/dist/plugins/daterangepicker-3.1/daterangepicker.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ asset('public/dist/plugins/daterangepicker/daterangepicker.min.css') }}">
     <!-- dataTables -->
-    <link rel="stylesheet" type="text/css" href="{{ asset('public/dist/plugins/DataTables/DataTables-1.10.18/css/jquery.dataTables.min.css') }}">
-    <link rel="stylesheet" type="text/css" href="{{ asset('public/dist/plugins/DataTables/Responsive-2.2.2/css/responsive.dataTables.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ asset('public/dist/plugins/DataTables/DataTables/css/jquery.dataTables.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ asset('public/dist/plugins/DataTables/Responsive/css/responsive.dataTables.min.css') }}">
 
-    <!-- jquery-ui-1.12.1 -->
-    <link rel="stylesheet" type="text/css" href="{{ asset('public/dist/libraries/jquery-ui-1.12.1/jquery-ui.min.css') }}">
+    <!-- jquery-ui -->
+    <link rel="stylesheet" type="text/css" href="{{ asset('public/dist/libraries/jquery-ui/jquery-ui.min.css') }}">
 
     <style type="text/css">
         table.dataTable th:nth-child(6) {
@@ -44,7 +44,7 @@
                             <div class="d-flex flex-wrap">
                                 <!-- Date and time range -->
                                 <div class="pr-25">
-                                    <label class="f-14 fw-bold mb-1" id="daterange-btn">{{ __('Date Range') }}</label><br>
+                                    <label class="f-14 fw-bold mb-1" for="daterange-btn">{{ __('Date Range') }}</label><br>
                                     <button type="button" class="btn btn-default f-14" id="daterange-btn">
                                         <span id="drp">
                                             <i class="fa fa-calendar"></i>
@@ -134,71 +134,37 @@
 @push('extra_body_scripts')
 
     <!-- Bootstrap daterangepicker -->
-    <script src="{{ asset('public/dist/plugins/daterangepicker-3.1/daterangepicker.min.js') }}" type="text/javascript">
+    <script src="{{ asset('public/dist/plugins/daterangepicker/daterangepicker.min.js') }}" type="text/javascript">
     </script>
 
     <!-- jquery.dataTables js -->
-    <script src="{{ asset('public/dist/plugins/DataTables/DataTables-1.10.18/js/jquery.dataTables.min.js') }}" type="text/javascript"></script>
-    <script src="{{ asset('public/dist/plugins/DataTables/Responsive-2.2.2/js/dataTables.responsive.min.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('public/dist/plugins/DataTables/DataTables/js/jquery.dataTables.min.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('public/dist/plugins/DataTables/Responsive/js/dataTables.responsive.min.js') }}" type="text/javascript"></script>
 
-    <!-- jquery-ui-1.12.1 -->
-    <script src="{{ asset('public/dist/libraries/jquery-ui-1.12.1/jquery-ui.min.js') }}" type="text/javascript"></script>
+    <!-- jquery-ui-->
+    <script src="{{ asset('public/dist/libraries/jquery-ui/jquery-ui.min.js') }}" type="text/javascript"></script>
+
+    <script type="text/javascript">
+        'use strict';
+        var sessionDateFormateType = "{{Session::get('date_format_type')}}";
+        let dateRangePickerText = '{{ __("Pick a date range") }}';
+        var startDate = "{!! $from !!}";
+        var endDate   = "{!! $to !!}";
+        var csvUrl = ADMIN_URL + "/exchanges/csv";
+        var pdfUrl = ADMIN_URL + "/exchanges/pdf";
+    </script>
+    
+    <script src="{{ asset('public/admin/customs/js/daterange-select.min.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('public/admin/customs/js/csv-pdf.min.js') }}" type="text/javascript"></script>
+    
 
     {!! $dataTable->scripts() !!}
 
     <script type="text/javascript">
         $(".select2").select2({});
 
-        var sDate;
-        var eDate;
-
-        //Date range as a button
-        $('#daterange-btn').daterangepicker({
-                ranges: {
-                    'Today': [moment(), moment()],
-                    'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
-                    'Last 7 Days': [moment().subtract(6, 'days'), moment()],
-                    'Last 30 Days': [moment().subtract(29, 'days'), moment()],
-                    'This Month': [moment().startOf('month'), moment().endOf('month')],
-                    'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf(
-                        'month')]
-                },
-                startDate: moment().subtract(29, 'days'),
-                endDate: moment()
-            },
-            function(start, end) {
-                var sessionDate = '{{ Session::get('date_format_type') }}';
-                var sessionDateFinal = sessionDate.toUpperCase();
-
-                sDate = moment(start, 'MMMM D, YYYY').format(sessionDateFinal);
-                $('#startfrom').val(sDate);
-
-                eDate = moment(end, 'MMMM D, YYYY').format(sessionDateFinal);
-                $('#endto').val(eDate);
-
-                $('#daterange-btn span').html('&nbsp;' + sDate + ' - ' + eDate +
-                    '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;');
-            }
-        )
-
         $(document).ready(function() {
-            $("#daterange-btn").mouseover(function() {
-                $(this).css('background-color', 'white');
-                $(this).css('border-color', 'grey !important');
-            });
-
-            var startDate = "{!! $from !!}";
-            var endDate = "{!! $to !!}";
-            // alert(startDate);
-            if (startDate == '') {
-                $('#daterange-btn span').html(
-                    '<i class="fa fa-calendar"></i> &nbsp;&nbsp; Pick a date range &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
-                    );
-            } else {
-                $('#daterange-btn span').html(startDate + ' - ' + endDate +
-                    '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;');
-            }
-
+         
             $("#user_input").on('keyup keypress', function(e) {
                 if (e.type == "keyup" || e.type == "keypress") {
                     var user_input = $('form').find("input[type='text']").val();
@@ -221,8 +187,6 @@
                                 search: req.term
                             },
                             success: function(response) {
-                                // console.log(response);
-                                // console.log(req.term.length);
 
                                 $('form').find("button[type='submit']").prop('disabled',
                                     true);
@@ -247,7 +211,6 @@
                             }
                         })
                     } else {
-                        // console.log(req.term.length);
                         $('#user_id').val('');
                     }
                 },
@@ -258,56 +221,10 @@
 
                     $('#user_id').val(e.user_id);
 
-                    // console.log(e.user_id);
-
                     $('form').find("button[type='submit']").prop('disabled', false);
                 },
                 minLength: 0,
                 autoFocus: true
-            });
-        });
-
-        // csv
-        $(document).ready(function() {
-            $('#csv').on('click', function(event) {
-                event.preventDefault();
-
-                var startfrom = $('#startfrom').val();
-                var endto = $('#endto').val();
-
-                var status = $('#status').val();
-
-                var currency = $('#currency').val();
-
-                var user_id = $('#user_id').val();
-
-                window.location = SITE_URL + "/" + ADMIN_PREFIX + "/exchanges/csv?startfrom=" + startfrom +
-                    "&endto=" + endto +
-                    "&status=" + status +
-                    "&currency=" + currency +
-                    "&user_id=" + user_id;
-            });
-        });
-
-        // pdf
-        $(document).ready(function() {
-            $('#pdf').on('click', function(event) {
-                event.preventDefault();
-
-                var startfrom = $('#startfrom').val();
-                var endto = $('#endto').val();
-
-                var status = $('#status').val();
-
-                var currency = $('#currency').val();
-
-                var user_id = $('#user_id').val();
-
-                window.location = SITE_URL + "/" + ADMIN_PREFIX + "/exchanges/pdf?startfrom=" + startfrom +
-                    "&endto=" + endto +
-                    "&status=" + status +
-                    "&currency=" + currency +
-                    "&user_id=" + user_id;
             });
         });
     </script>

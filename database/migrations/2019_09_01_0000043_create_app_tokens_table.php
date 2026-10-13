@@ -14,9 +14,8 @@ class CreateAppTokensTable extends Migration
     public function up()
     {
         Schema::create('app_tokens', function (Blueprint $table) {
-            $table->increments('id');
-            $table->integer('app_id')->unsigned()->index();
-            $table->foreign('app_id')->references('id')->on('merchant_apps')->onUpdate('cascade')->onDelete('cascade');
+            $table->id();
+            $table->foreignId('app_id')->constrained('merchant_apps')->onUpdate('cascade')->onDelete('cascade');
             $table->string('token',100);
             $table->string('expires_in',20);
             $table->timestamps();

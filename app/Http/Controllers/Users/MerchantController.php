@@ -2,14 +2,16 @@
 
 namespace App\Http\Controllers\Users;
 
-use Intervention\Image\Facades\Image;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
 use App\Http\Controllers\Controller;
 use App\Rules\CheckValidFile;
 use Illuminate\Http\Request;
 use App\Http\Helpers\Common;
 use Illuminate\Support\Str;
 use DB, Auth, Exception;
-use App\Models\{Wallet,
+use App\Models\{
+    Wallet,
     MerchantPayment,
     MerchantGroup,
     Currency,
@@ -68,7 +70,7 @@ class MerchantController extends Controller
             $fileName = null;
 
             if (isset($picture)) {
-                $response = uploadImage($picture, public_path("/uploads/merchant/"),'100*80', null, '70*70');
+                $response = uploadImage($picture, public_path("/uploads/merchant/"), '100*80', null, '70*70');
 
                 if ($response['status'] === true) {
                     $fileName = $response['file_name'];
@@ -93,7 +95,7 @@ class MerchantController extends Controller
             $merchant->logo              = $fileName != null ? $fileName : '';
             $merchant->fee               = isset($merchantGroup) ? $merchantGroup->fee : 0.00;
 
-            if (module('WithdrawalApi') && isActive('WithdrawalApi')) {
+            if (moduleExists('WithdrawalApi') && isActive('WithdrawalApi')) {
                 $merchant->withdrawal_approval = $request->withdrawal_approval == 'on' ? 'Yes' : 'No';
             }
 
@@ -112,7 +114,7 @@ class MerchantController extends Controller
                 }
 
                 $request->request->add([
-                    'merchantId' => $merchant->id, 
+                    'merchantId' => $merchant->id,
                     'merchantDefaultCurrencyId' => $merchant->currency_id,
                     'clientId' => $merchantAppInfo->client_id
                 ]);
@@ -126,9 +128,7 @@ class MerchantController extends Controller
             (new  \App\Services\Mail\MerchantPayment\NotifyAdminOnMerchantCreationMailService())->send($merchant, ['type' => 'payment', 'medium' => 'email']);
             $this->helper->one_time_message('success', __('Merchant Created Successfully!'));
             return redirect('merchants');
-        }
-        catch (Exception $e)
-        {
+        } catch (Exception $e) {
             DB::rollBack();
             $this->helper->one_time_message('error', $e->getMessage());
             return redirect('merchants');
@@ -145,8 +145,7 @@ class MerchantController extends Controller
         $data['merchant']         = $merchant = Merchant::with('currency:id,code')->find($id);
         $data['defaultWallet']    = Wallet::with(['currency:id,code'])->where(['user_id' => $merchant->user->id, 'is_default' => 'Yes'])->first(['currency_id']);
 
-        if (!isset($merchant) || $merchant->user_id != Auth::user()->id)
-        {
+        if (!isset($merchant) || $merchant->user_id != Auth::user()->id) {
             abort(404);
         }
         return view('user.merchant.edit', $data);
@@ -168,9 +167,9 @@ class MerchantController extends Controller
             DB::beginTransaction();
 
             $merchant = Merchant::find($request->id, ['id', 'currency_id', 'business_name', 'site_url', 'note', 'logo']);
-            
+
             if (isset($picture)) {
-                $response = uploadImage($picture, public_path("/uploads/merchant/"),'100*80', $merchant->logo, '70*70');
+                $response = uploadImage($picture, public_path("/uploads/merchant/"), '100*80', $merchant->logo, '70*70');
                 if ($response['status'] === true) {
                     $fileName = $response['file_name'];
                 } else {
@@ -186,13 +185,13 @@ class MerchantController extends Controller
             if ($fileName != null) {
                 $merchant->logo = $fileName;
             }
-            
+
             if ($merchant->currency_id != $request->currency_id) {
                 $merchant->status = 'Moderation';
             }
             $merchant->currency_id   = $request->currency_id;
 
-            if (module('WithdrawalApi') && isActive('WithdrawalApi')) {
+            if (moduleExists('WithdrawalApi') && isActive('WithdrawalApi')) {
                 $merchant->withdrawal_approval = $request->withdrawal_approval == 'on' ? 'Yes' : 'No';
             }
 
@@ -206,7 +205,6 @@ class MerchantController extends Controller
             $this->helper->one_time_message('error', $e->getMessage());
             return redirect('merchants');
         }
-        
     }
 
     public function detail($id)
@@ -217,8 +215,7 @@ class MerchantController extends Controller
         $data['icon']          = 'user';
         $data['merchant']      = $merchant      = Merchant::find($id);
         $data['defaultWallet'] = Wallet::with(['currency:id,code'])->where(['user_id' => $merchant->user->id, 'is_default' => 'Yes'])->first(['currency_id']); //new
-        if (!isset($merchant) || $merchant->user_id != Auth::user()->id)
-        {
+        if (!isset($merchant) || $merchant->user_id != Auth::user()->id) {
             abort(404);
         }
         return view('user_dashboard.Merchant.detail', $data);
@@ -234,7 +231,7 @@ class MerchantController extends Controller
         $paymentMethod = isset(request()->paymentMethod) ? request()->paymentMethod : 'all';
         $orderNumber = isset(request()->orderNumber) ? request()->orderNumber : null;
         $merchant = isset(request()->merchant) && request()->merchant != 'all' ? request()->merchant : $merchants->pluck('id')->toArray();
-        
+
         $data = [
             'to' => $to,
             'from' => $from,
@@ -252,18 +249,18 @@ class MerchantController extends Controller
             'statuses' => $this->merchantPayment->groupBy('status')->get(['status']),
             'currencies' => $this->merchantPayment->with('currency:id,code')->groupBy('currency_id')->get(['currency_id']),
             'merchantPayments' => $this->merchantPayment->getMerchantPaymentsList($from, $to, $status, $currency, $paymentMethod, $orderNumber, $merchant)->latest()->paginate(15)
-            
+
         ];
 
         return view('user.merchant.payments', $data);
     }
 
     //Standard Merchant QrCode - starts
-    public function generateStandardMerchantPaymentQrCode(Request $request) 
+    public function generateStandardMerchantPaymentQrCode(Request $request)
     {
         $qrCode = QrCode::where(['object_id' => $request->merchantId, 'object_type' => 'standard_merchant', 'status' => 'Active'])->first(['id', 'secret']);
         $merchantCurrency = Currency::where('id', $request->merchantDefaultCurrency)->first(['code']);
-        
+
         if (!empty($qrCode)) {
             $qrCode->status = 'Inactive';
             $qrCode->save();
@@ -280,10 +277,12 @@ class MerchantController extends Controller
         $createMerchantQrCode->qr_image = $imageName;
         $createMerchantQrCode->status = 'Active';
         $createMerchantQrCode->save();
-        
 
-        $secretCodeImage = generateQrcode($createMerchantQrCode->secret);
-        Image::make($secretCodeImage)->save(getDirectory('merchant_qrcode') . $imageName); 
+
+        $imageContent = file_get_contents(generateQrcode($createMerchantQrCode->secret));
+        $manager = new ImageManager(new Driver());
+        $img = $manager->read($imageContent);
+        $img->save(getDirectory('merchant_qrcode') . $imageName);
 
         return response()->json([
             'status' => true,
@@ -301,7 +300,7 @@ class MerchantController extends Controller
         ]);
     }
 
-    public function generateOrUpdateExpressMerchantQrCode(Request $request) 
+    public function generateOrUpdateExpressMerchantQrCode(Request $request)
     {
         $qrCode = QrCode::where(['object_id' => $request->merchantId, 'object_type' => 'express_merchant', 'status' => 'Active'])->first(['id', 'secret']);
         $merchantCurrency = Currency::where('id', $request->merchantDefaultCurrencyId)->first(['code']);
@@ -323,18 +322,21 @@ class MerchantController extends Controller
         $createMerchantQrCode->qr_image = $imageName;
         $createMerchantQrCode->status = 'Active';
         $createMerchantQrCode->save();
-        
-        $secretCodeImage = generateQrcode($createMerchantQrCode->secret);
-        Image::make($secretCodeImage)->save(getDirectory('merchant_qrcode') . $imageName); 
+
+        $imageContent = file_get_contents(generateQrcode($createMerchantQrCode->secret));
+
+        $manager = new ImageManager(new Driver());
+        $img = $manager->read($imageContent);
+        $img->save(getDirectory('merchant_qrcode') . $imageName);
 
         return response()->json([
             'status' => true,
             'imgSource' => image($imageName, 'merchant_qrcode')
         ]);
-        
     }
 
-    public function printMerchantQrCode($merchantId, $objectType) {
+    public function printMerchantQrCode($merchantId, $objectType)
+    {
         $this->helper->printQrCode($merchantId, $objectType);
     }
 }

@@ -95,12 +95,26 @@ class TrimStrings extends Middleware
      */
     private function iterateInputValue($key, $value)
     {
+        // If the value is an array, process it recursively
+        if (is_array($value)) {
+            return array_map(fn($v) => $this->iterateInputValue($key, $v), $value);
+        }
+
+        // If it's not a string, return it as is
+        if (!is_string($value)) {
+            return $value;
+        }
+
+        // Apply XSS cleaning if the key is not in the exception list
         if (!in_array($key, $this->except, true)) {
             $value = trim(xss_clean($value));
         }
+
+        // If the key is not in the allow-HTML list, strip unwanted characters
         if (!empty($value) && !in_array($key, $this->exceptAllowHTMLTags, true)) {
             return stripBeforeSave($value);
         }
+
         return $value;
     }
 }

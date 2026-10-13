@@ -22,6 +22,13 @@
         <a href="{{url()->current()}}#top-header"><i class="fas fa-arrow-up"></i></a>
     </div>
     <!-- End scroll-top button -->
+     
+    <script>
+        // Apply dark class to body immediately if dark mode is set
+        if (localStorage.getItem('dark') === '1') {
+            document.body.classList.add('dark');
+        }
+    </script>
     
     <!-- Start Header -->
     @include('frontend.layouts.common.header')

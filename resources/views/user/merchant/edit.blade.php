@@ -113,7 +113,7 @@
                         </div>
                     </div>
                 </div>
-                @if (module('WithdrawalApi') && isActive('WithdrawalApi'))
+                @if (moduleExists('WithdrawalApi') && isActive('WithdrawalApi'))
                     <!-- Withdrawal Approval -->
                     <div class="row">
                         <div class="col-12">
@@ -174,7 +174,7 @@
 @endsection
 
 @push('js')
-    <script src="{{ asset('public/dist/plugins/html5-validation-1.0.0/validation.min.js') }}"></script>
+    <script src="{{ asset('public/dist/plugins/html5-validation/validation.min.js') }}"></script>
     <script type="text/javascript">
         'use strict';
         var csrfToken = $('[name="_token"]').val();

@@ -15,7 +15,7 @@ class CreateSmsConfigsTable extends Migration
     {
         Schema::create('sms_configs', function (Blueprint $table)
         {
-            $table->increments('id');
+            $table->id();
             $table->string('type', 8)->index();
             $table->text('credentials');
             $table->string('status', 8)->index();

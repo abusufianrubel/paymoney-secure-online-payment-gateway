@@ -62,6 +62,7 @@ class DepositMoneyService
         Currency::join("fees_limits", "fees_limits.currency_id", "currencies.id")
             ->where("fees_limits.has_transaction", "Yes")
             ->where("fees_limits.transaction_type_id", Deposit)
+            ->where("currencies.status", "Active")
             ->get()
             ->map(function ($item) use (&$result) {
                 $result["currencies"][$item->currency_id] = [
@@ -234,7 +235,7 @@ class DepositMoneyService
                     $response["bank"] ?? null
                 );
                 $response = miniCollection($response)->only(["action", "message"]);
-            } elseif ($paymentMethodId == Coinbase || $paymentMethodId == Payeer || $paymentMethodId == Coinpayments) {
+            } elseif ($paymentMethodId == Coinbase || $paymentMethodId == Payeer || $paymentMethodId == Coinpayments || $paymentMethodId == Flutterwave) {
 
                 $deposit = Deposit::success(
                     $currencyId,
@@ -334,6 +335,7 @@ class DepositMoneyService
             'payment_type' => 'deposit',
             'payment_method' => $paymentMethodId,
             'redirectUrl' => route('deposit.complete'),
+            'success_url' => route('user.deposit.success'),
             'cancel_url' => url('deposit'),
             'gateway' => $paymentMethodAlias,
             'uuid' => unique_code()

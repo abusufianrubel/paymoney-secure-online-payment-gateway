@@ -19,7 +19,6 @@ use Modules\TatumIo\Services\CryptoSendService;
 
 class CryptoSendController extends Controller
 {
-
     protected $service;
 
     public function __construct(CryptoSendService $service)
@@ -40,8 +39,6 @@ class CryptoSendController extends Controller
 
     }
 
-
-
     public function userCryptoAddress()
     {
         try {
@@ -54,7 +51,6 @@ class CryptoSendController extends Controller
         }
 
     }
-
 
     public function validateCryptoAddress()
     {
@@ -85,8 +81,6 @@ class CryptoSendController extends Controller
         }
     }
 
-
-
     public function cryptoSendConfirm(CryptoSendRequest $request)
     {
         try {
@@ -100,11 +94,6 @@ class CryptoSendController extends Controller
         }
 
     }
-
-
-
-
-
 }
 
 

@@ -86,10 +86,10 @@
 @endsection
 
 @push('extra_body_scripts')
-<script src="{{ asset('public/dist/plugins/html5-validation-1.0.0/validation.min.js') }}"  type="text/javascript" ></script>
+<script src="{{ asset('public/dist/plugins/html5-validation/validation.min.js') }}"  type="text/javascript" ></script>
 <script>
     'use strict';
-    var cryptoSendBackConfirmUrl = '{{ route("admin.crypto_send.create", ["code" => encrypt($network)]) }}';
+    var cryptoSendBackConfirmUrl = '{{ route("admin.tatum.crypto_send.create", ["code" => encrypt($network)]) }}';
     var confirm = '{{ __("Confirm") }}';
     var confirming = '{{ __("Confirming...") }}';
 </script>

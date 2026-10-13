@@ -2,19 +2,18 @@
 
 namespace App\Event;
 
-use Illuminate\Broadcasting\{Channel,
-    InteractsWithSockets,
-    PresenceChannel,
+use Illuminate\Broadcasting\{InteractsWithSockets,
     PrivateChannel
 };
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
 class LoginActivity
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
-    public $userType;
+    
+    public $user, $userType;
+
     /**
      * Create a new event instance.
      *

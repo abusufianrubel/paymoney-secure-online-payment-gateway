@@ -25,6 +25,17 @@ use Str, Exception, Session, DB;
 class ExpressMerchantPaymentService
 {
     protected $helper;
+    protected $feeBearer;
+    protected $fee;
+    protected $merchantId;
+    protected $userId;
+    protected $uniqueCode;
+    protected $amount;
+    protected $currencyCode;
+    protected $currencyId;
+    protected $paymentMethodId;
+    protected $payerId;
+
     public function __construct()
     {
         $this->helper = new Common();
@@ -249,8 +260,30 @@ class ExpressMerchantPaymentService
         return [
             'status' => 'Active',
             'transInfo' => $transInfo,
-            'currSymbol' => Currency::where('code', $transInfo->currency)->value('symbol')
+            'fee_bearer' => $transInfo?->app?->merchant?->merchant_group?->fee_bearer,
+            'merchant_fee' =>  $transInfo?->app?->merchant?->fee,
+            'merchant_id' => $transInfo?->app?->merchant_id,
+            'user_id' => $transInfo->app?->merchant?->user_id,
+            'currSymbol' => Currency::where('code', $transInfo->currency)->value('symbol'),
+            'currCode' => $transInfo->currency,
         ];
+    }
+
+    private function setData()
+    {
+        $data = getPaymentParam(request()->params);
+        $this->feeBearer = $data['fee_bearer'];
+        $this->fee = $data['merchant_fee'];
+        $this->merchantId = $data['merchant_id'];
+        $this->userId = $data['user_id'];
+        $this->payerId = $data['payer_id'];
+        $this->uniqueCode = $data['uuid'];
+        $this->amount = $data['transInfo']['amount'];
+        $this->currencyCode = $data['transInfo']['currency'];
+        $this->paymentMethodId = $data['payment_method'];
+        $this->currencyId = $data['currencyId'];
+
+        return $data;
     }
 
     /**
@@ -261,149 +294,60 @@ class ExpressMerchantPaymentService
      * @through MerchantWithdrawException
      */
     public function storePaymentInformations()
-    {
-        $transInfo = Session::get('transInfo');
-
-        self::checkNullAndThrowException($transInfo, __('Url has been deleted or expired.'), 'sessionExpired');
-        
-        $unique_code = unique_code();
-        $amount      = $transInfo->amount;
-        $currencyCode = $transInfo->currency;
-
-        //Check currency exists in system or not
-        $currencyId = Currency::where('code', $currencyCode)->value('id');
-
-        self::checkNullAndThrowException($currencyId, __('Currency not found.'), 'currencyNotFound');
-
-        $feesLimit = self::checkMerchantPaymentFeesLimit($currencyId, Mts, $transInfo->amount, $transInfo?->app?->merchant?->fee);
-
-        $merchantUser = Merchant::where('id', $transInfo?->app?->merchant?->id)->first(['id', 'user_id']);
-
-        self::checkNullAndThrowException($merchantUser, __('Merchant not found.'), 'merchantNotFound');
-
-        $senderWallet = Wallet::where(['user_id' => auth()->user()->id, 'currency_id' => $currencyId])->first(['id', 'balance']);
-
-        self::checkNullAndThrowException($senderWallet, __('Sender wallet not found.'), 'merchantWalletNotFound');
-
-        if ($senderWallet->balance < $amount) {
-            self::throwException(__('Sender does not have enough balance.'), 'notHaveEnoughBalance');
-        }
-
+    {  
         try {
             DB::beginTransaction();
 
-            $data = [];
+            $data = $this->setData();
 
-            //Check User has the wallet or not
-            $senderWallet->balance = $transInfo?->app?->merchant?->merchant_group?->fee_bearer == 'Merchant' ? $senderWallet->balance - $amount : $senderWallet->balance - ($amount + $feesLimit['totalFee']) ;
-            $senderWallet->save();
+            $transInfo = $data['transInfo'];
 
-            $merchantPayment                    = new MerchantPayment();
-            $merchantPayment->merchant_id       = $transInfo->app?->merchant_id;
-            $merchantPayment->currency_id       = $currencyId;
-            $merchantPayment->payment_method_id = 1;
-            $merchantPayment->user_id           = auth()->user()->id;
-            $merchantPayment->gateway_reference = $unique_code;
-            $merchantPayment->order_no          = '';
-            $merchantPayment->item_name         = '';
-            $merchantPayment->uuid              = $unique_code;
-            $merchantPayment->status            = 'Success';
-            $merchantPayment->fee_bearer        = $transInfo?->app?->merchant?->merchant_group?->fee_bearer;
-            $merchantPayment->charge_percentage = $feesLimit['depositPercent'] + $feesLimit['merchantPercentOrTotalFee'];
-            $merchantPayment->charge_fixed      = $feesLimit['chargeFixed'];
-            $merchantPayment->percentage        = $transInfo?->app?->merchant?->fee + $feesLimit['chargePercentage'];
-            $merchantPayment->amount            = $transInfo?->app?->merchant?->merchant_group?->fee_bearer == 'Merchant' ? $amount - $feesLimit['totalFee'] : $amount;
-            $merchantPayment->total             = $merchantPayment->amount + $feesLimit['totalFee'];
-            $merchantPayment->save();
+            $feesLimit = self::checkMerchantPaymentFeesLimit(
+                $this->currencyId, 
+                $this->paymentMethodId, 
+                $this->amount, 
+                $this->fee
+            );
 
-            $userTransaction                           = new Transaction();
-            $userTransaction->user_id                  = auth()->user()->id;
-            $userTransaction->end_user_id              = $transInfo?->app?->merchant?->user_id;
-            $userTransaction->merchant_id              = $transInfo?->app?->merchant_id;
-            $userTransaction->currency_id              = $currencyId;
-            $userTransaction->payment_method_id        = Mts;
-            $userTransaction->uuid                     = $unique_code;
-            $userTransaction->transaction_reference_id = $merchantPayment->id;
-            $userTransaction->transaction_type_id      = Payment_Sent;
-            $userTransaction->subtotal                 = $amount;
-            $userTransaction->status                   = 'Success'; 
+            self::checkMerchant();
 
-            $userTransaction->percentage = $transInfo?->app?->merchant?->merchant_group?->fee_bearer == 'Merchant' ? 0 : $transInfo?->app?->merchant?->fee + $feesLimit['chargePercentage'];
-
-            $userTransaction->charge_percentage = $transInfo?->app?->merchant?->merchant_group?->fee_bearer == 'Merchant' ? 0 : $feesLimit['depositPercent'] + $feesLimit['merchantPercentOrTotalFee'];
-
-            $userTransaction->charge_fixed = $transInfo?->app?->merchant?->merchant_group?->fee_bearer == 'Merchant' ? 0 : $feesLimit['chargeFixed'];
-            $userTransaction->total = '-' . ($userTransaction->subtotal + $userTransaction->charge_percentage + $userTransaction->charge_fixed);
-            $userTransaction->save();
-
-            $merchantTransaction                           = new Transaction();
-            $merchantTransaction->user_id                  = $transInfo->app?->merchant?->user_id;
-            $merchantTransaction->end_user_id              = auth()->user()->id;
-            $merchantTransaction->merchant_id              = $transInfo->app?->merchant_id;
-            $merchantTransaction->currency_id              = $currencyId;
-            $merchantTransaction->payment_method_id        = 1;
-            $merchantTransaction->uuid                     = $unique_code;
-            $merchantTransaction->transaction_reference_id = $merchantPayment->id;
-            $merchantTransaction->transaction_type_id      = Payment_Received;
-            $merchantTransaction->status                   = 'Success';
-
-            $merchantTransaction->subtotal = $transInfo?->app?->merchant?->merchant_group?->fee_bearer == 'Merchant' ? $amount - $feesLimit['totalFee'] : $amount;
-
-            $merchantTransaction->percentage = $transInfo?->app?->merchant?->merchant_group?->fee_bearer == 'Merchant' ? $transInfo->app?->merchant?->fee + $feesLimit['chargePercentage'] : 0;
-
-            $merchantTransaction->charge_percentage = $transInfo?->app?->merchant?->merchant_group?->fee_bearer == 'Merchant' ? $feesLimit['depositPercent'] + $feesLimit['merchantPercentOrTotalFee'] : 0;
-
-            $merchantTransaction->charge_fixed = $transInfo?->app?->merchant?->merchant_group?->fee_bearer == 'Merchant' ? $feesLimit['chargeFixed'] : 0;
-
-            $merchantTransaction->total = $merchantTransaction->charge_percentage + $merchantTransaction->charge_fixed + $merchantTransaction->subtotal;
-            
-            $merchantTransaction->save();
-
-            $transInfo->status = 'success';
-            $transInfo->save();
-
-            //updating/Creating merchant wallet
-            $merchantWallet = Wallet::where(['user_id' => $transInfo?->app?->merchant?->user_id, 'currency_id' => $currencyId])->first(['id', 'balance']);
-            if (empty($merchantWallet)) {
-                $wallet              = new Wallet();
-                $wallet->user_id     = $transInfo->app?->merchant?->user_id;
-                $wallet->currency_id = $currencyId;
-                $wallet->balance     = $transInfo?->app?->merchant?->merchant_group?->fee_bearer == 'Merchant' ? ($amount - $feesLimit['totalFee']) : $amount;
-                $wallet->is_default  = 'No';
-                $wallet->save();
-            } else {
-                $merchantWallet->balance = $transInfo?->app?->merchant?->merchant_group?->fee_bearer == 'Merchant' ? $merchantWallet->balance + ($amount - $feesLimit['totalFee']) : $merchantWallet->balance + $amount;
-                $merchantWallet->save();
+            if ($this->paymentMethodId == Mts) {
+                self::senderWalletOperation($feesLimit);
             }
+
+            $merchantPayment = $this->merchantPayment($feesLimit);
+
+            $userTransaction = self::createTransaction(
+                $merchantPayment->id, 
+                $feesLimit, 
+                Payment_Sent
+            );
+
+            self::createTransaction(
+                $merchantPayment->id, 
+                $feesLimit, 
+                Payment_Received
+            );
+
+            self::merchantWalletUpdate($feesLimit);
 
             DB::commit();
 
-            // Send mail to admin
-            (new NotifyAdminOnPaymentMailService())->send($merchantPayment, ['type' => 'payment', 'medium' => 'email', 'fee_bearer' => $transInfo?->app?->merchant?->merchant_group?->fee_bearer, 'fee' => $feesLimit['totalFee']]);
+            self::sendNotification($merchantPayment, $feesLimit);
 
-            // Send mail to merchant
-            (new NotifyMerchantOnPaymentMailService())->send($merchantPayment, ['fee_bearer' => $transInfo?->app?->merchant?->merchant_group?->fee_bearer, 'fee' => $feesLimit['totalFee']]);
-
-            //pass the response to success url
-            $response = [
-                'status'         => 200,
-                'transaction_id' => $merchantPayment->uuid,
-                'merchant'       => getColumnValue($merchantPayment->merchant?->user),
-                'currency'       => $merchantPayment->currency?->code,
-                'fee'            => $merchantPayment->charge_percentage,
-                'amount'         => $merchantPayment->amount,
-                'total'          => $merchantPayment->total,
+            return [
+                'status' => 200,
+                'transaction_id' => $userTransaction,
+                'successPath' =>self::generateSuccessUrl($merchantPayment, $transInfo['success_url'])
             ];
-            $response            = json_encode($response);
-            $encodedResponse     = base64_encode($response);
-            $successPath         = $transInfo->success_url . '?' . $encodedResponse;
-            $data['status']      = 200;
-            $data['successPath'] = $successPath;
-            return $data;
+
         } catch (Exception $e) {
             DB::rollBack();
-            $this->helper->one_time_message('error', $e->getMessage());
-            return redirect()->to('payment/fail');
+
+            return [
+                'status' => 401,
+                'message' => $e->getMessage()
+            ];
         }
     }
 
@@ -446,6 +390,131 @@ class ExpressMerchantPaymentService
         if ($userWallet->balance < $amount) {
             Self::throwException( __('User does not have sufficient balance.'), 'insufficientBalance');
         }
+    }
+
+    public function checkMerchant()
+    {
+        $merchantUser = Merchant::where('id', $this->merchantId)->first(['id', 'user_id']);
+
+        self::checkNullAndThrowException($merchantUser, __('Merchant not found.'), 'merchantNotFound');
+
+    }
+
+    public function sendNotification($merchantPayment, $feesLimit)
+    {
+        // Send mail to admin
+        (new NotifyAdminOnPaymentMailService())->send($merchantPayment, ['type' => 'payment', 'medium' => 'email', 'fee_bearer' => $this->feeBearer, 'fee' => $feesLimit['totalFee']]);
+
+        // Send mail to merchant
+        (new NotifyMerchantOnPaymentMailService())->send($merchantPayment, ['fee_bearer' => $this->feeBearer, 'fee' => $feesLimit['totalFee']]);
+        return true;
+    }
+
+
+    public function generateSuccessUrl($merchantPayment, $url)
+    {
+        $response = [
+            'status'         => 200,
+            'transaction_id' => $merchantPayment->uuid,
+            'merchant'       => getColumnValue($merchantPayment->merchant?->user),
+            'currency'       => $merchantPayment->currency?->code,
+            'fee'            => $merchantPayment->charge_percentage,
+            'amount'         => $merchantPayment->amount,
+            'total'          => $merchantPayment->total,
+        ];
+        $response = json_encode($response);
+        $encodedResponse = base64_encode($response);
+
+        return $url . '?' . $encodedResponse;
+    }
+
+
+    public function merchantPayment($feesLimit)
+    {
+        $merchantPayment                    = new MerchantPayment();
+        $merchantPayment->merchant_id       = $this->merchantId;
+        $merchantPayment->currency_id       = $this->currencyId;
+        $merchantPayment->payment_method_id = $this->paymentMethodId;
+        $merchantPayment->user_id           = $this->payerId ?? null;
+        $merchantPayment->gateway_reference = $this->uniqueCode;
+        $merchantPayment->order_no          = '';
+        $merchantPayment->item_name         = '';
+        $merchantPayment->uuid              = $this->uniqueCode;
+        $merchantPayment->status            = 'Success';
+        $merchantPayment->fee_bearer        = $this->feeBearer;
+        $merchantPayment->charge_percentage = $feesLimit['depositPercent'] + $feesLimit['merchantPercentOrTotalFee'];
+        $merchantPayment->charge_fixed      = $feesLimit['chargeFixed'];
+        $merchantPayment->percentage        = $this->fee + $feesLimit['chargePercentage'];
+        $merchantPayment->amount            = $this->feeBearer == 'Merchant' ? $this->amount - $feesLimit['totalFee'] : $this->amount;
+        $merchantPayment->total             = $merchantPayment->amount + $feesLimit['totalFee'];
+        $merchantPayment->save();
+        return $merchantPayment;
+    }
+
+    public function createTransaction($merchantPaymentId, $feesLimit, $transactionType)
+    {
+        $transaction = new Transaction();
+        $transaction->merchant_id = $this->merchantId;
+        $transaction->currency_id = $this->currencyId;
+        $transaction->payment_method_id = $this->paymentMethodId; 
+        $transaction->uuid = $this->uniqueCode;
+        $transaction->transaction_reference_id = $merchantPaymentId;
+        $transaction->transaction_type_id = $transactionType;
+        $transaction->status = 'Success';
+        
+        if ($transactionType == Payment_Sent) {
+            $transaction->end_user_id = $this->userId;
+            $transaction->user_id = $this->payerId;
+            $transaction->subtotal = $this->amount;
+            $transaction->percentage = $this->feeBearer == 'Merchant' ? 0 : $feesLimit['chargePercentage'] + $this->fee;
+            $transaction->charge_percentage = $this->feeBearer == 'Merchant' ? 0 : $feesLimit['depositPercent'] + $feesLimit['merchantPercentOrTotalFee'];
+            $transaction->charge_fixed = $this->feeBearer == 'Merchant' ? 0 : $feesLimit['chargeFixed'];
+            $transaction->total = '-' . ($transaction->subtotal + $transaction->charge_percentage + $transaction->charge_fixed);
+        } elseif ($transactionType == Payment_Received) {
+            $transaction->end_user_id = $this->payerId;
+            $transaction->user_id = $this->userId;
+            $transaction->subtotal = $this->feeBearer == 'Merchant' ? $this->amount - $feesLimit['totalFee'] : $this->amount;
+            $transaction->percentage = $this->feeBearer == 'Merchant' ? $feesLimit['chargePercentage'] + $this->fee : 0;
+            $transaction->charge_percentage = $this->feeBearer == 'Merchant' ? $feesLimit['depositPercent'] + $feesLimit['merchantPercentOrTotalFee'] : 0;
+            $transaction->charge_fixed = $this->feeBearer == 'Merchant' ? $feesLimit['chargeFixed'] : 0;
+            $transaction->total = $transaction->subtotal + $transaction->charge_percentage + $transaction->charge_fixed;
+        }
+        
+        $transaction->save();
+        return $transaction->id;
+    }
+
+    public function merchantWalletUpdate($feesLimit)
+    {
+       $merchantWallet = Wallet::where(['user_id' => $this->userId, 'currency_id' => $this->currencyId])->first(['id', 'balance']);
+       if (empty($merchantWallet)) {
+           $wallet              = new Wallet();
+           $wallet->user_id     = $this->userId;
+           $wallet->currency_id = $this->currencyId;
+           $wallet->balance     = $this->feeBearer == 'Merchant' ? ($this->amount - $feesLimit['totalFee']) : $this->amount;
+           $wallet->is_default  = 'No';
+           $wallet->save();
+       } else {
+           $merchantWallet->balance = $this->feeBearer == 'Merchant' ? $merchantWallet->balance + ($this->amount - $feesLimit['totalFee']) : $merchantWallet->balance + $this->amount;
+           $merchantWallet->save();
+       }
+
+       return true;
+
+    }
+
+    public function senderWalletOperation($feesLimit)
+    {
+        $senderWallet = Wallet::where(['user_id' => $this->payerId, 'currency_id' => $this->currencyId])->first(['id', 'balance']);
+
+        self::checkNullAndThrowException($senderWallet, __('Sender wallet not found.'), 'merchantWalletNotFound');
+
+        if ($senderWallet->balance < $this->amount) {
+            self::throwException(__('Sender does not have enough balance.'), 'notHaveEnoughBalance');
+        }
+        //Check User has the wallet or not
+        $senderWallet->balance = $this->feeBearer == 'Merchant' ? $senderWallet->balance - $this->amount : $senderWallet->balance - ($this->amount + $feesLimit['totalFee']) ;
+        $senderWallet->save();
     }
 
     /**

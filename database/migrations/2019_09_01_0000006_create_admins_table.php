@@ -15,9 +15,8 @@ class CreateAdminsTable extends Migration
     {
         Schema::create('admins', function (Blueprint $table)
         {
-            $table->increments('id');
-            $table->integer('role_id')->unsigned()->index();
-            $table->foreign('role_id')->references('id')->on('roles')->onUpdate('cascade')->onDelete('cascade');
+            $table->id();
+            $table->foreignId('role_id')->constrained('roles')->onUpdate('cascade')->onDelete('cascade');
 
             // $table->string('username')->unique();
             $table->string('first_name', 100);
@@ -26,6 +25,7 @@ class CreateAdminsTable extends Migration
             $table->string('email')->unique();
             $table->string('password', 60);
             $table->string('status')->default('Active')->comment('Active or Inactive');
+            $table->string('picture', 100);
             $table->rememberToken();
             $table->timestamps();
         });

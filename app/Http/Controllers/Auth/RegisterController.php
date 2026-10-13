@@ -4,12 +4,11 @@ namespace App\Http\Controllers\Auth;
 
 use App\Services\Mail\UserVerificationMailService;
 use App\Http\Controllers\Users\EmailController;
+use Modules\Escrow\Services\EscrowService;
 use DB, Validator, Auth, Exception;
-use Intervention\Image\Facades\Image;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Http\Helpers\Common;
-use Illuminate\Support\Str;
 use App\Models\{RoleUser,
     CryptoProvider,
     VerifyUser,
@@ -30,7 +29,7 @@ class RegisterController extends Controller
         $this->helper = new Common();
         $this->email  = new EmailController();
         $this->user   = new User();
-        if (module('Referral') && settings('referral_enabled') == 'Yes') {
+        if (moduleExists('Referral') && settings('referral_enabled') == 'Yes') {
             $this->referralIdentifier = md5(getBrowser($_SERVER['HTTP_USER_AGENT'])['platform'] . $_SERVER['REMOTE_ADDR']);
         }
     }
@@ -87,6 +86,7 @@ class RegisterController extends Controller
                     'first_name'            => ['required', 'max:30', 'regex:/^[a-zA-Z\s]*$/'],
                     'last_name'             => ['required', 'max:30', 'regex:/^[a-zA-Z\s]*$/'],
                     'email'                 => ['required', 'email', 'unique:users,email'],
+                    'phone'                 => 'nullable|unique:users',
                     'password'              => ['required', 'confirmed'],
                     'password_confirmation' => ['required'],
                     'g-recaptcha-response'  => ['required', 'captcha'],
@@ -106,12 +106,14 @@ class RegisterController extends Controller
                     'first_name'            => ['required', 'max:30', 'regex:/^[a-zA-Z\s]*$/'],
                     'last_name'             => ['required', 'max:30', 'regex:/^[a-zA-Z\s]*$/'],
                     'email'                 => ['required', 'email', 'unique:users,email'],
+                    'phone'                 => 'nullable|unique:users',
                     'password'              => ['required', 'confirmed'],
                     'password_confirmation' => ['required'],
                 );
                 $fieldNames = array(
                     'first_name'            => 'First Name',
                     'last_name'             => 'Last Name',
+                    'phone'                 => 'Phone',
                     'email'                 => 'Email',
                     'password'              => 'Password',
                     'password_confirmation' => 'Confirm Password',
@@ -124,6 +126,12 @@ class RegisterController extends Controller
                 return redirect('register')->withErrors($validator)->withInput();
             } else {
                 try {
+                    
+                    if (User::where('phone', preg_replace("/[\s-]+/", "", $request->phone))->exists()) {
+                        $this->helper->one_time_message('error', __('The phone number has already been taken!'));
+                        return redirect('register')->withErrors($validator)->withInput();
+                    }
+                
                     DB::beginTransaction();
 
                     // Create user
@@ -143,7 +151,7 @@ class RegisterController extends Controller
                         $this->user->createUserAllowedWallets($user->id, settings('allowed_wallets'));
                     }
 
-                    if (module('Referral') && settings('referral_enabled') == 'Yes') {
+                    if (moduleExists('Referral') && settings('referral_enabled') == 'Yes') {
                         // Save referral code for new User
                         (new \Modules\Referral\Entities\ReferralCode())->saveUserReferralCode($user->id);
 
@@ -154,21 +162,24 @@ class RegisterController extends Controller
                         (new \Modules\Referral\Entities\ReferralAward())->saveSignupReferralAward($user->id);
                     }
 
-                    if (isActive('BlockIo') && CryptoProvider::getStatus('BlockIo') == 'Active') {
-                        $generateUserCryptoWalletAddress = $this->user->generateUserBlockIoWalletAddress($user);
-                        if ($generateUserCryptoWalletAddress['status'] == 401) {
-                            DB::rollBack();
-                            $this->helper->one_time_message('error', $generateUserCryptoWalletAddress['message']);
-                            return redirect('/login');
-                        }
+                    if (moduleExists('PaymentLink') && isActive('PaymentLink')) {
+                        (new \Modules\PaymentLink\Services\PaymentLinkService())->processUnregisteredPaymentLink($user->email, $user->id);
+                    }
+                    
+                    if (moduleExists('Escrow') && isActive('Escrow')) {
+                        (new EscrowService())->processUnregisteredEscrow($user);
                     }
 
-                    if (isActive('TatumIo') && CryptoProvider::getStatus('TatumIo') == 'Active') {
-                        $generateUserCryptoWalletAddress = $this->user->generateUserTatumIoWalletAddress($user);
-                        if ($generateUserCryptoWalletAddress['status'] == 401) {
-                            DB::rollBack();
-                            $this->helper->one_time_message('error', $generateUserCryptoWalletAddress['message']);
-                            return redirect('/login');
+                  
+                    if (!checkDemoEnvironment() && isActive('TatumIo') && CryptoProvider::getStatus('TatumIo') == 'Active') {
+
+                        if (isActive('TatumIo') && CryptoProvider::getStatus('TatumIo') == 'Active') {
+                            $generateUserCryptoWalletAddress = $this->user->generateUserTatumIoWalletAddress($user);
+                            if ($generateUserCryptoWalletAddress['status'] == 401) {
+                                DB::rollBack();
+                                $this->helper->one_time_message('error', $generateUserCryptoWalletAddress['message']);
+                                return redirect('/login');
+                            }
                         }
                     }
                     

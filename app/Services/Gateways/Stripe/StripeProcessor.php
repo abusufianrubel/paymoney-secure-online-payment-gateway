@@ -74,6 +74,21 @@ class StripeProcessor extends PaymentProcessor
         }
     }
 
+    /**
+     * Method initiateGateway
+     *
+     * @param $data $data
+     *
+     * @return void
+     */
+    public function initiateGateway($data)
+    {
+        $this->setPaymentType($data['payment_type']);
+        $paymentIntent = $this->pay($data);
+        $data['publishableKey'] = $paymentIntent['publishableKey'];
+        $data['paymentIntent'] = $paymentIntent['paymentIntent'];
+        return view(('gateways.' . $this->gateway()), $data);
+    }
 
     public function createPaymentIntent($amount, $currency) {
         try {

@@ -13,19 +13,13 @@
                 <form action="{{ url(config('adminPrefix').'/admin-users/store') }}" class="form-horizontal" id="user_form" method="POST">
                     <input type="hidden" value="{{ csrf_token() }}" name="_token" id="token">
                     <div class="box-body">
-                        @if (count($errors) > 0)
-                            <div class="alert alert-danger">
-                                <ul>
-                                    @foreach ($errors->all() as $error)
-                                        <li>{{ $error }}</li>
-                                    @endforeach
-                                </ul>
-                            </div>
-                        @endif
                         <div class="form-group row">
                             <label class="col-sm-3 control-label mt-11 f-14 fw-bold text-sm-end" for="first_name">{{ __('First Name') }}</label>
                             <div class="col-sm-6">
                                 <input class="form-control f-14" placeholder="{{ __('Enter First Name') }}" name="first_name" type="text" id="first_name">
+                                @error('first_name')
+                                    <span class="error">{{ $message }}</span>
+                                @enderror
                             </div>
                         </div>
 
@@ -33,6 +27,9 @@
                             <label class="col-sm-3 control-label mt-11 f-14 fw-bold text-sm-end" for="last_name">{{ __('Last Name') }}</label>
                             <div class="col-sm-6">
                                 <input class="form-control f-14" placeholder="{{ __('Enter Last Name') }}" name="last_name" type="text" id="last_name">
+                                @error('last_name')
+                                    <span class="error">{{ $message }}</span>
+                                @enderror
                             </div>
                         </div>
                         <div class="form-group row">
@@ -41,6 +38,9 @@
                                 <input class="form-control f-14" placeholder="{{ __('Enter a valid email') }}" name="email" type="email" id="email">
                                 <span id="email_error"></span>
                                 <span id="email_ok" class="text-success"></span>
+                                @error('email')
+                                    <span class="error">{{ $message }}</span>
+                                @enderror
                             </div>
                         </div>
 
@@ -53,6 +53,9 @@
                                         <option value='{{ $role->id }}'> {{ $role->display_name }}</option>
                                     @endforeach
                                 </select>
+                                @error('role')
+                                    <span class="error">{{ $message }}</span>
+                                @enderror
                             </div>
                         </div>
 
@@ -60,6 +63,9 @@
                             <label class="col-sm-3 control-label mt-11 f-14 fw-bold text-sm-end require" for="password">{{ __('Password') }}</label>
                             <div class="col-sm-6">
                                 <input class="form-control f-14" placeholder="{{ __('Enter new Password (min 6 characters)') }}" name="password" type="password" id="password">
+                                @error('password')
+                                    <span class="error">{{ $message }}</span>
+                                @enderror
                             </div>
                         </div>
 
@@ -67,6 +73,9 @@
                             <label class="col-sm-3 control-label mt-11 f-14 fw-bold text-sm-end require" for="password_confirmation">{{ __('Confirm Password') }}</label>
                             <div class="col-sm-6">
                                 <input class="form-control f-14" placeholder="{{ __('Confirm password (min 6 characters)') }}" name="password_confirmation" type="password" id="password_confirmation">
+                                @error('password_confirmation')
+                                    <span class="error">{{ $message }}</span>
+                                @enderror
                             </div>
                         </div>
 
@@ -89,7 +98,7 @@
 @push('extra_body_scripts')
 
 <!-- jquery.validate -->
-<script src="{{ asset('public/dist/plugins/jquery-validation-1.17.0/dist/jquery.validate.min.js') }}" type="text/javascript"></script>
+<script src="{{ asset('public/dist/plugins/jquery-validation/dist/jquery.validate.min.js') }}" type="text/javascript"></script>
 
 <script type="text/javascript">
 
@@ -163,7 +172,6 @@
                     }
                 })
                     .done(function (response) {
-                        // console.log(response);
                         if (response.status == true) {
                             emptyEmail();
                             if (validateEmail(email)) {

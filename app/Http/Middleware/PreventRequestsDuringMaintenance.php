@@ -11,7 +11,15 @@ class PreventRequestsDuringMaintenance extends Middleware
      *
      * @var array
      */
-    protected $except = [
-        //
-    ];
+    protected $except = [];
+
+    /**
+     * Allow in-app upgrade API calls while maintenance mode is on (phase 2 runs over HTTP).
+     *
+     * @return array<int, string>
+     */
+    public function getExcludedPaths(): array
+    {
+        return array_merge(parent::getExcludedPaths(), \Modules\Upgrader\Entities\UpgradeManager::getMaintenanceExceptUris());
+    }
 }

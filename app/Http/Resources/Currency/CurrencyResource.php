@@ -2,9 +2,9 @@
 
 namespace App\Http\Resources\Currency;
 
-use Illuminate\Http\Resources\Json\Resource;
+use Illuminate\Http\Resources\Json\JsonResource;
 
-class CurrencyResource extends Resource
+class CurrencyResource extends JsonResource
 {
     public function toArray($request)
     {
@@ -14,6 +14,11 @@ class CurrencyResource extends Resource
             'symbol'        => $this->symbol,
             'code'          => $this->code,
             'status'        => $this->status,
+            'type'          => $this->type,
+            'rate'          => $this->rate,
+            'default'       => $this->default,
+            'logo'          => $this->logo,
+            'path'          => image($this->logo, 'currency'),
         ];
     }
 

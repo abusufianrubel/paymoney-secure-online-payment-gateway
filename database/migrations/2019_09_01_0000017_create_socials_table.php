@@ -18,7 +18,7 @@ class CreateSocialsTable extends Migration
             $table->engine    = 'InnoDB';
             $table->charset   = 'utf8';
             $table->collation = 'utf8_general_ci';
-            $table->increments('id');
+            $table->id();
             $table->string('name', 20);
             $table->text('icon');
             $table->string('url', 255);

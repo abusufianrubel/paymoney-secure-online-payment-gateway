@@ -2,9 +2,12 @@
 
 namespace Modules\TatumIo\Services;
 
+use App\Models\Wallet;
 use Exception;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Modules\TatumIo\Class\TatumIoTransaction;
+use Modules\TatumIo\Entities\CryptoToken;
 use Modules\TatumIo\Exception\CryptoSendException;
 
 class CryptoSendService
@@ -25,14 +28,16 @@ class CryptoSendService
     public function cryptoAddressValidation($network, $address, $via='api')
     {
         try {
+
             $this->setTatumIo($network);
             return $this->tatumIo->checkAddress($address, $via);
+            
         } catch (Exception $e) {
            throw new CryptoSendException($e->getMessage());
         }
     }
 
-    public function userCryptoBalanceCheck($network, $amount, $senderAddress, $receiverAddress, $priority)
+    public function userCryptoBalanceCheck($network, $amount, $senderAddress, $receiverAddress, $priority='low')
     {
         try {
 
@@ -51,6 +56,138 @@ class CryptoSendService
         }
 
     }
+
+    
+    public function userTokenBalanceCheck($walletId, $walletCurrencyCode, $receiverAddress, $amount)
+    {
+        try {
+            $minNativeBalance = 10;
+
+            $cryptoToken = $this->getUserTokenNetwork(
+                $walletId, 
+                $walletCurrencyCode
+            );
+
+            $minTatumIoLimit = tokenFormat(tokenMinLimit($cryptoToken->decimals), $cryptoToken->decimals);
+
+            if ($amount < $minTatumIoLimit) {
+                throw new CryptoSendException(__('The minimum amount must be :x', ['x' => $minTatumIoLimit . ' ' . $walletCurrencyCode]));
+            }
+
+            $this->setTatumIo($cryptoToken->network);
+
+            if ($minNativeBalance > $this->tatumIo->getUserBalance()) {
+                throw new CryptoSendException(__('Minimum :x amount needed for network fee', ['x' => $minNativeBalance . ' ' . $cryptoToken->network]));
+            }
+
+            $tokenBalance = getTokenDecimalBalance(
+                $this->tatumIo->getTokenBalanceByAddress(
+                    $this->tatumIo->getUserAddress(), 
+                    $cryptoToken->address
+                ), 
+                $cryptoToken->decimals
+            );
+
+            if ($amount > $tokenBalance) {
+                throw new CryptoSendException(__('Insufficient Token'));
+            }
+
+            $this->cryptoAddressValidation($cryptoToken->network, $receiverAddress);
+
+            return $this->setTokenTransactionArray($cryptoToken, $walletCurrencyCode,$receiverAddress, $amount);
+
+        } catch (Exception $e) {
+            throw new CryptoSendException($e->getMessage());
+        }
+
+    }
+
+
+    public function getUserTokenNetwork($walletId, $walletCurrencyCode)
+    {
+        try {
+            $wallet = Wallet::find($walletId);
+            if ( $wallet) {
+                $cryptoToken = CryptoToken::where(
+                    ['symbol' => $walletCurrencyCode, 
+                    'currency_id' => $wallet->currency_id ]
+                    )->first();
+                if ($cryptoToken) {
+                    return $cryptoToken;
+                }
+            }
+            throw new CryptoSendException(__('Token info not Valid'));
+
+        } catch (Exception $e) {
+            throw new CryptoSendException($e->getMessage());
+        }
+        
+    }
+
+    public function sendTokenFinal($network, $walletCurrencyCode, $walletId, $receiverAddress, $amount)
+    {
+        try {
+
+            $this->setTatumIo($network);
+
+            $cryptoTrx = $this->userTokenBalanceCheck(
+                $walletId, 
+                $walletCurrencyCode, 
+                $receiverAddress, 
+                $amount
+            );
+
+            $sendResponse = $this->tatumIo->sendTokenToAddress(
+                $cryptoTrx['tokenAddress'], 
+                $amount, 
+                $receiverAddress
+            );
+
+            if (!isset($sendResponse->txId)) {
+                $message = isset($sendResponse->cause) ?  $sendResponse->cause : __('Transaction Failed, please try again');
+                throw new CryptoSendException(__($message));
+            }
+
+            DB::beginTransaction();
+
+
+            $createCryptoTransactionId = $this->tatumIo->createTokenTransaction($cryptoTrx);
+
+            $withdrawInfoResponse = $this->tatumIo->getTokenTransactionDetails($sendResponse->txId);
+
+            Log::info(json_encode($withdrawInfoResponse));
+
+            $cryptoTrx['transactionId'] = $createCryptoTransactionId;
+
+            $withdrawInfoData = [
+                'txId' => isset($withdrawInfoResponse->txID) ? $withdrawInfoResponse->txID : null ,
+                'senderAddress' => $this->tatumIo->getUserAddress(),
+                'receiverAddress' => $receiverAddress,
+                'network_fee' => isset($withdrawInfoResponse->fee)? getTokenDecimalBalance($withdrawInfoResponse->fee, $cryptoTrx['tokenDecimals']) : 0,
+                'token' => $walletCurrencyCode,
+                'network' => $network
+            ];
+
+            $cryptoTrx['withdrawInfoData'] = $withdrawInfoData;
+          
+            $this->tatumIo->createWithdrawalOrSendTokenApiLog($cryptoTrx);
+
+            $wallet = Wallet::find($walletId);
+            $wallet->balance = $wallet->balance - $amount;
+            $wallet->save();
+
+            DB::commit();
+
+            return $cryptoTrx;
+
+        } catch (Exception $e) {
+            DB::rollBack();
+            throw new CryptoSendException(__($e->getMessage()));
+        }
+
+    }
+
+
 
 
     public function userAddress($network)
@@ -133,7 +270,7 @@ class CryptoSendService
         $minLimit =  getTatumIoMinLimit('amount', $network);
 
         if ($minLimit > $amount) {
-            throw new CryptoSendException(__('The minimum amount must be :x  :y.', ['x' => $minLimit, 'y' => $network]));
+            throw new CryptoSendException(__('The minimum amount must be :x', ['x' => $minLimit . ' ' .$network]));
         }
         return true;
     }
@@ -165,7 +302,7 @@ class CryptoSendService
     public function checkSenderAddress($address)
     {
         if ( $address !== $this->tatumIo->getUserAddress() ) {
-            throw new Exception(__('Sender Address is not correct'));
+            throw new CryptoSendException(__('Sender Address is not correct'));
         }
 
         return true;
@@ -212,6 +349,32 @@ class CryptoSendService
 
         return $arr;
 
+    }
+
+    public function setTokenTransactionArray($cryptoToken, $walletCurrencyCode,$receiverAddress, $amount)
+    {
+
+        $endUserWallet = getReceiverAddressWalletUserId($receiverAddress);
+    
+        return [
+            'walletCurrencyCode' => $walletCurrencyCode,
+            'network' => $this->network,
+            'amount' => $amount,
+            'networkFee' => 10,
+            'userId' => auth()->id(),
+            'endUserId' => (!empty($endUserWallet)) ?  optional($endUserWallet->wallet)->user_id : null,
+            'currencyId' => $cryptoToken->currency_id,
+            'currencySymbol' =>  $cryptoToken->symbol,
+            'senderAddress' => $this->tatumIo->getUserAddress(),
+            'receiverAddress' => $receiverAddress,
+            'tokenAddress' => $cryptoToken->address,
+            'tokenDecimals' => $cryptoToken->decimals,
+            'transactionType' => Token_Sent,
+            'object_type' => 'token_sent',
+            'uniqueCode' => unique_code(),
+            'confirmation' => 0,
+            'status' => 'Pending',
+        ];
     }
 
 

@@ -5,8 +5,9 @@
 				<div class="col-12">
 					<nav class="navbar navbar-expand-md navbar-light">
 						<a class="navbar-brand" href="{{ request()->path() != 'merchant/payment' ? url('/') : 'javascript:void(0)' }}">
-							<img src="{{ image(settings('logo'), 'logo') }}" alt="{{ __('Brand Logo') }}">
-                        </a>	
+							<img src="{{ image(settings('logo'), 'logo') }}" alt="{{ __('Brand Logo') }}" class="light-logo">
+							<img src="{{ image(settings('dark_logo'), 'dark_logo') }}" alt="{{ __('Brand Logo') }}" class="dark-logo">
+                        </a>
 						
 						<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
 							<svg class="mt-n4p" width="22" height="16" viewBox="0 0 22 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -44,6 +45,52 @@
                                 <li class="nav-item {{ isset( $menu ) && ( $menu == 'privacy-policy' ) ? 'nav-active': '' }}">
 									<a class="nav-link" href="{{ route('privacy_policy') }}">{{ __('Privacy Policy') }}</a>
 								</li>
+
+                                @php
+                                    $menuModules = activeModulesMenu();
+                                @endphp
+
+                                @if ($menuModules->count() > 1)
+                                    <li class="nav-item custom-dropdown menu-item position-md-relative">
+                                        <a id="megaMenuId" href="#" class="desktop-item nav-link custom-link">
+                                            {{ __('Services') }}
+                                            {!! megaMenuSvg('arrow-down') !!}
+                                        </a>
+                                        
+                                        <!-- Mega Menu -->
+                                        <div id="megaMenuChildId" class="mega-links py-3 mega-menu-width-2 sidebar-scrollbar">
+                                            <button id="closeMegaMenuId" class="mega-close-btn d-block d-md-none">×</button>
+                                            <div class="mega-scrollable-div row">
+
+                                                @foreach ($menuModules as $moduleMenu)
+                                                    @if (!isset($moduleMenu->condition) || (isset($moduleMenu->condition) && $moduleMenu->condition))
+                                                        <!-- Item 1 -->
+                                                        <div class="col-12 col-md-6 py-2">
+                                                            <a href="{{ !empty($moduleMenu->route) ? route($moduleMenu->route) : 'javascript:void(0)' }}" class="d-flex gap-2 justify-content-start align-items-start px-md-2">
+                                                                
+                                                                <span>
+                                                                    <span class="d-flex gap-2 justify-content-start align-items-center">
+                                                                        <span>{{ $moduleMenu->name }}</span>
+                                                                        {!! megaMenuSvg('arrow-right') !!}
+                                                                    </span>
+                                                                    <p class="descriptions mb-0">
+                                                                        {{ __($moduleMenu->description) }}
+                                                                    </p>
+                                                                </span>
+                                                            </a>
+                                                        </div>
+                                                    @endif
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    </li>
+                                @else
+                                    @if (isset($menuModules[0]) && $menuModules[0]->condition)
+                                        <li class="nav-item {{ isset($menu) && $menu == $menuModules[0]->label ? 'nav-active' : '' }}">
+                                            <a href="{{ !empty($menuModules[0]->route) ? route($menuModules[0]->route) : 'javascript:void(0)' }}" class="nav-link"> {{ $menuModules[0]->name }} </a>
+                                        </li>
+                                    @endif
+                                @endif
 
 								<li>
 									<div class="color-parent mt-2p">

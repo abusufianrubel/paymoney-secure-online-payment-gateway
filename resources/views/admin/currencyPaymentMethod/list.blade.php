@@ -94,8 +94,8 @@
 @endsection
 
 @push('extra_body_scripts')
-	<script src="{{ asset('public/dist/plugins/jquery-validation-1.17.0/dist/jquery.validate.min.js') }}" type="text/javascript"></script>
-	<script src="{{ asset('public/dist/plugins/jquery-validation-1.17.0/dist/additional-methods.min.js') }}" type="text/javascript"></script>
+	<script src="{{ asset('public/dist/plugins/jquery-validation/dist/jquery.validate.min.js') }}" type="text/javascript"></script>
+	<script src="{{ asset('public/dist/plugins/jquery-validation/dist/additional-methods.min.js') }}" type="text/javascript"></script>
 	<script src="{{ asset('public/dist/libraries/sweetalert/sweetalert.min.js')}}" type="text/javascript"></script>
 	<script>
 		'use strict';
@@ -116,6 +116,7 @@
 		var cancelAlert = "{{ __('You have cancelled it') }}";
 		var copyTitle = "{{ __('Copied') }}";
 		var copyText = "{{ __('IPN URL link copied.') }}";
+		var flutterwaveCopyText = "{{ __('Webhook URL link copied.') }}";
 		var noResponseText = "{{ __('No response.') }}";
 		var yesText = "{{ __('Yes') }}";
 		var noText = "{{ __('No') }}";

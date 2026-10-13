@@ -6,6 +6,15 @@ function isNumber(evt) {
     return (charCode > 31 && (charCode < 48 || charCode > 57)) ? false : true;
 }
 
+function stripeMonutdiv(paymentElement) {
+    return new Promise((resolve, reject) => {
+        paymentElement.mount('#payment-element');
+        // Assuming mounting is synchronous. If it's asynchronous, call resolve() accordingly.
+        resolve();
+    });
+}
+
+
 const stripe = Stripe(publishableKey, {
     locale: lang
 });
@@ -15,12 +24,12 @@ var mode = localStorage.getItem('theme');
 
 var theme, bgcolor;
 
-if (localStorage.getItem('theme') === 'dark') {
-    theme = 'stripe';
-    bgcolor = '#F5F6FA';
-} else {
+if (localStorage.getItem('dark') === '1') {
     theme = 'night';
     bgcolor = '#30313d';
+} else {
+    theme = 'stripe';
+    bgcolor = '#F5F6FA';
 }
 
 $("#switch").on('click', function () {
@@ -43,14 +52,23 @@ const options = {
 const elements = stripe.elements(options);
 const paymentElement = elements.create('payment');
 
-paymentElement.mount('#payment-element');
+
+stripeMonutdiv(paymentElement).then(() => {
+    return new Promise((resolve) => {
+        setTimeout(resolve, 3000);
+    });
+}).then(() => {
+    $('#stripe_btn').prop('disabled', false);
+});
+
+
 
 const form = document.getElementById('payment-form');
 form.addEventListener('submit', async (event) => {
 
     event.preventDefault();
 
-    $("#stripeSubmitBtn").attr("disabled", true);
+    $("#stripe_btn").attr("disabled", true);
     $(".spinner").removeClass('d-none');
     $("#stripeSubmitBtnText").text(stripeSubmitBtnText);
 
@@ -61,14 +79,24 @@ form.addEventListener('submit', async (event) => {
         }
     });
 
+
     if (error) {
 
-        $("#stripeSubmitBtn").attr("disabled", false);
+        // 🔥 Show error message
+        let message = error.message || stripeError;
+
+        // Display in your UI
+        $("#stripe-error").text(message).removeClass('d-none');
+
+        $("#stripe_btn").attr("disabled", false);
         $(".spinner").addClass('d-none');
         $("#stripeSubmitBtnText").text(confirmText);
-        
     }
 
+    
+
 });
+
+
 
 

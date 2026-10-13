@@ -91,11 +91,25 @@ class CoinbaseProcessor extends PaymentProcessor
                 "action" => "success",
                 "message" => __("Charge Created."),
                 "type" => 'coinbase',
-                "href" => $charge['data']['hosted_url'],
+                'redirect' => true,
+                "redirect_url" => $charge['data']['hosted_url'],
             ];
+
         } catch (Exception $th) {
             throw new PaymentFailedException($th->getMessage());
         }
+    }
+
+    /**
+     * Method initiateGateway
+     *
+     * @param $data $data
+     *
+     * @return void
+     */
+    public function initiateGateway($data)
+    {
+        return view(('gateways.' . $this->gateway()), $data);
     }
 
     public function paymentView()
@@ -194,7 +208,6 @@ class CoinbaseProcessor extends PaymentProcessor
 
     public function verify($request)
     {
-
         try {
             $this->uniqid = $request->uid;
             $data = getPaymentParam($request->uid);
@@ -222,68 +235,7 @@ class CoinbaseProcessor extends PaymentProcessor
 
     public function transactionUpdate($status = 'Success')
     {
-        $uid = $this->uniqid;
+        return Transaction::webHookTransactionUpdate($this->uniqid, $status);
 
-        $transaction = Transaction::where(['uuid' => $uid, 'status' => 'Pending'])
-            ->first(['id', 'uuid', 'status', 'user_id', 'currency_id', 'subtotal', 'transaction_type_id', 'merchant_id', 'payment_status']);
-
-
-        if (empty($transaction)) {
-            throw new Exception(__('Transaction not found'));
-        }
-
-        $transactionArray = ['status' => $status, 'payment_status' => $status];
-
-        if ($transaction->transaction_type_id == Deposit) {
-
-            Deposit::where(['uuid' => $uid])->update(['status' => $status]);
-        }
-
-        if ($transaction->transaction_type_id == Payment_Received) {
-
-            MerchantPayment::where(['uuid' => $uid])->update(['status' => $status]);
-        }
-
-        if (isActive('Investment')) {
-
-            if ($transaction->transaction_type_id == Investment) {
-
-                $invest_status = settings('invest_start_on_admin_approval') == 'Yes' ? 'Pending' : 'Active';
-
-                $transactionArray = ['status' => $invest_status, 'payment_status' => $status];
-
-                \Modules\Investment\Entities\Invest::where(['uuid' => $uid])->update(['status' => $invest_status]);
-            }
-
-        }
-
-        if (isActive('CryptoExchange')) {
-
-            if ($transaction->transaction_type_id == Crypto_Buy) {
-
-                $transactionArray = ['payment_status' => $status];
-            }
-        }
-
-        $transaction->update($transactionArray);
-
-        if ($status == 'Success') {
-
-            if ($transaction->transaction_type_id == Deposit || $transaction->transaction_type_id == Payment_Received) {
-
-                $walletUserId = isset($transaction->merchant_id)
-                ? Merchant::find($transaction->merchant_id)->user_id
-                : $transaction->user_id;
-
-                $wallet = Wallet::where(['user_id' => $walletUserId, 'currency_id' => $transaction->currency_id])->first();
-                if (empty($wallet)) {
-                    $wallet = Wallet::createWallet($walletUserId, $transaction->currency_id);
-                }
-                $wallet->balance = $wallet->balance + $transaction->subtotal;
-                $wallet->save();
-            }
-        }
-
-        return $transaction;
     }
 }

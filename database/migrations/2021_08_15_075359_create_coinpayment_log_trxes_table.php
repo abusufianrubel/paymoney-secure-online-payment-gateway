@@ -15,8 +15,8 @@ class CreateCoinpaymentLogTrxesTable extends Migration
     {
         Schema::create('coinpayment_log_trxes', function (Blueprint $table) {
             $table->id();
-            $table->integer('user_id');
-            $table->integer('merchant_id');
+            $table->bigInteger('user_id');
+            $table->bigInteger('merchant_id');
             $table->string('payment_id');
             $table->string('payment_address');
             $table->string('coin', 10);

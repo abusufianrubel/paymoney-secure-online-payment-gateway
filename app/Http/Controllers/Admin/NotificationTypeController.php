@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\NotificationType;
-use Validator, Config, Common;
 use Illuminate\Http\Request;
+use Validator, Common;
 
 class NotificationTypeController extends Controller
 {
@@ -25,10 +25,13 @@ class NotificationTypeController extends Controller
     {
         $data['menu'] = 'settings';
         $data['settings_menu'] = 'notification-settings';
-        
-        $condition = !isActive('Investment') ? 'Investment' : null;
 
-        $data['notificationTypes'] = NotificationType::select(['id', 'name', 'status'])->where('name', '!=' , $condition)->get();
+        $condition = array_filter([
+            !isActive('Investment') ? 'Investment' : null,
+            !isActive('P2PXchange') ? 'P2PXchange' : null
+        ]);
+
+        $data['notificationTypes'] = NotificationType::select(['id', 'name', 'status'])->whereNotIn('name', $condition)->get();
 
         return view('admin.settings.notification_types.index', $data);
     }

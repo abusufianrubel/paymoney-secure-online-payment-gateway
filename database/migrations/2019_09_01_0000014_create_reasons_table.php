@@ -15,7 +15,7 @@ class CreateReasonsTable extends Migration
     {
         Schema::create('reasons', function (Blueprint $table)
         {
-            $table->increments('id');
+            $table->id();
             $table->string('title',100)->nullable();
         });
     }

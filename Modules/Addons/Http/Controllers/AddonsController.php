@@ -19,25 +19,16 @@ class AddonsController extends Controller
      */
     public function upload(UploadAddonRequest $request)
     {
+        $addon = null;
+
         try {
-            if (in_array(explode('.', $request->attachment->getClientOriginalName())[0], array_keys(Addon::all()) )) {
-                return back()->with(['AddonStatus'=> 'fail', 'AddonMessage' => __('Addon already exist, Uploading again may lose your previous data.')])->withInput();
-            }
-    
-            // Upload addon to temp directory for checking
             $addonInfo = AddonManager::upload($request->attachment);
             if (isset($addonInfo['status']) && $addonInfo['status'] == 201) {
                 return back()->with(['AddonStatus'=> 'fail', 'AddonMessage' => $addonInfo['message']])->withInput();
             }
             $addon = $addonInfo['addon'];
-           
-            // has - check the module.json file and and name value exist or not
-            if (!Addon::has($addon->get('name'))) {
-                $addon->delete();
-                return back()->with(['AddonStatus'=> 'fail', 'AddonMessage' => __('The uploaded addon is not a valid file.')])->withInput();
-            }
 
-            // load the module config file for getting the config value 
+            // load the module config file for getting the config value
             $addon->register();
 
             // Script Version
@@ -54,14 +45,14 @@ class AddonsController extends Controller
             $appSupportedVersion = config('addons.items_version.' . config($addon->get('alias'). '.' . 'name'));
 
             $moduleVersion = $addon->get('version');
-           
+
             if (!($moduleVersion >= $appSupportedVersion)) {
                 $message = __('The current version of the addon is :z. For compatibility with :x :y, you need to have version :a or higher.', ['x' => settings('name'), 'y' => $appVersion, 'z' => $moduleVersion, 'a' => $appSupportedVersion]);
                 $addon->delete();
                 return back()->with(['AddonStatus' => 'fail', 'AddonMessage' =>  $message])->withInput();
             }
-            
-            if ($addon->get('name') !== config('addons.items.' . config($addon->get('alias') . '.' . 'item_id'))) { 
+
+            if ($addon->get('name') !== config('addons.items.' . config($addon->get('alias') . '.' . 'item_id'))) {
                 $addon->delete();
                 return back()->with(['AddonStatus'=> 'fail', 'AddonMessage' => __('The compressed module file does not belong to this script.')])->withInput();
             }
@@ -70,15 +61,21 @@ class AddonsController extends Controller
             $requiredModules = config($addon->get('alias') . '.required_modules');
             if (!is_null($requiredModules) && !empty($requiredModules)) {
                 foreach ($requiredModules as $requiredModule) {
-                    if (is_null(module($requiredModule))) {
+                    if (is_null(moduleExists($requiredModule))) {
                         $addon->delete();
                         return back()->with(['AddonStatus'=> 'fail', 'AddonMessage' => __('The module required :addional module to run.', ['addional' => $requiredModule])])->withInput();
                     }
                 }
             }
-    
+
             // Required: purchasecode, username, item_id
             $purchaseData = Envato::isValidPurchaseCode($request->purchase_code, $request->username, config($addon->get('alias') . '.' . 'item_id'));
+
+            if (empty($purchaseData)) {
+                $addon->delete();
+                return back()->with(['AddonStatus' => 'fail', 'AddonMessage' => __('Unable to verify the purchase code. Please try again later.')])->withInput();
+            }
+
             if (!$purchaseData->status) {
                 $addon->delete();
                 return back()->with(['AddonStatus'=> 'fail', 'AddonMessage' => __($purchaseData->data)])->withInput();
@@ -104,12 +101,15 @@ class AddonsController extends Controller
                     Cache::forget($cacheKey);
                 }
             }
-           
+
             return back()->with(['AddonStatus'=> 'success', 'AddonMessage' => __('Addon has been uploaded successfully.')]);
 
         } catch (Exception $e) {
-            Artisan::call('module:migrate-rollback ' . $addon->get('name'));
-            $addon->delete();
+            if ($addon !== null) {
+                Artisan::call('module:migrate-rollback ' . $addon->get('name'));
+                $addon->delete();
+            }
+
             return back()->with(['AddonStatus'=> 'fail', 'AddonMessage' => $e->getMessage()])->withInput();
         }
     }
@@ -143,6 +143,14 @@ class AddonsController extends Controller
         $itemId = config($addon->get('alias') . '.' . 'item_id');
 
         $purchaseData = Envato::isValidPurchaseCode($request->purchase_code, $request->username, $itemId);
+
+        if (empty($purchaseData)) {
+            return redirect(config('adminPrefix') . '/module-manager/addons')->with(['AddonStatus' => 'fail', 'AddonMessage' => __('Unable to verify the purchase code. Please try again later.')]);
+        }
+
+        if (!$purchaseData->status) {
+            return redirect(config('adminPrefix') . '/module-manager/addons')->with(['AddonStatus' => 'fail', 'AddonMessage' => __($purchaseData->data)]);
+        }
 
         if ($purchaseData->status && !is_null($purchaseData->data)) {
             changeEnvironmentVariable(strtoupper($addon->get('name')) . '_SECRET', $purchaseData->data);

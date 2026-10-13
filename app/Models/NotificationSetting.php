@@ -22,15 +22,20 @@ class NotificationSetting extends Model
         $query = self::select('notification_settings.*', 'nt.name', 'nt.alias')
         ->leftJoin('notification_types as nt', 'nt.id', '=', 'notification_settings.notification_type_id');
 
-        if (!isActive('Investment') && module('Investment')) {
+        if (!isActive('Investment') && moduleExists('Investment')) {
             $type = \App\Models\NotificationType::where('name', 'Investment')->first(['id']);
             if ($type) {
                 $query->where('notification_settings.notification_type_id', '!=', $type->id);
             }
         }
 
-        $notificationSettings = $query->where($conditions)
-        ->get();
-        return $notificationSettings;
+        if (!isActive('P2PXchange') && moduleExists('P2PXchange')) {
+            $type = \App\Models\NotificationType::where('name', 'P2PXchange')->first(['id']);
+            if ($type) {
+                $query->where('notification_settings.notification_type_id', '!=', $type->id);
+            }
+        }
+
+        return  $query->where($conditions)->get();
     }
 }

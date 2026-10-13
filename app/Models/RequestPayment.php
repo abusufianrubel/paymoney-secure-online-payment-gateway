@@ -12,6 +12,7 @@ use App\Services\Mail\RequestMoney\{
 };
 use App\Http\Helpers\Common;
 use DB, Exception;
+use App\Services\Sms\AcceptMoneyCreatorSmsService;
 
 
 class RequestPayment extends Model
@@ -333,7 +334,7 @@ class RequestPayment extends Model
 
     public function updateRequestPayment($arr)
     {
-        $requestPayment                = $this->with(['user:id,first_name,last_name,phone,carrierCode,email,picture', 'receiver:id,first_name,last_name,picture', 'currency:id,symbol,code'])->find($arr['requestPaymentId']);
+        $requestPayment                = $this->with(['user:id,first_name,last_name,phone,carrierCode,email,picture,formattedPhone', 'receiver:id,first_name,last_name,picture', 'currency:id,symbol,code'])->find($arr['requestPaymentId']);
         $requestPayment->accept_amount = $arr['accept_amount'];
         $requestPayment->status        = "Success";
         $requestPayment->save();
@@ -353,7 +354,7 @@ class RequestPayment extends Model
         $transaction->save();
 
 
-        if (module('Referral') && settings('referral_enabled') == 'Yes') {
+        if (moduleExists('Referral') && isActive('Referral') && settings('referral_enabled') == 'Yes') {
             $currency   = Currency::find($arr['currency_id'], ['code']);
             
             $refAwardData = [
@@ -478,7 +479,7 @@ class RequestPayment extends Model
                 
                 // Send referral award email/sms to users
                 (new NotifyAdminOnRequestMoneyMailService())->send($requestPayment, ['type' => 'request', 'medium' => 'email']);
-                if (module('Referral') && settings('referral_enabled') == 'Yes' && !empty($awardResponse)) {
+                if (moduleExists('Referral') && settings('referral_enabled') == 'Yes' && !empty($awardResponse)) {
                     if (isset($awardResponse['email_status']) && $awardResponse['email_status'] === 200 && !empty($awardResponse['email_details'])) {
                         $awardInfo = (new \Modules\Referral\Services\Email\ReferralAwardMailService)->send($awardResponse['email_details']);
                         \Modules\Referral\Jobs\ProcessRewardEmail::dispatch($awardInfo);

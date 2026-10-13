@@ -25,7 +25,7 @@
     </div>
 
     <!-- Button -->
-    <div class="d-flex justify-content-center mt-28 r-mt-20">
+    <div class="d-flex justify-content-center mt-28 r-mt-20" id="success-button-div">
         <a href="{{ route('user.deposit.print', $transaction_id) }}" class="print-btn d-flex justify-content-center align-items-center gap-10" target="__blank">{!! svgIcons('printer') !!}<span>{{ __('Print') }}</span>
         </a>
         <a href="{{ route('user.dashboard') }}" class="bg-white repeat-btn d-flex justify-content-center align-items-center ml-20">

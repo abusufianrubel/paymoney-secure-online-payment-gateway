@@ -75,7 +75,7 @@ class CoinpaymentsProcessor extends PaymentProcessor
 
         $this->validateInitiatePaymentRequest($data);
 
-        $gatewayData = (array_merge($data, ['total_amount' => $data['total'], 'payment_method_id' => $data['payment_method']]));
+        $gatewayData = (array_merge((array) $data, ['total_amount' => $data['total'], 'payment_method_id' => $data['payment_method']]));
 
         if ($data['currencyType'] == 'crypto') {
             return $this->initiatePayment($gatewayData);
@@ -129,7 +129,8 @@ class CoinpaymentsProcessor extends PaymentProcessor
 
         return [
             'type' => 'coinpayments',
-            'view' => $this->createCoinPaymentTransaction(),
+            'redirect' => true,
+            'redirect_url' => $this->createCoinPaymentTransaction(),
         ];
     }
 
@@ -164,117 +165,122 @@ class CoinpaymentsProcessor extends PaymentProcessor
 
     protected function createCoinPaymentTransaction()
     {
-        $getPaymentParam = getPaymentParam($this->data['params']);
+        try {
+            $getPaymentParam = getPaymentParam($this->data['params']);
 
-        $rates = $this->coinPayment->GetRates(0);
-
-        if ($rates['error'] != 'ok' ) {
-           throw new Exception($rates['error']);
-        }
-
-        $rates = $rates['result'];
-
-        $currencyRate = $rates[$this->currency]['rate_btc'];
-        $rateAmount = $currencyRate * $this->data['total'];
-        $currencyList = getFormatedCurrencyList($rates, $rateAmount);
-        $acceptedCoin = $currencyList['coins_accept'];
-        $acceptedCoinIso = array_column($acceptedCoin, 'iso');
-
-        $selectedCurrency = (isset($this->data['selected_coin'])) ? $this->data['selected_coin'] : $this->currency;
-
-        if (!in_array($selectedCurrency, $acceptedCoinIso)) {
-            throw new GatewayInitializeFailedException(__("CoinPayments Payment failed."));
-        }
-
-        $transactionData = [
-            'amount' => $this->data['totalAmount'],
-            'currency1' => $this->currency,
-            'currency2' => $selectedCurrency,
-            'buyer_email' => auth()->check() ? auth()->user()->email : null,
-            'buyer_name' => auth()->check() ? getColumnValue(auth()->user()) : null,
-            'item_name' => ($this->data['transaction_type'] == Deposit) ? __('Deposit via coinpayment') : __('Payment via coinpayment'),
-            'custom' => $this->data['uuid'],
-            'ipn_url' => url("gateway/payment-verify/coinpayments"),
-        ];
-
-        $makeTransaction = $this->coinPayment->CreateTransaction($transactionData);
-
-        if ($makeTransaction['error'] !== 'ok') {
-            throw new GatewayInitializeFailedException(__("CoinPayments Payment failed."));
-        }
-
-        switch ($this->data['transaction_type']) {
-            case Deposit:
-                $type = 'deposit';
-                break;
-            case Payment_Sent:
-            case Payment_Received:
-                $type = 'merchant_payment';
-                break;
-            default:
-                // Handle the default case here, if needed
-                break;
-        }
-
-        if ( isActive('CryptoExchange') && ($this->data['transaction_type'] == Crypto_Buy)) {
-            $type = 'crypto_exchange';
-        }
-
-        if (isActive('Investment') && $this->data['transaction_type'] == Investment) {
-            $type = 'investment';
-        }
-
-        $payload = ['type' => $type, 'currency' => $this->currency];
-        $makeTransaction['payload'] = $payload;
-        $transactionInfo = $this->getCoinPaymentTransactionInfo($makeTransaction['result']['txn_id']);
-
-        if ($transactionInfo['error'] !== 'ok') {
-            throw new GatewayInitializeFailedException(__("CoinPayments Payment failed."));
-        }
-
-        if ($transactionInfo['error'] === 'ok') {
-
-            $response = $this->createTransaction();
-            $data = json_decode($response, true);
-
-            $transactionId = isset($data['data']['transaction']) ? $data['data']['transaction']['id'] : null;
-
-            $transactionInfoData = $transactionInfo['result'];
-
-            $coinPaymentLogTrx = [
-                'payment_id' => $makeTransaction['result']['txn_id'],
-                'payment_address' => $transactionInfoData['payment_address'],
-                'coin' => $transactionInfoData['coin'],
-                'fiat' => $payload['currency'],
-                'status_text' => $transactionInfoData['status_text'],
-                'status' => $transactionInfoData['status'],
-                'payment_created_at' => date('Y-m-d H:i:s', $transactionInfoData['time_created']),
-                'expired' => date('Y-m-d H:i:s', $transactionInfoData['time_expires']),
-                'amount' => $transactionInfoData['amountf'],
-                'confirms_needed' => empty($makeTransaction['result']['confirms_needed']) ? 0 : $makeTransaction['result']['confirms_needed'],
-                'qrcode_url' => empty($makeTransaction['result']['qrcode_url']) ? '' : $makeTransaction['result']['qrcode_url'],
-                'status_url' => empty($makeTransaction['result']['status_url']) ? '' : $makeTransaction['result']['status_url'],
-            ];
-
-            if ($this->data['transaction_type'] == Payment_Sent) {
-                $coinPaymentLogTrx['merchant_id'] = $getPaymentParam['merchant_id'];
+            if (array_key_exists('merchant_id', $getPaymentParam)) {
+                $merchant = Merchant::where(['id' => $getPaymentParam['merchant_id']])->first();
             }
 
-            $payload['transaction_id'] = $transactionId;
-            $payload['uuid'] = $this->data['uuid'];
-            $payload['receivedf'] = $transactionInfoData['receivedf'];
-            $payload['time_expires'] = $transactionInfoData['time_expires'];
-            $payload = json_encode($payload);
+            $rates = $this->coinPayment->GetRates(0);
 
-            $coinPaymentLogTrx['payload'] = $payload;
+            if ($rates['error'] != 'ok') {
+                throw new Exception($rates['error']);
+            }
 
-            auth()->check() ? auth()->user()->coinpayment_transactions()->create($coinPaymentLogTrx) : CoinpaymentLogTrx::create($coinPaymentLogTrx);
+            $rates = $rates['result'];
 
-            Session::put('transactionDetails', $makeTransaction);
-            Session::put('transactionInfo', $transactionInfo);
+            $currencyRate = $rates[$this->currency]['rate_btc'];
+            $rateAmount = $currencyRate * $this->data['total'];
+            $currencyList = getFormatedCurrencyList($rates, $rateAmount);
+            $acceptedCoin = $currencyList['coins_accept'];
+            $acceptedCoinIso = array_column($acceptedCoin, 'iso');
 
-            return redirect()->route('coinpayment.summery');
+            $selectedCurrency = (isset($this->data['selected_coin'])) ? $this->data['selected_coin'] : $this->currency;
 
+            $notSupportedMessage = __(':x is not supported via coinpayments Gateway', ['x' => $selectedCurrency]);
+
+            if (!in_array($selectedCurrency, $acceptedCoinIso)) {
+
+                $usdtCurrencies = array_filter($acceptedCoinIso, function($currency) use ($selectedCurrency) {
+                    return strpos($currency, $selectedCurrency) === 0;
+                });
+                
+                if (count($usdtCurrencies)) {
+                    $availableVariants = implode(', ', $usdtCurrencies);
+                    throw new GatewayInitializeFailedException( __(":x is available for the following networks :y", ['x' => $selectedCurrency,  'y' =>  $availableVariants]));
+                }
+   
+                throw new GatewayInitializeFailedException($notSupportedMessage);
+
+            }
+
+            $admin = \App\Models\Admin::first();
+
+            $transactionData = [
+                'amount' => $this->data['totalAmount'],
+                'currency1' => $this->currency,
+                'currency2' => $selectedCurrency,
+                'buyer_email' => auth()->check() ? auth()->user()->email : $merchant->user->email ?? $admin->email,
+                'buyer_name' => auth()->check() ? getColumnValue(auth()->user()) : getColumnValue($merchant->user),
+                'item_name' => ($this->data['transaction_type'] == Deposit) ? __('Deposit via coinpayment') : __('Payment via coinpayment'),
+                'custom' => $this->data['uuid'],
+                'ipn_url' => url("gateway/payment-verify/coinpayments"),
+            ];
+
+            $makeTransaction = $this->coinPayment->CreateTransaction($transactionData);
+
+            if ($makeTransaction['error'] !== 'ok') {
+                throw new GatewayInitializeFailedException($makeTransaction['error']);
+            }
+
+            $payload = ['type' => $this->data['payment_type'], 'currency' => $this->currency];
+            $makeTransaction['payload'] = $payload;
+            $transactionInfo = $this->getCoinPaymentTransactionInfo($makeTransaction['result']['txn_id']);
+
+            if ($transactionInfo['error'] !== 'ok') {
+                throw new GatewayInitializeFailedException($transactionInfo['error']);
+            }
+
+            if ($transactionInfo['error'] === 'ok') {
+
+                $response = $this->createTransaction();
+                $data = json_decode($response, true);
+
+                $transactionId = isset($data['data']['transaction']) ? $data['data']['transaction']['id'] : null;
+
+                $transactionInfoData = $transactionInfo['result'];
+
+                $coinPaymentLogTrx = [
+                    'payment_id' => $makeTransaction['result']['txn_id'],
+                    'payment_address' => $transactionInfoData['payment_address'],
+                    'coin' => $transactionInfoData['coin'],
+                    'fiat' => $payload['currency'],
+                    'status_text' => $transactionInfoData['status_text'],
+                    'status' => $transactionInfoData['status'],
+                    'payment_created_at' => date('Y-m-d H:i:s', $transactionInfoData['time_created']),
+                    'expired' => date('Y-m-d H:i:s', $transactionInfoData['time_expires']),
+                    'amount' => $transactionInfoData['amountf'],
+                    'confirms_needed' => empty($makeTransaction['result']['confirms_needed']) ? 0 : $makeTransaction['result']['confirms_needed'],
+                    'qrcode_url' => empty($makeTransaction['result']['qrcode_url']) ? '' : $makeTransaction['result']['qrcode_url'],
+                    'status_url' => empty($makeTransaction['result']['status_url']) ? '' : $makeTransaction['result']['status_url'],
+                ];
+
+                if ($this->data['transaction_type'] == Payment_Sent) {
+                    $coinPaymentLogTrx['merchant_id'] = $getPaymentParam['merchant_id'];
+                }
+
+                $payload['transaction_id'] = $transactionId;
+                $payload['uuid'] = $this->data['uuid'];
+                $payload['receivedf'] = $transactionInfoData['receivedf'];
+                $payload['time_expires'] = $transactionInfoData['time_expires'];
+                $payload = json_encode($payload);
+
+                $coinPaymentLogTrx['payload'] = $payload;
+
+                auth()->check() ? auth()->user()->coinpayment_transactions()->create($coinPaymentLogTrx) : CoinpaymentLogTrx::create($coinPaymentLogTrx);
+
+                Session::put('transactionDetails', $makeTransaction);
+                Session::put('transactionInfo', $transactionInfo);
+
+                if (array_key_exists($transactionData['currency1'], $currencyList['fiat'])) {
+                    return route('coinpayment.summery');
+                }
+
+                return redirect()->route('coinpayment.summery');
+            }
+        } catch (Exception $e) {
+            throw new Exception($e->getMessage());
         }
     }
 
@@ -382,94 +388,22 @@ class CoinpaymentsProcessor extends PaymentProcessor
 
             $coinLogResponse = isset($coinLog->payload) ? json_decode($coinLog->payload) : null;
 
-            $data = getPaymentParam($coinLogResponse->uuid);
+            if (isset($coinLogResponse->type) && in_array($status, ['100', '-1']) && in_array($status_text, ['Complete', 'Cancelled / Timed Out'])) {
+                try {
+                    DB::beginTransaction();
 
+                    $coinLog->status_text = $status_text;
+                    $coinLog->status = $status;
+                    $coinLog->confirmation_at = date('Y-m-d H:i:s', time());
+                    $coinLog->save();
 
-            if (isset($coinLogResponse->type)) {
+                    $transactionStatus = ((int) $status === 100) ? "Success" : "Blocked";
 
-                $modelName = Str::studly(str_replace('_', ' ', $coinLogResponse->type));
-                if (in_array($modelName, ['Deposit', 'MerchantPayment', 'CryptoExchange', 'Invest'])) {
+                    return Transaction::webHookTransactionUpdate($coinLogResponse->uuid, $transactionStatus);
 
-                    $model = 'App\\Models\\' . $modelName;
-
-                    if ($modelName == 'CryptoExchange') {
-                        $model = 'Modules\\CryptoExchange\\Entities' . $modelName;
-                    }
-
-                    if ($modelName == 'Invest') {
-                        $model = 'Modules\\Investment\\Entities' . $modelName;
-                    }
-
-                    $payment = $model::where(['uuid' => $coinLogResponse->uuid])->first();
-
-                }
-
-                if (!empty($payment)) {
-
-                    try {
-                        DB::beginTransaction();
-
-                        $coinLog->status_text = $status_text;
-                        $coinLog->status = $status;
-                        $coinLog->confirmation_at = date('Y-m-d H:i:s', time());
-                        $coinLog->save();
-
-                        $transaction = Transaction::where(['uuid' => $coinLogResponse->uuid])->first(['id', 'user_id', 'currency_id', 'subtotal', 'transaction_type_id', 'payment_status', 'status']);
-
-                        $transactionStatus = ((int) $status === 100) ? "Success" : "Blocked";
-
-                        if (isActive('CryptoExchange')) {
-                            if ($transaction->transaction_type_id == Crypto_Buy) {
-                                $transactionStatus = ((int) $status === 100) ? "Pending" : "Blocked";
-                            }
-                        }
-
-                        if (isActive('Investment') ) {
-                            if ($transaction->transaction_type_id == Investment) {
-                                $invest_status = settings('invest_start_on_admin_approval') == 'Yes' ? 'Pending' : 'Active';
-                                $transactionStatus = ((int) $status === 100) ? $invest_status : "Blocked";
-                            }
-                        }
-
-                        if (!empty($transaction)) {
-                            $transaction->payment_status = ((int) $status === 100) ? "Success" : "Blocked";
-                            $transaction->status = $transactionStatus;
-                            $transaction->save();
-                        }
-
-                        if (!empty($payment)) {
-                            $payment->status = ((int) $status === 100) ? $transactionStatus : "Blocked";
-                            $payment->save();
-                        }
-
-                        if ($status == 100 && $status_text == 'Complete') {
-
-                            if ($transaction->transaction_type_id == Deposit || $transaction->transaction_type_id == Payment_Received) {
-
-                                $userId = isset($transaction->merchant_id)
-                                ? Merchant::find($transaction->merchant_id)->user_id
-                                : $transaction->user_id;
-
-                                $wallet = Wallet::where(['user_id' => $userId, 'currency_id' => $transaction->currency_id])->first(['id', 'balance']);
-                                if (empty($wallet)) {
-                                    $wallet = Wallet::createWallet($userId, $transaction->currency_id);
-                                }
-                                $wallet->balance = ($wallet->balance + $transaction->subtotal);
-                                $wallet->save();
-
-                            }
-                        }
-                        DB::commit();
-
-                        $data['payment_method_id'] = Coinpayments;
-                        $data ['transaction_id'] = $transaction->id;
-                        return $data;
-
-
-                    } catch (Exception $e) {
-                        DB::rollBack();
-                        throw new Exception($e->getMessage());
-                    }
+                } catch (Exception $e) {
+                    DB::rollBack();
+                    throw new Exception($e->getMessage());
                 }
             }
         }

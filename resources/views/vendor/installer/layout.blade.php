@@ -5,21 +5,16 @@
         <meta http-equiv="x-ua-compatible" content="ie=edge">
         <title>{{ __('Pay Money') }}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+        
         <link rel="icon" type="image/x-icon" href="{{ asset('public/dist/images/default-favicon.png') }}">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.5/css/materialize.min.css">
-        <style type="text/css">
-            .card, .card-panel {
-                width: 960px;
-                margin: 0 auto;
-            }
-        </style>
+        <link rel="stylesheet" href="{{ asset('public/dist/libraries/materialize/materialize.min.css') }}">
+        <link href="{{ asset('public/frontend/templates/css/installer.min.css') }}" rel="stylesheet">
         @yield('style')
     </head>
     <body>
         @yield('content')
-        <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.5/js/materialize.min.js"></script>
+        <script type="text/javascript" src="{{ asset('public/dist/libraries/jquery/dist/jquery.min.js') }}"></script>
+        <script src="{{ asset('public/dist/libraries/materialize/materialize.min.js') }}"></script>
         @yield('script')
     </body>
 </html>

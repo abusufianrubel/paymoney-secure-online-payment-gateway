@@ -14,6 +14,8 @@ use App\Models\{Currency,
     Wallet,
     User
 };
+use App\Services\Mail\RequestMoney\RequestCancelMailService;
+use App\Services\Sms\RequestMoneyCancelSmsService;
 
 class RequestPaymentController extends Controller
 {
@@ -317,156 +319,26 @@ class RequestPaymentController extends Controller
         }
     }
 
-    //Cancel from request creator
-    public function cancelfrom(Request $request)
-    {
-        $id = $request->id;
-        try
-        {
-            DB::beginTransaction();
-            if ($request->type == Request_Sent)
-            {
-                $TransactionA         = Transaction::find($id); //TODO: query optimization
-                $TransactionA->status = "Blocked";
-                $TransactionA->save();
-
-                $TransactionB         = Transaction::where(['transaction_reference_id' => $TransactionA->transaction_reference_id, 'transaction_type_id' => Request_Received])->first(); //TODO: query optimization
-                $TransactionB->status = "Blocked";
-                $TransactionB->save();
-
-            }
-            elseif ($request->type == Request_Received)
-            {
-                $TransactionA         = Transaction::find($id); //TODO: query optimization
-                $TransactionA->status = "Blocked";
-                $TransactionA->save();
-
-                $TransactionB         = Transaction::where(['transaction_reference_id' => $TransactionA->transaction_reference_id, 'transaction_type_id' => Request_Sent])->first(); //TODO: query optimization
-                $TransactionB->status = "Blocked";
-                $TransactionB->save();
-            }
-            $requestPayment         = RequestPayment::find($TransactionA->transaction_reference_id); //TODO: query optimization
-            $requestPayment->status = "Blocked";
-            $requestPayment->save();
-            DB::commit();
-
-            $data = $this->sendRequestCancelNotificationToAcceptorOrCreator($requestPayment, $request->notificationType); //TODO: query optimization
-            return json_encode($data);
-        }
-        catch (Exception $e)
-        {
-            DB::rollBack();
-            $this->helper->one_time_message('error', $e->getMessage());
-            return redirect('dashboard');
-        }
-    }
-
     public function sendRequestCancelNotificationToAcceptorOrCreator($requestPayment, $notificationType)
     {
         $processedBy         = preference('processed_by');
         $emailFilterValidate = $this->helper->validateEmailInput($notificationType);
         $phoneRegex          = $this->helper->validatePhoneInput($notificationType);
-        $soft_name = session('name');
-        $messageFromCreatorToAcceptor = __('Your request payment #:x of :y has been cancelled by :z.', ['x' => $requestPayment->uuid, 'y' => moneyFormat(optional($requestPayment->currency)->symbol, formatNumber($requestPayment->amount)), 'z' => getColumnValue($requestPayment->user)]);
 
-        if ($emailFilterValidate && $processedBy == "email")
-        {
-            if (auth()->user()->id == $requestPayment->user_id)
-            {
-                if (!empty($requestPayment->receiver_id))
-                {
-                    //ok
-                    $data = $this->onlyEmailToRegisteredRequestReceiver($messageFromCreatorToAcceptor,
-                        $requestPayment->receiver->first_name, $requestPayment->receiver->last_name, $soft_name, $requestPayment->receiver->email);
-                    return $data;
-                }
-                else
-                {
-                    //ok
-                    $data = $this->onlyEmailToUnregisteredRequestReceiver($messageFromCreatorToAcceptor, $soft_name, $requestPayment->email);
-                    return $data;
-                }
-            }
-            elseif (!empty($requestPayment->receiver_id) && auth()->user()->id == $requestPayment->receiver_id)
-            {
-                $messageFromAcceptorToCreator = __('Your request payment #:x of :y has been cancelled by :z.', ['x' => $requestPayment->uuid, 'y' => moneyFormat(optional($requestPayment->currency)->symbol, formatNumber($requestPayment->amount)), 'z' => getColumnValue($requestPayment->receiver)]);
+        if ($emailFilterValidate && $processedBy == "email") {
 
-                $data = $this->onlyEmailToRequestCreator($messageFromAcceptorToCreator, $requestPayment->user->first_name, $requestPayment->user->last_name, $soft_name, $requestPayment->user->email);
-                return $data;
-            }
-        }
-        elseif ($phoneRegex && $processedBy == "phone")
-        {
-            if (auth()->user()->id == $requestPayment->user_id)
-            {
-                if (!empty($requestPayment->receiver_id))
-                {
-                    $data = $this->onlySmsToRegisteredRequestReceiver($messageFromCreatorToAcceptor,
-                        $requestPayment->receiver->first_name, $requestPayment->receiver->last_name, $soft_name, $requestPayment->receiver->carrierCode, $requestPayment->receiver->phone);
-                    return $data;
-                }
-                else
-                {
-                    $data = $this->onlySmsToUnregisteredRequestReceiver($messageFromCreatorToAcceptor, $soft_name, $requestPayment->phone);
-                    return $data;
-                }
-            }
-            elseif (!empty($requestPayment->receiver_id) && auth()->user()->id == $requestPayment->receiver_id)
-            {
-                $messageFromAcceptorToCreator = __('Your request payment #:x of :y has been cancelled by :z.', ['x' => $requestPayment->uuid, 'y' => moneyFormat(optional($requestPayment->currency)->symbol, formatNumber($requestPayment->amount)), 'z' => getColumnValue($requestPayment->receiver)]);
-                $data = $this->onlySmsToRequestCreator($messageFromAcceptorToCreator, $requestPayment->user->first_name, $requestPayment->user->last_name, $soft_name,
-                    $requestPayment->user->carrierCode, $requestPayment->user->phone);
-                return $data;
-            }
-        }
-        elseif ($processedBy == "email_or_phone")
-        {
-            if ($emailFilterValidate)
-            {
-                if (auth()->user()->id == $requestPayment->user_id)
-                {
-                    if (!empty($requestPayment->receiver_id))
-                    {
-                        $data = $this->onlyEmailToRegisteredRequestReceiver($messageFromCreatorToAcceptor,
-                            $requestPayment->receiver->first_name, $requestPayment->receiver->last_name, $soft_name, $requestPayment->receiver->email);
-                        return $data;
-                    }
-                    else
-                    {
-                        $data = $this->onlyEmailToUnregisteredRequestReceiver($messageFromCreatorToAcceptor, $soft_name, $requestPayment->email);
-                        return $data;
-                    }
-                }
-                elseif (!empty($requestPayment->receiver_id) && auth()->user()->id == $requestPayment->receiver_id)
-                {
-                    $messageFromAcceptorToCreator = __('Your request payment #:x of :y has been cancelled by :z.', ['x' => $requestPayment->uuid, 'y' => moneyFormat(optional($requestPayment->currency)->symbol, formatNumber($requestPayment->amount)), 'z' => getColumnValue($requestPayment->receiver)]);
-                    $data = $this->onlyEmailToRequestCreator($messageFromAcceptorToCreator, $requestPayment->user->first_name, $requestPayment->user->last_name, $soft_name, $requestPayment->user->email);
-                    return $data;
-                }
-            }
-            elseif ($phoneRegex)
-            {
-                if (auth()->user()->id == $requestPayment->user_id)
-                {
-                    if (!empty($requestPayment->receiver_id))
-                    {
-                        $data = $this->onlySmsToRegisteredRequestReceiver($messageFromCreatorToAcceptor,
-                            $requestPayment->receiver->first_name, $requestPayment->receiver->last_name, $soft_name, $requestPayment->receiver->carrierCode, $requestPayment->receiver->phone);
-                        return $data;
-                    }
-                    else
-                    {
-                        $data = $this->onlySmsToUnregisteredRequestReceiver($messageFromCreatorToAcceptor, $soft_name, $requestPayment->phone);
-                        return $data;
-                    }
-                }
-                elseif (!empty($requestPayment->receiver_id) && auth()->user()->id == $requestPayment->receiver_id)
-                {
-                    $messageFromAcceptorToCreator = __('Your request payment #:x of :y has been cancelled by :z.', ['x' => $requestPayment->uuid, 'y' => moneyFormat(optional($requestPayment->currency)->symbol, formatNumber($requestPayment->amount)), 'z' => getColumnValue($requestPayment->receiver)]);
-                    $data = $this->onlySmsToRequestCreator($messageFromAcceptorToCreator, $requestPayment->user->first_name, $requestPayment->user->last_name, $soft_name,
-                        $requestPayment->user->carrierCode, $requestPayment->user->phone);
-                    return $data;
-                }
+            return (new RequestCancelMailService())->send($requestPayment, ['cancelled_by' => getColumnValue(auth()->user()), 'auth_id' => auth()->user()->id]);
+            
+        } elseif ($phoneRegex && $processedBy == "phone") {
+
+            return (new RequestMoneyCancelSmsService())->send($requestPayment, ['cancelled_by' => getColumnValue(auth()->user()), 'auth_id' => auth()->user()->id]);
+
+        } elseif ($processedBy == "email_or_phone") {
+            if ($emailFilterValidate) {
+                return (new RequestCancelMailService())->send($requestPayment, ['cancelled_by' => getColumnValue(auth()->user()), 'auth_id' => auth()->user()->id]);
+                
+            } elseif ($phoneRegex) {
+                return (new RequestMoneyCancelSmsService())->send($requestPayment, ['cancelled_by' => getColumnValue(auth()->user()), 'auth_id' => auth()->user()->id]);
             }
         }
     }
@@ -483,8 +355,7 @@ class RequestPaymentController extends Controller
 
     public function requestAccepted(Request $request)
     {
-        if ($request->isMethod('post'))
-        {
+        if ($request->isMethod('post')) {
             $rules = array(
                 'emailOrPhone' => 'required',
                 'amount' => 'required|numeric',
@@ -494,8 +365,7 @@ class RequestPaymentController extends Controller
 
             $validator = Validator::make($request->all(), $rules);
 
-            if ($validator->fails())
-            {
+            if ($validator->fails()) {
                 return back()->withErrors($validator)->withInput();
             }
 
@@ -504,18 +374,19 @@ class RequestPaymentController extends Controller
             $request['currency_id']         = $request->currency_id;
             $request['transaction_type_id'] = Request_Received;
             $amountLimitCheck               = $this->amountLimitCheck($request);
-            if ($amountLimitCheck->getData()->success->status == 404 || $amountLimitCheck->getData()->success->status == 401)
-            {
+
+            if ($amountLimitCheck->getData()->success->status == 404 || $amountLimitCheck->getData()->success->status == 401) {
                 return back()->withErrors(__($amountLimitCheck->getData()->success->message))->withInput();
             }
             //backend validation - ends
-            
+
             $data['requestPaymentId'] = $request->id;
             $request['currSymbol']    = $request->currencySymbol;
-            $currency = Currency::find($request->currency_id)->first();
+            $currency = Currency::find($request->currency_id);
+
             $request['currencyCode'] = $currency->code;
 
-            $user = User::where('email', $request->emailOrPhone)->orWhere('formattedPhone', $request->emailOrPhone)->first(['first_name', 'last_name']); 
+            $user = User::where('email', $request->emailOrPhone)->orWhere('formattedPhone', $request->emailOrPhone)->first(['first_name', 'last_name']);
             $request['userName'] = !is_null($user) ? getColumnValue($user) : null;
 
             $request['percentage_fee'] = $amountLimitCheck->getData()->success->feesPercentage;
@@ -525,7 +396,7 @@ class RequestPaymentController extends Controller
             $request['totalAmount']   = $request->amount + $request['fee'];
             session(['transInfo' => $request->all()]);
             $data['transInfo'] = $request->all();
-            
+
             return view('user.request-money.accept-confirm', $data);
         }
     }
@@ -537,58 +408,46 @@ class RequestPaymentController extends Controller
         $currency_id = $request->currency_id;
         $user_id     = auth()->user()->id;
 
-        $RequestAcceptorWallet = Wallet::where(['user_id' => $user_id, 'currency_id' => $currency_id])->first(['id']);
-        if (empty($RequestAcceptorWallet))
-        {
+        $wallet = Wallet::where(['user_id' => $user_id, 'currency_id' => $currency_id])->first(['id', 'balance']);
+
+        if (empty($wallet)) {
             $success['status']  = 404;
             $success['message'] = __("You don't have the requested currency!");
             return response()->json(['success' => $success]);
         }
 
-        $wallet              = Wallet::where(['currency_id' => $currency_id, 'user_id' => $user_id])->first(['balance']);
-        $feesDetails         = FeesLimit::where(['transaction_type_id' => $request->transaction_type_id, 'currency_id' => $currency_id])->first(['charge_fixed', 'charge_percentage', 'min_limit', 'max_limit']);
+        $feesDetails = FeesLimit::where(['transaction_type_id' => $request->transaction_type_id, 'currency_id' => $currency_id])->first(['charge_fixed', 'charge_percentage', 'min_limit', 'max_limit']);
+
         $feesPercentage      = $amount * ($feesDetails->charge_percentage / 100);
         $checkAmountWithFees = $amount + $feesDetails->charge_fixed + $feesPercentage;
-        if (@$wallet)
-        {
-            if ((@$checkAmountWithFees) > (@$wallet->balance) || (@$wallet->balance < 0))
-            {
-                $success['message'] = __("Not have enough balance !");
-                $success['status']  = '401';
-                return response()->json(['success' => $success]);
-            }
+
+        if ($checkAmountWithFees > $wallet->balance || $wallet->balance < 0) {
+            $success['message'] = __("Not have enough balance !");
+            $success['status']  = '401';
+            return response()->json(['success' => $success]);
         }
 
         //Code for Amount Limit starts here
-        if (@$feesDetails->max_limit == null)
-        {
-            if ((@$amount < @$feesDetails->min_limit))
-            {
+        if ($feesDetails->max_limit == null) {
+            if ($amount < $feesDetails->min_limit) {
                 $success['message'] = __('Minimum amount ') . formatNumber($feesDetails->min_limit, $currency_id);
                 $success['status']  = '401';
-            }
-            else
-            {
+            } else {
                 $success['status'] = 200;
             }
-        }
-        else
-        {
-            if ((@$amount < @$feesDetails->min_limit) || (@$amount > @$feesDetails->max_limit))
-            {
+        } else {
+            if ($amount < $feesDetails->min_limit || $amount > $feesDetails->max_limit) {
                 $success['message'] = __('Minimum amount ') . formatNumber($feesDetails->min_limit, $currency_id) . __(' and Maximum amount ') . formatNumber($feesDetails->max_limit, $currency_id);
                 $success['status']  = '401';
-            }
-            else
-            {
+            } else {
                 $success['status'] = 200;
             }
         }
+
         //Code for Amount Limit ends here
 
         //Code for Fees Limit Starts here
-        if (empty($feesDetails))
-        {
+        if (empty($feesDetails)) {
             $feesPercentage            = 0;
             $feesFixed                 = 0;
             $totalFess                 = $feesPercentage + $feesFixed;
@@ -603,9 +462,7 @@ class RequestPaymentController extends Controller
             $success['min']            = 0;
             $success['max']            = 0;
             $success['balance']        = 0;
-        }
-        else
-        {
+        } else {
             $feesPercentage            = $amount * ($feesDetails->charge_percentage / 100);
             $feesFixed                 = $feesDetails->charge_fixed;
             $totalFess                 = $feesPercentage + $feesFixed;

@@ -19,6 +19,9 @@ $(document).ready(function() {
         $('#currency-error').text('');
         $('#modalHeading').text(addModalHeadingText);
         $('#paypalWithdrawalSettingSubmitBtnText').text(addButtonText);
+        $('#bankWithdrawalSettingSubmitBtnText').text(addButtonText);
+        $('#cryptoWithdrawalSettingSubmitBtnText').text(addButtonText);
+        $('#mobileMoneyWithdrawalSettingSubmitBtnText').text(addButtonText);
     });
 });
 

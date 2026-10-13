@@ -43,7 +43,7 @@ $(window).on('load', function()
 // preview company logo on change
 $(document).on('change','#logo', function()
 {
-    let orginalSource = '{{ url("public/uploads/userPic/default-logo.jpg") }}';
+    let orginalSource = defaultLogoUrl;
     let logo = $('#logo').attr('data-rel');
 
     if (logo != '') {
@@ -53,6 +53,19 @@ $(document).on('change','#logo', function()
     } else {
     readFileOnChange(this, $('#logo-demo-preview'), orginalSource);
     updateSideBarCompanySmallLogo(this.files[0]);
+    }
+});
+
+// preview company logo on change
+$(document).on('change', '#dark_logo', function () {
+    let orginalSource = defaultLogoUrl;
+    let dark_logo = $('#dark_logo').attr('data-rel');
+
+    if (dark_logo != '') {
+        readFileOnChange(this, $('#dark-logo-preview'), orginalSource);
+        $('.remove_img_preview_dark_logo').remove();
+    } else {
+        readFileOnChange(this, $('#dark-logo-demo-preview'), orginalSource);
     }
 });
 
@@ -101,6 +114,39 @@ $(document).on('click','.remove_img_preview_site_logo', function()
                 location.reload();
             }
         }
+        });
+    }
+});
+
+//Delete logo preview
+$(document).on('click', '.remove_img_preview_dark_logo', function () {
+    let dark_logo = $('#dark_logo').attr('data-rel');
+
+    if (dark_logo) {
+        $.ajax({
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            type: "POST",
+            url: ADMIN_URL + '/settings/delete-dark-logo',
+            data: {
+                'dark_logo': dark_logo,
+            },
+            dataType: 'json',
+            success: function (reply) {
+                if (reply.success == 1) {
+                    swal({
+                        title: "",
+                        text: reply.message,
+                        type: "success"
+                    }, function () {
+                        window.location.reload();
+                    });
+                } else {
+                    alert(reply.message);
+                    location.reload();
+                }
+            }
         });
     }
 });

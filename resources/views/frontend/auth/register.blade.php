@@ -1,7 +1,7 @@
 @extends('frontend.layouts.app')
 
 @section('styles')
-    <link rel="stylesheet" type="text/css" href="{{ asset('public/dist/plugins/intl-tel-input-17.0.19/css/intlTelInput.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ asset('public/dist/plugins/intl-tel-input/css/intlTelInput.min.css') }}">
 @endsection
 
 @section('content')
@@ -16,7 +16,8 @@
                         <div class="d-flex justify-content-start"> 
                             <div class="logo-div">
                                 <a href="{{ url('/') }}">
-                                    <img src="{{ image(settings('logo'), 'logo') }}" alt="{{ __('Brand Logo') }}">
+                                    <img src="{{ image(settings('logo'), 'logo') }}" alt="{{ __('Brand Logo') }}" class="light-logo">
+                                    <img src="{{ image(settings('dark_logo'), 'dark_logo') }}" alt="{{ __('Brand Logo') }}" class="dark-logo">
                                 </a>
                             </div>
                         </div> 
@@ -50,9 +51,10 @@
                             </div>
                         <form action="{{ route('register.personal.info') }}" class="form-horizontal" id="personal-info-form" method="POST">
                             @csrf
-                            <input type="hidden" name="defaultCountry" id="defaultCountry" class="form-control">
-                            <input type="hidden" name="carrierCode" id="carrierCode" class="form-control">
-                            <input type="hidden" name="formattedPhone" id="formattedPhone" class="form-control">
+                            <input type="hidden" name="defaultCountry" id="defaultCountry" class="form-control" value="{{ old('defaultCountry')}}">
+                            <input type="hidden" name="carrierCode" id="carrierCode" class="form-control" value="{{ old('carrierCode')}}">
+                            <input type="hidden" name="formattedPhone" id="formattedPhone" class="form-control" value="{{old
+                            ('formattedPhone')}}">
 
                             <div class="auth-module-header">
                                 <p class="mb-0 text-start auth-title">{{ __('Create Account') }}</p>
@@ -95,8 +97,14 @@
                                     </div>
                                     <div class="form-group mb-3">
                                         <label class="form-label">{{ __('Phone') }}</label>
-                                        <input type="tel" class="form-control" id="phone" name="phone">
-                                        <span id="duplicate-phone-error"></span>
+                                        <input type="tel" class="form-control" id="phone" name="phone" value="{{ old('formattedPhone')}}" >
+                                        
+                                        @error('phone')
+                                            <span id="duplicate-phone-error" class="error"> {{ $message }} </span>
+                                        @else
+                                            <span id="duplicate-phone-error"></span>
+                                        @enderror
+
                                         <span id="tel-error"></span>
                                     </div>
                                     <div class="form-group mb-3">
@@ -149,8 +157,8 @@
 @endsection
 
 @section('js')
-<script src="{{ asset('public/dist/plugins/html5-validation-1.0.0/validation.min.js') }}" type="text/javascript"></script>
-<script src="{{ asset('public/dist/plugins/intl-tel-input-17.0.19/js/intlTelInput-jquery.min.js') }}" type="text/javascript"></script>
+<script src="{{ asset('public/dist/plugins/html5-validation/validation.min.js') }}" type="text/javascript"></script>
+<script src="{{ asset('public/dist/plugins/intl-tel-input/js/intlTelInput-jquery.min.js') }}" type="text/javascript"></script>
 <script src="{{ asset('public/dist/js/isValidPhoneNumber.min.js') }}" type="text/javascript"></script>
 
 <script>
@@ -163,7 +171,7 @@
     let signingUpText = '{{ __("Continuing...") }}';
     let countryShortCode = '{{ getDefaultCountry() }}';
     let validPhoneNumberText = '{{ __("Please enter a valid international phone number.") }}'
-    let utilsJsScript = '{{ asset("public/dist/plugins/intl-tel-input-17.0.19/js/utils.min.js") }}';
+    let utilsJsScript = '{{ asset("public/dist/plugins/intl-tel-input/js/utils.min.js") }}';
 </script>
 <script src="{{ asset('public/frontend/customs/js/register/register.min.js') }}" type="text/javascript"></script>
 @endsection

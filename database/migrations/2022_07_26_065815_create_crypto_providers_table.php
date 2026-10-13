@@ -14,7 +14,7 @@ class CreateCryptoProvidersTable extends Migration
     public function up()
     {
         Schema::create('crypto_providers', function (Blueprint $table) {
-            $table->increments('id');
+            $table->id();
             $table->string('name', 30)->index('crypto_providers_name_idx');
             $table->string('alias', 30)->unique()->index('crypto_providers_alias_idx');
             $table->string('description')->nullable();

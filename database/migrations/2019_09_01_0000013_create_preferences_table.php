@@ -10,7 +10,7 @@ class CreatePreferencesTable extends Migration
     {
         Schema::create('preferences', function (Blueprint $table)
         {
-            $table->increments('id');
+            $table->id();
             $table->string('category');
             $table->string('field', 30)->unique()->index();
             $table->string('value', 50);

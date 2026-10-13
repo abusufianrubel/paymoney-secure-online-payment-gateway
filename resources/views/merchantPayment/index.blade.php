@@ -37,18 +37,19 @@
                 <input name="item_name" value="{{ isset($paymentInfo['item_name']) ? $paymentInfo['item_name'] : '' }}" type="hidden">
 
                 <div class="transaction-payment-method">
-                    <p>{{ __('Accepted payment methods') }}</p>
+                    <p>{{ __('Accepted payment methods') }} {{ old('method') }}</p>
                     <div class="d-flex flex-wrap gap-18 mt-2 radio-hide">
                         @foreach($payment_methods as $value)
                             @if(!in_array($value['id'], [Bank, Crypto]) && in_array($value['id'], $cpm))
-                                <input type="radio" name="method" value="{{ $value['name'] }}" id="{{ $value['id'] }}" {{ $value['name'] == 'Mts' ? 'checked' : '' }}>
-                                <label for="{{ $value['id'] }}" class="gateway d-inline-flex flex-column justify-content-center align-items-center {{ $value['name'] == 'Mts' ? 'gateway-selected' : '' }}">
-                                    <img src="{{ asset('public/dist/images/gateways/payments/'.strtolower($value['name']).'.png') }}" alt="{{ $value['name'] }}">
+                                <input type="radio" name="method" value="{{ $value['name'] }}" id="{{ $value['id'] }}"  {{ old('method') == $value['id'] ||  $loop->index == 0 ? 'checked' : '' }}
+                                >
+                                <label for="{{ $value['id'] }}" id="{{ $value['name'] }}" class="gateway d-inline-flex flex-column justify-content-center align-items-center {{ old('method') == $value['id'] ? 'gateway-selected' : '' }}">
+                                    {!! ($value['name'] == 'Mts') ? getSystemLogo() : '<img src="' . asset('public/dist/images/gateways/payments/'.strtolower($value['name']).'.png') . '" alt="' . $value['name'] . '">' !!}
                                 </label>
                             @endif
                         @endforeach
                     </div>
-                </div>
+                </div>     
                 <div class="d-grid">
                     <button class="btn btn-lg btn-primary" type="submit" id="paymentMethodSubmitBtn">
                         <div class="spinner spinner-border text-white spinner-border-sm mx-2 d-none">

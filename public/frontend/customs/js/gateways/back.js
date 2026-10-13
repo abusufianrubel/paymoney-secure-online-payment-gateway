@@ -5,3 +5,7 @@ $(document).ready(function () {
         window.history.back();
     });
 });
+
+if (window["ReactNativeWebView"]) {
+    $("#goBackButton").addClass('d-none');
+}

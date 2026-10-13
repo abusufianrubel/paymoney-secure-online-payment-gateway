@@ -21,7 +21,8 @@ class SmsTemplateController extends Controller
                     return $data['smsTemplates'][$templates->group][$templates->name][$templates->lang] = $templates;
                 });
 
-        $data['templateAlias'] = $alias ?? $data['smsTemplates']['General']['Address or Identity Verification']['en']['alias'];
+        $data['templateAlias'] = $alias ?? $data['smsTemplates']['Deposit']['Notify User on Deposit via Admin']['en']['alias'];
+
         $data['templateData'] = EmailTemplate::where(['type' => 'sms', 'status' => 'Active', 'alias' => $data['templateAlias']])->get(['id', 'subject', 'body']);
 
         return view('admin.sms_templates.index', $data);

@@ -53,7 +53,7 @@
     <div class="col-xl-8 dis-mb-top">
         <form method="post" action="{{ route('user.merchants.store') }}" enctype="multipart/form-data" id="merchantCreateForm">
             @csrf
-            <div class="merchant-parent-form bg-white mt-32 shadow">
+            <div class="merchant-parent-form bg-white mt-32 shadow ">
                 <p class="mb-0 f-24 leading-30 gilroy-Semibold text-dark text-center">{{ __('Merchant Form') }}</p>
                 <!-- Business Name -->
                 <div class="row">
@@ -108,7 +108,7 @@
                     </div>
                 </div>
                 
-                @if (module('WithdrawalApi') && isActive('WithdrawalApi'))
+                @if (moduleExists('WithdrawalApi') && isActive('WithdrawalApi'))
                     <!-- Withdrawal Approval -->
                     <div class="row">
                         <div class="col-12">
@@ -169,7 +169,7 @@
 @endsection
 
 @push('js')
-    <script src="{{ asset('public/dist/plugins/html5-validation-1.0.0/validation.min.js') }}"></script>
+    <script src="{{ asset('public/dist/plugins/html5-validation/validation.min.js') }}"></script>
     <script type="text/javascript">
         'use strict';
         var csrfToken = $('[name="_token"]').val();

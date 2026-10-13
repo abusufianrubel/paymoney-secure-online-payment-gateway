@@ -9,12 +9,16 @@ use App\Http\Helpers\Common;
 use Illuminate\Http\Request;
 use App\Models\{
     AppTransactionsInfo,
-    Currency
+    Currency,
+    CurrencyPaymentMethod,
+    MerchantPayment,
+    PaymentMethod
 };
 
 class ExpressMerchantPaymentController extends Controller
 {
-    protected $helper, $service;
+    protected $helper;
+    protected $service;
     public function __construct()
     {
         $this->helper = new Common();
@@ -101,60 +105,25 @@ class ExpressMerchantPaymentController extends Controller
         try {
 
             $transInfo = $this->service->getTransactionData($request->grant_id, $request->token);
+
             $currency = Currency::whereCode($transInfo->currency)->first();
             $feesLimit = $this->service->checkMerchantPaymentFeesLimit($currency->id, Mts, $transInfo->amount, $transInfo->app->merchant->fee);
-
-            $totalAmount = $transInfo?->app?->merchant?->merchant_group?->fee_bearer == 'Merchant' ? $transInfo['amount'] : $transInfo['amount'] + $feesLimit['totalFee'];
-
-            if (!auth()->check()) {
-
-                if ($request->isMethod('POST')) {
-                    $credentials = $request->only('email', 'password');
-
-                    if (Auth::attempt($credentials)) {
-
-                        $authCredentials = [
-                            'email'    => $request->email,
-                            'password' => $request->password,
-                        ];
-
-                        Session::put('credentials', $authCredentials);
-                        //Abort if logged in user is same as merchant
-                        $this->checkMerchantUser($transInfo);
-
-                        $this->checkUserStatus(auth()->user()->status);
-
-                        $this->service->checkUserBalance(auth()->user()->id, $totalAmount, $currency->id);
-
-                        $data = $this->service->checkoutToPaymentConfirmPage($transInfo);
-                        $data['fees'] = $feesLimit['totalFee'];
-                        $data['transInfo'] = $transInfo;
-                        $data['currencyId'] = $currency->id;
-                        return view('merchantPayment.confirm', $data);
-                        
-                    } else {
-                        $this->helper->one_time_message('error', __('Unable to login with provided credentials!'));
-                        return redirect()->back();
-                    }
-                } else {
-                    $data['fees'] = $feesLimit['totalFee'];
-                    $data['transInfo'] = $transInfo;
-                    $data['currencyId'] = $currency->id;
-                    return view('merchantPayment.login', $data);
-                }
-            }
-
-            //Abort if logged in user is same as merchant
-            $this->checkMerchantUser($transInfo);
-
-            $this->checkUserStatus(auth()->user()->status);
-
-            $this->service->checkUserBalance(auth()->user()->id, $totalAmount, $currency->id);
-
             $data = $this->service->checkoutToPaymentConfirmPage($transInfo);
 
             $data['fees'] = $feesLimit['totalFee'];
             $data['currencyId'] = $currency->id;
+            $data['totalAmount'] = $data['fee_bearer'] == 'Merchant' ? $transInfo['amount'] : $transInfo['amount'] + $feesLimit['totalFee'];
+
+            setPaymentData($data);
+
+            $data['payment_methods'] = PaymentMethod::whereStatus('Active')->get(['id', 'name'])->toArray();
+
+            $cpmWithoutMts = CurrencyPaymentMethod::where(['currency_id' => $currency->id])
+            ->where('activated_for', 'like', "%deposit%")->pluck('method_id')->toArray();
+
+            $paymoney = PaymentMethod::whereName('Mts')->first(['id']);
+            array_push($cpmWithoutMts, $paymoney->id);
+            $data['cpm'] = $cpmWithoutMts;
 
             return view('merchantPayment.confirm', $data);
 
@@ -174,28 +143,46 @@ class ExpressMerchantPaymentController extends Controller
         }
     }
 
-    public function confirmPayment()
+    public function confirmPayment(Request $request)
     {
         try {
 
-            if (!auth()->check()) {
-                $getLoggedInCredentials = Session::get('credentials');
+            $data = getPaymentData();
+
+            $this->checkMerchantUser($data['transInfo']);
+
+            $this->checkUserStatus(auth()->user()->status);
+
+            $this->service->checkUserBalance(auth()->user()->id, $data['totalAmount'], $data['currencyId']);
+
+            $paymentMethod = PaymentMethod::whereName($request->method)->first(['id', 'name']);
+            $methodId = $paymentMethod['id'];
+
+            $paymentData = [
+                'currency_id' =>  $data['currencyId'],
+                'currencySymbol' => $data['currSymbol'],
+                'currencyCode' => $data['currCode'],
+                'currencyType' => 'fiat',
+                'amount' => $data['totalAmount'],
+                'total' => $data['totalAmount'],
+                'totalAmount' => $data['totalAmount'],
+                'transaction_type' => Payment_Sent,
+                'payment_type' => 'deposit',
+                'payment_method' => $methodId,
+                'payment_method_id' => $methodId,
+                'redirectUrl' => route('express.payment.succss'),
+                'success_url' => route('express.payment.redirect'),
+                'cancel_url' => url('payment/fail'),
+                'gateway' => strtolower($request->method),
+                'payer_id' => auth()->id(),
+                'uuid' => unique_code()
+            ];
     
-                if (Auth::attempt($getLoggedInCredentials)) {
-                    $successPath = $this->service->storePaymentInformations();
-                    return redirect()->to($successPath);
-                } 
+            $paymentData = array_merge($data, $paymentData);
+
+            setPaymentData($paymentData);
     
-                $this->helper->one_time_message('error', __('Unable to login with provided credentials!'));
-                return redirect()->back();
-                
-            }
-    
-            $data = $this->service->storePaymentInformations();
-            if ($data['status'] == 200) {
-                return redirect()->to($data['successPath']);
-            }
-            Session::forget('transInfo');
+            return redirect(gatewayPaymentUrl($paymentData));
 
         } catch (ExpressMerchantPaymentException $exception) {
             $data = [
@@ -208,6 +195,55 @@ class ExpressMerchantPaymentController extends Controller
             $data = [
                 'status'  => 'error',
                 'message' => __("Failed to process the request."),
+            ];
+            return view('merchantPayment.fail', $data);
+        }
+        
+    }
+
+
+    public function paymentSuccess()
+    {
+        try {
+            $data = $this->service->storePaymentInformations();
+            
+            if ($data['status'] == 200) {
+                if (isset(request()->execute) && (request()->execute == 'api')) {
+                    return  $data['transaction_id'];
+                }
+                getPaymentData('forget');
+                return redirect()->to($data['successPath']);
+            } 
+
+        } catch (ExpressMerchantPaymentException $exception ) {
+            $data = [
+                'status'  => 'error',
+                'message' => $exception->getMessage(),
+            ];
+            return view('merchantPayment.fail', $data);
+
+        }  catch(Exception $exception) {
+            $data = [
+                'status'  => 'error',
+                'message' => $exception->getMessage(),
+            ];
+            return view('merchantPayment.fail', $data);
+        }
+        
+    }
+
+    public function redirectSuccessPath()
+    {
+        try {
+            $data = getPaymentData('forget');
+            $transInfo = $data['transInfo'];
+            $merchantPayment = MerchantPayment::where('uuid', $data['uuid'])->first();
+            $url = $this->service->generateSuccessUrl($merchantPayment, $transInfo['success_url']);
+             return redirect()->to($url);
+        } catch (Exception $e) {
+            $data = [
+                'status'  => 'error',
+                'message' => $e->getMessage(),
             ];
             return view('merchantPayment.fail', $data);
         }

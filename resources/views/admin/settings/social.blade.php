@@ -56,7 +56,7 @@
 @push('extra_body_scripts')
 
 <!-- jquery.validate -->
-<script src="{{ asset('public/dist/plugins/jquery-validation-1.17.0/dist/jquery.validate.min.js') }}" type="text/javascript"></script>
+<script src="{{ asset('public/dist/plugins/jquery-validation/dist/jquery.validate.min.js') }}" type="text/javascript"></script>
 
 <script type="text/javascript">
 
@@ -75,31 +75,24 @@
     $('#social_links').validate({
         rules: {
             facebook: {
-                // required: true,
                 url: true,
             },
             google_plus: {
-                // required: true,
                 url: true,
             },
             twitter: {
-                // required: true,
                 url: true,
             },
             linkedin: {
-                // required: true,
                 url: true,
             },
             pinterest: {
-                // required: true,
                 url: true,
             },
             youtube: {
-                // required: true,
                 url: true,
             },
             instagram: {
-                // required: true,
                 url: true,
             },
         },

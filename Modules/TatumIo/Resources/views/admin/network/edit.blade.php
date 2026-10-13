@@ -2,7 +2,7 @@
 @section('title', __('Update Crypto Asset') )
 
 @section('head_style')
-    <link rel="stylesheet" type="text/css" href="{{ asset('public/dist/plugins/bootstrap-toggle-2.2.0/css/bootstrap-toggle.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ asset('public/dist/plugins/bootstrap-toggle/css/bootstrap-toggle.min.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ asset('Modules/TatumIo/Resources/assets/admin/css/tatumio_asset_setting.min.css') }}">
 @endsection
 
@@ -123,10 +123,10 @@
 @endsection
 
 @push('extra_body_scripts')
-<script src="{{ asset('public/dist/plugins/bootstrap-toggle-2.2.0/js/bootstrap-toggle.min.js') }}" type="text/javascript"></script>
-<script src="{{ asset('public/dist/plugins/debounce-1.1/jquery.ba-throttle-debounce.min.js')}}" type="text/javascript"></script>
+<script src="{{ asset('public/dist/plugins/bootstrap-toggle/js/bootstrap-toggle.min.js') }}" type="text/javascript"></script>
+<script src="{{ asset('public/dist/plugins/debounce/jquery.ba-throttle-debounce.min.js')}}" type="text/javascript"></script>
 <script src="{{ asset('public/dist/libraries/sweetalert/sweetalert-unpkg.min.js')}}" type="text/javascript"></script>
-<script src="{{ asset('public/dist/plugins/html5-validation-1.0.0/validation.min.js') }}"  type="text/javascript" ></script>
+<script src="{{ asset('public/dist/plugins/html5-validation/validation.min.js') }}"  type="text/javascript" ></script>
 
 <script>
     'use script';

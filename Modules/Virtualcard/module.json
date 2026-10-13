@@ -1,0 +1,13 @@
+{
+    "name": "Virtualcard",
+    "alias": "virtualcard",
+    "core": true,
+    "description": "The Virtualcard Module allows users to create and manage virtual cards for secure online payments. It supports multiple card types, customizable card designs, and real-time transaction tracking to ensure a seamless and secure payment experience. Ideal for businesses and individuals needing flexible payment solutions with enhanced security.",
+    "keywords": [],
+    "priority": 500,
+    "providers": [
+        "Modules\\Virtualcard\\Providers\\VirtualcardServiceProvider"
+    ],
+    "files": [],
+    "type": "virtualcard"
+}

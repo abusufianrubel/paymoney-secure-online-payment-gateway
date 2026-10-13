@@ -1,25 +1,41 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Page Not Found</title>
-    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Ruda:400,700,900">
-    <style type="text/css">
-    body { margin: 0; padding: 10px; background-color: #ed5565; font-family: "Ruda",sans-serif; color: #FFF; }
-    .middle-box { margin: 0 auto; max-width: 400px; padding-top: 30px; z-index: 100; text-align: center; }
-    .middle-box h1 { font-size: 170px; color:white; margin:0; }
-    </style>
+
+    <title>{{ __('Page Not Found | :x', ['x' => settings('name')]) }}</title>
+
+    <script src="{{ asset('public/frontend/templates/js/flashesh-dark.min.js') }}"></script>
+    <link rel="stylesheet" href="{{ asset('public/dist/libraries/bootstrap/css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('public/frontend/templates/css/prism.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('public/frontend/templates/css/style.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('public/frontend/templates/css/owl-css/owl.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('public/frontend/templates/css/404.min.css') }}">
+
+    <link rel="shortcut icon" href="{{ faviconPath() }}" />
 </head>
 
-<body class="bg-theme04">
-    <div class="middle-box animated fadeInDown">
-        <h1>404</h1>
-        <h3 style="font-weight:bold;">Requested page has not been found!</h3>
-        <div style="color:#F5F5F5;">
-            Sorry, but the page you are looking for might have been removed, or unavailable.
+<body>
+	<div class="position-relative vh-100 log-bg d-flex flex-column align-items-center pb-11 overflow-auto">
+        <img class="mt-54p w-[175px] h-[42px]" src="{{ image(settings('logo'), 'logo') }}" alt="brand-logo">
+        <div class="mt-14 relative flex flex-col items-center">
+            <p class="error-code gilroy-Semibold">{{ __('404') }}</p>
+            <p class="error-message text-center gilroy-medium mb-5">{{ __('The page you’re looking for appears to have been moved, deleted or doesn’t exist. We apologize for the inconveniences.') }}</p>
+            <a href="{{ route('home')}}" class="border d-flex align-items-center justify-content-center log-btn rounded ml-60 mt-n4p mt-54p m-auto">
+                <span class="text-lg homepage-link gilroy-medium color-white text-uppercase">{{ __('Go to Home') }}</span> 
+            </a>
         </div>
     </div>
+
+    <!-- Footer section -->
+    <script src="{{ asset('public/dist/libraries/jquery/dist/jquery.min.js') }}"></script>  
+    <script src="{{ asset('public/frontend/templates/js/owl.carousel.min.js') }}"></script>
+    <script src="{{ asset('public/dist/libraries/bootstrap/js/bootstrap.min.js') }}"></script>
+    <script src="{{ asset('public/user/templates/js/main.min.js') }}"></script>
+    <script src="{{ asset('public/frontend/templates/js/prism.min.js') }}"></script>
 </body>
 
 </html>

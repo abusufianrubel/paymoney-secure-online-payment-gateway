@@ -11,6 +11,7 @@ namespace App\Services;
 
 use App\Exceptions\Api\V2\RegistrationException;
 use App\Models\{
+    CryptoProvider,
     RoleUser,
     User,
     QrCode,
@@ -33,6 +34,12 @@ class RegistrationService
     public function userRegistration($request)
     {
         try {
+            
+            $formattedPhone   = str_replace('+' . $request->carrierCode, "", $request->formattedPhone);
+            if (!empty($request->phone) && $request->phone !==  $formattedPhone) {
+                throw new Exception(__('The phone number provided is incorrect'));
+            }
+
             DB::beginTransaction();
             $this->user = new User();
             $user = $this->user->createNewUser($request, 'user');
@@ -45,16 +52,27 @@ class RegistrationService
             QrCode::createUserQrCode($user);
             $userEmail          = $user->email;
             $userFormattedPhone = $user->formattedPhone;
-            $this->user->processUnregisteredUserTransfers($userEmail, $userFormattedPhone, $user, settings('default_currency'));
-            $this->user->processUnregisteredUserRequestPayments($userEmail, $userFormattedPhone, $user, settings('default_currency'));
-
-            $this->emailVerification($user);
+            $this->user->processUnregisteredUserTransfers(
+                $userEmail, $userFormattedPhone, $user, settings('default_currency')
+            );
+            $this->user->processUnregisteredUserRequestPayments(
+                $userEmail, $userFormattedPhone, $user, settings('default_currency')
+            );
+   
+            if (!checkDemoEnvironment() && isActive('TatumIo') && CryptoProvider::getStatus('TatumIo') == 'Active') {
+                $generateUserCryptoWalletAddress = $this->user->generateUserTatumIoWalletAddress($user);
+                if ($generateUserCryptoWalletAddress['status'] == 401) {
+                    throw new RegistrationException($generateUserCryptoWalletAddress['message']);
+                }
+            }
 
             DB::commit();
 
+            $emailVerificationMessage = $this->emailVerification($user);
+
             return [
                 'status'  => true,
-                'message' => __('Registration Successful.')
+                'message' => __('Registration Successful.') . ' ' . $emailVerificationMessage
             ];
 
         } catch (Exception $e) {
@@ -66,12 +84,12 @@ class RegistrationService
 
     public function emailVerification($user)
     {
-        if ('Enabled' == preference('verification_mail')) {
-            if (0 == optional($user->user_detail)->email_verification) {
-                (new VerifyUser())->createVerifyUser($user->id);
-                (new UserVerificationMailService())->send($user);
-            }
+        if ('Enabled' == preference('verification_mail') && 0 == optional($user->user_detail)->email_verification) {
+            (new VerifyUser())->createVerifyUser($user->id);
+            (new UserVerificationMailService())->send($user);
+            return __('We sent you an activation code. Check your email and click on the link to verify.');
         }
+        return null;
     }
 
 }

@@ -16,7 +16,7 @@ class CreateNotificationTypesTable extends Migration
         if (!Schema::hasTable('notification_types'))
         {
             Schema::create('notification_types', function (Blueprint $table) {
-                $table->increments('id');
+                $table->id();
                 $table->string('name')->unique()->index();
                 $table->string('alias')->unique()->index();
                 $table->string('status')->default('Active');

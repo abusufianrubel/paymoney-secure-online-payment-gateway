@@ -15,7 +15,7 @@ class CreateMerchantGroupsTable extends Migration
     {
         Schema::create('merchant_groups', function (Blueprint $table)
         {
-            $table->increments('id');
+            $table->id();
             $table->string('name', 50)->unique();
             $table->string('description')->nullable();
             $table->decimal('fee', 20, 8)->nullable()->default(0.00000000);

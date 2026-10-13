@@ -15,7 +15,7 @@ class CreatePaymentMethodsTable extends Migration
     {
         Schema::create('payment_methods', function (Blueprint $table)
         {
-            $table->increments('id');
+            $table->id();
             $table->string('name', 50);
             $table->string('status', 11)->default('Active')->comment('Active or Inactive');
         });

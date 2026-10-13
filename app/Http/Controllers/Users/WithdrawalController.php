@@ -243,14 +243,18 @@ class WithdrawalController extends Controller
     public function withdrawalConfirm(Request $request)
     {
         $rules = array(
-            'amount'            => ['required','numeric', new CheckWalletBalance],
+            'amount' => [
+                'required',
+                'numeric', 
+                new CheckWalletBalance
+            ],
             'withdrawal_method_id' => 'required',
-            'currency_id'       => 'required',
+            'currency_id' => 'required',
         );
         $fieldNames = array(
-            'amount'            => 'Amount',
+            'amount' => 'Amount',
             'withdrawal_method_id' => 'Payment method',
-            'currency_id'       => 'Currency',
+            'currency_id' => 'Currency',
         );
 
         $validator = Validator::make($request->all(), $rules);
@@ -403,10 +407,10 @@ class WithdrawalController extends Controller
         }
         else
         {
-            $feesPercentage            = $amount * ($feesDetails->charge_percentage / 100);
+            $feesPercentage            = (double) $amount * ($feesDetails->charge_percentage / 100);
             $feesFixed                 = $feesDetails->charge_fixed;
             $totalFess                 = $feesPercentage + $feesFixed;
-            $totalAmount               = $amount + $totalFess;
+            $totalAmount               = (double) $amount + $totalFess;
             $success['feesPercentage'] = $feesPercentage;
             $success['feesFixed']      = $feesFixed;
             $success['totalFees']      = $totalFess;
@@ -488,6 +492,11 @@ class WithdrawalController extends Controller
         $data['transactionDetails'] = Transaction::with(['payment_method:id,name', 'currency:id,code,symbol'])
             ->where('id', $trans_id)
             ->first(['uuid', 'created_at', 'status', 'currency_id', 'payment_method_id', 'subtotal', 'charge_percentage', 'charge_fixed', 'total', 'transaction_type_id', 'transaction_reference_id']);
+
+        if (empty($data['transactionDetails'])) {
+            $this->helper->one_time_message('error', __('Transaction not found!'));
+            return redirect()->route('user.transactions.index');
+        }
 
         generatePDF('user.withdrawal.withdrawal-pdf', 'withdrawal_', $data);
     }

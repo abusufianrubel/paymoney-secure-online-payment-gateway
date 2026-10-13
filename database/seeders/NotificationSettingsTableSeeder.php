@@ -2,116 +2,69 @@
 
 namespace Database\Seeders;
 
-use App\Models\NotificationSetting;
+use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 
 class NotificationSettingsTableSeeder extends Seeder
 {
     /**
-     * Run the database seeds.
+     * Auto generated seed file
      *
      * @return void
      */
     public function run()
     {
-        NotificationSetting::truncate();
-        NotificationSetting::insert([
+        \DB::table('notification_settings')->delete();
+        
+        \DB::table('notification_settings')->insert([
             [
-                'id'                   => '1',
-                'notification_type_id' => '1',
-                'recipient_type'       => 'email',
-                'recipient'            => NULL,
-                'status'               => 'No',
+                'notification_type_id' => getNotificationTypeId('deposit'),
+                'recipient_type' => 'email',
+                'recipient' => 'admin@techvill.net',
+                'status' => 'Yes',
+                'created_at' => Carbon::now()->subDays(590),
+                'updated_at' => Carbon::now()->subDays(590),
             ],
-
             [
-                'id'                   => '2',
-                'notification_type_id' => '2',
-                'recipient_type'       => 'email',
-                'recipient'            => NULL,
-                'status'               => 'No',
+                'notification_type_id' => getNotificationTypeId('payout'),
+                'recipient_type' => 'email',
+                'recipient' => 'admin@techvill.net',
+                'status' => 'Yes',
+                'created_at' => Carbon::now()->subDays(590),
+                'updated_at' => Carbon::now()->subDays(590),
             ],
-
             [
-                'id'                   => '3',
-                'notification_type_id' => '3',
-                'recipient_type'       => 'email',
-                'recipient'            => NULL,
-                'status'               => 'No',
+                'notification_type_id' => getNotificationTypeId('send'),
+                'recipient_type' => 'email',
+                'recipient' => 'admin@techvill.net',
+                'status' => 'Yes',
+                'created_at' => Carbon::now()->subDays(590),
+                'updated_at' => Carbon::now()->subDays(590),
             ],
-
             [
-                'id'                   => '4',
-                'notification_type_id' => '4',
-                'recipient_type'       => 'email',
-                'recipient'            => NULL,
-                'status'               => 'No',
+                'notification_type_id' => getNotificationTypeId('request'),
+                'recipient_type' => 'email',
+                'recipient' => 'admin@techvill.net',
+                'status' => 'Yes',
+                'created_at' => Carbon::now()->subDays(590),
+                'updated_at' => Carbon::now()->subDays(590),
             ],
-
             [
-                'id'                   => '5',
-                'notification_type_id' => '5',
-                'recipient_type'       => 'email',
-                'recipient'            => NULL,
-                'status'               => 'No',
+                'notification_type_id' => getNotificationTypeId('exchange'),
+                'recipient_type' => 'email',
+                'recipient' => 'admin@techvill.net',
+                'status' => 'Yes',
+                'created_at' => Carbon::now()->subDays(590),
+                'updated_at' => Carbon::now()->subDays(590),
             ],
-
             [
-                'id'                   => '6',
-                'notification_type_id' => '6',
-                'recipient_type'       => 'email',
-                'recipient'            => NULL,
-                'status'               => 'No',
+                'notification_type_id' => getNotificationTypeId('payment'),
+                'recipient_type' => 'email',
+                'recipient' => 'admin@techvill.net',
+                'status' => 'Yes',
+                'created_at' => Carbon::now()->subDays(590),
+                'updated_at' => Carbon::now()->subDays(590),
             ],
-
-            [
-                'id'                   => '7',
-                'notification_type_id' => '1',
-                'recipient_type'       => 'sms',
-                'recipient'            => NULL,
-                'status'               => 'No',
-            ],
-
-            [
-                'id'                   => '8',
-                'notification_type_id' => '2',
-                'recipient_type'       => 'sms',
-                'recipient'            => NULL,
-                'status'               => 'No',
-            ],
-
-            [
-                'id'                   => '9',
-                'notification_type_id' => '3',
-                'recipient_type'       => 'sms',
-                'recipient'            => NULL,
-                'status'               => 'No',
-            ],
-
-            [
-                'id'                   => '10',
-                'notification_type_id' => '4',
-                'recipient_type'       => 'sms',
-                'recipient'            => NULL,
-                'status'               => 'No',
-            ],
-
-            [
-                'id'                   => '11',
-                'notification_type_id' => '5',
-                'recipient_type'       => 'sms',
-                'recipient'            => NULL,
-                'status'               => 'No',
-            ],
-
-            [
-                'id'                   => '12',
-                'notification_type_id' => '6',
-                'recipient_type'       => 'sms',
-                'recipient'            => NULL,
-                'status'               => 'No',
-            ],
-
         ]);
     }
 }

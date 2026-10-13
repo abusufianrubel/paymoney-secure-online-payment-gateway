@@ -157,7 +157,7 @@
 @endsection
 
 @push('js')
-<script src="{{ asset('public/dist/plugins/html5-validation-1.0.0/validation.min.js') }}" type="text/javascript"></script>
+<script src="{{ asset('public/dist/plugins/html5-validation/validation.min.js') }}" type="text/javascript"></script>
 <script>
 	'use strict';
     var extensions = JSON.parse(@json(json_encode(getFileExtensions(1))));

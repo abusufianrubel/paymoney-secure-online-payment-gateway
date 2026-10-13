@@ -32,19 +32,27 @@ class TransactionsDataTable extends DataTable
                     case Exchange_To:
                     case Request_Sent:
                     case Withdrawal:
-                    case (module('CryptoExchange') ? Crypto_Buy : false):
-                    case (module('CryptoExchange') ? Crypto_Sell : false):
-                    case (module('CryptoExchange') ? Crypto_Swap : false):
+                    case (moduleExists('CryptoExchange') && isActive('CryptoExchange') ? Crypto_Buy : false):
+                    case (moduleExists('CryptoExchange') && isActive('CryptoExchange') ? Crypto_Sell : false):
+                    case (moduleExists('CryptoExchange') && isActive('CryptoExchange') ? Crypto_Swap : false):
                         if (isset($transaction->user->first_name) && !empty($transaction->user->first_name)) {
                             $sender = $transaction->user->first_name . ' ' . $transaction->user->last_name;
                             $senderWithLink = (Common::has_permission(auth('admin')->user()->id, 'edit_user')) ? '<a href="' . url(config('adminPrefix') . '/users/edit/' . $transaction->user_id) . '">' . $sender . '</a>' : $sender;
-                        } elseif (module('CryptoExchange') && isset($transaction->crypto_exchange) && !empty($transaction->crypto_exchange) ) {
+                        } elseif (moduleExists('CryptoExchange') && isActive('CryptoExchange') && isset($transaction->crypto_exchange) && !empty($transaction->crypto_exchange) ) {
                            $senderWithLink = (isset($transaction->crypto_exchange->email_phone) && !empty($transaction->crypto_exchange->email_phone)) ?  $transaction->crypto_exchange->email_phone : '-' ;
                         }
                         break;
                     case Payment_Sent:
+                    case defined('Virtualcard_Topup') && Virtualcard_Topup:
+                    case defined('Virtualcard_Withdrawal') && Virtualcard_Withdrawal:
                         if (isset($transaction->user->first_name) && !empty($transaction->user->first_name)) {
                             $sender = $transaction->user->first_name . ' ' . $transaction->user->last_name;
+                            $senderWithLink = (Common::has_permission(auth('admin')->user()->id, 'edit_user')) ? '<a href="' . url(config('adminPrefix') . '/users/edit/' . $transaction->user_id) . '">' . $sender . '</a>' : $sender;
+                        }
+                        break;
+                    case (moduleExists('Invoice') && isActive('Invoice') ? Invoice_Payment_Sent : false):
+                        if (isset($transaction->user?->first_name) && !empty($transaction->user?->first_name)) {
+                            $sender = $transaction->user?->first_name . ' ' . $transaction->user?->last_name;
                             $senderWithLink = (Common::has_permission(auth('admin')->user()->id, 'edit_user')) ? '<a href="' . url(config('adminPrefix') . '/users/edit/' . $transaction->user_id) . '">' . $sender . '</a>' : $sender;
                         }
                         break;
@@ -61,7 +69,7 @@ class TransactionsDataTable extends DataTable
                 return $senderWithLink;
             })
             ->addColumn('receiver', function ($transaction) {
-                
+
                 $receiverWithLink = getTransactionListUser($transaction, 'receiver');
                 if (!is_null($receiverWithLink)) {
                     return $receiverWithLink;
@@ -134,12 +142,18 @@ class TransactionsDataTable extends DataTable
                             $receiverWithLink = (Common::has_permission(auth('admin')->user()->id, 'edit_user')) ? '<a href="' . url(config('adminPrefix') . '/users/edit/' . $transaction->user_id) . '">' . $receiver . '</a>' : $receiver;
                         }
                         break;
+                    case (moduleExists('Invoice') && isActive('Invoice')? Invoice_Payment_Received : false):
+                        if (isset($transaction->end_user?->first_name) && !empty($transaction->end_user?->first_name)) {
+                            $receiver = $transaction->end_user?->first_name . ' ' . $transaction->end_user?->last_name;
+                            $receiverWithLink = (Common::has_permission(auth('admin')->user()->id, 'edit_user')) ? '<a href="' . url(config('adminPrefix') . '/users/edit/' . $transaction->end_user_id) . '">' . $receiver . '</a>' : $receiver;
+                        }
+                        break;
                 }
 
                 return $receiverWithLink;
             })
             ->editColumn('transaction_type_id', function ($transaction) {
-                return (isset($transaction->transaction_type->name) && !empty($transaction->transaction_type->name)) ? str_replace('_', ' ', $transaction->transaction_type->name) : '-';
+                return transactionTypeName($transaction->transaction_type);
             })
             ->editColumn('subtotal', function ($transaction) {
                 return formatNumber($transaction->subtotal, $transaction->currency_id);

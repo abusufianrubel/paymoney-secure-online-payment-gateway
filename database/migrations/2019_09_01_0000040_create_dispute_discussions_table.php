@@ -15,12 +15,10 @@ class CreateDisputeDiscussionsTable extends Migration
     {
         Schema::create('dispute_discussions', function (Blueprint $table)
         {
-            $table->increments('id');
+            $table->id();
 
-            $table->integer('dispute_id')->unsigned()->index()->nullable();
-            $table->foreign('dispute_id')->references('id')->on('disputes')->onUpdate('cascade')->onDelete('cascade');
-
-            $table->integer('user_id')->index();
+            $table->foreignId('dispute_id')->constrained('disputes')->onUpdate('cascade')->onDelete('cascade');
+            $table->foreignId('user_id')->constrained('users')->onUpdate('cascade')->onDelete('cascade');
             $table->string('type', 6)->comment('Admin, User');
             $table->longText('message')->nullable();
             $table->string('file', 255)->nullable();

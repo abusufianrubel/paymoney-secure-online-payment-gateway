@@ -12,7 +12,7 @@ return [
     |
     */
     'core' => [
-        'minimumPhpVersion' => '8.1.0',
+        'minimumPhpVersion' => '8.2.0',
         'minimumMysqlVersion' => '5.7'
     ],
     'requirements' => [

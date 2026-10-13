@@ -20,11 +20,13 @@ class GatewayController extends Controller
     {
         $this->helper = new Common();
 
-        if (!request('gateway')) {
-            throw new Exception(__('Payment parameter isn\'t available'));
+        if (request('gateway')) {
+            GatewayHandler::gatewayIssue(request("gateway"));
+            
+            if (request('gateway') == 'mts') {
+                $this->middleware('auth')->only('confirmPayment');
+            }
         }
-
-        GatewayHandler::gatewayIssue(request("gateway"));
 
     }
 
@@ -47,22 +49,9 @@ class GatewayController extends Controller
 
             $data['params'] = request()->params;
 
-
             $this->validateData($data);
 
-            if ($data['payment_method'] == Coinpayments) {
-
-                return $processor->initiateGateway($data);
-            }
-
-            if ($data['payment_method'] == Stripe) {
-                $processor->setPaymentType($data['payment_type']);
-                $paymentIntent = $processor->pay($data);
-                $data['publishableKey'] = $paymentIntent['publishableKey'];
-                $data['paymentIntent'] = $paymentIntent['paymentIntent'];
-            }
-
-            return view($processor->paymentView(), $data);
+            return $processor->initiateGateway($data);
 
         } catch (Exception $exception) {
             $this->helper->one_time_message('error', __($exception->getMessage()));
@@ -87,21 +76,8 @@ class GatewayController extends Controller
 
             $response = $processor->pay(array_merge($request->all(), ['total_amount' => request()->amount]));
 
-            if (!$request->ajax()) {
-
-                if ($response['type'] == 'paypal' || $response['type'] == 'coinbase' ) {
-                    return redirect($response['href']);
-                }
-
-                if ($response['type'] == 'coinpayments') {
-                    return $response['view'];
-                }
-
-                if ($response['type'] == 'mts') {
-                    return redirect($response['redirect_url'] . '?params=' . $request->params . '&user=' . $response['user']);
-                }
-
-                return redirect($response['redirect_url'] . '?params=' . $request->params . '&attachment=' . $response['attachment'] . '&bank=' . $response['bank']);
+            if(isset($response['redirect']) && $response['redirect'] ) {
+                return redirect($response['redirect_url']);
             }
 
             return response()->json([
@@ -143,6 +119,7 @@ class GatewayController extends Controller
             'transaction_type' => 'required', // Deposit, Payment_Sent & other on demand module transaction type
             'payment_type' => 'required', // To calculate fees limit need to provide payment type, if transaction type is Deposit payment type will be "deposit"
             'redirectUrl' => 'required', // After payment done via gateway will execute the url to process the transaction
+            'success_url' => 'required', // The Page which will show as success page
             'gateway' => 'required', // Payment method name
             'payment_method' => 'required', // Payment Method id
             'banks' => 'required_if:payment_method,' . Bank,
@@ -169,21 +146,7 @@ class GatewayController extends Controller
 
             setPaymentData($response);
 
-            if ( isActive('CryptoExchange') && ($response['transaction_type'] == Crypto_Buy)) {
-                return redirect()->route('guest.crypto_exchange.view');
-            }
-
-            if (isActive('Investment') && $response['transaction_type'] == Investment) {
-                return redirect()->route('user.invest.success', $response['transaction_id']);
-            }
-
-            switch ($response['transaction_type']) {
-                case Deposit:
-                    return redirect()->route('user.deposit.success');
-                case Payment_Sent:
-                    return redirect()->route('merchant.payment.success');
-                default:
-            }
+            return redirect($response['success_url']);      
 
         } catch (Exception $e) {
             $this->helper->one_time_message('error', $e->getMessage());
@@ -201,7 +164,25 @@ class GatewayController extends Controller
         }
 
         return redirect()->to('payment/fail');
-
     }
 
+    /**
+     * Process the payment
+     *
+     * @param Request $request
+     * @param PaymentProcessor $processor
+     *
+     * @return void
+     *
+     * @throws Exception
+     */
+    public function processPayment(Request $request, PaymentProcessor $processor)
+    {
+        try {
+            return $processor->processPayment($request);
+        } catch (Exception $e) {
+            $this->helper->one_time_message('error', $e->getMessage());
+            return redirect()->to('payment/fail');
+        }
+    }
 }

@@ -1,54 +1,10 @@
 'use strict';
 
-var sDate;
-var eDate;
-
 $(window).on('load', function (e)
 {
     $(".select2").select2({});
-
-    //Date range as a button
-    $('#daterange-btn').daterangepicker(
-    {
-        ranges   : {
-          'Today'       : [moment(), moment()],
-          'Yesterday'   : [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
-          'Last 7 Days' : [moment().subtract(6, 'days'), moment()],
-          'Last 30 Days': [moment().subtract(29, 'days'), moment()],
-          'This Month'  : [moment().startOf('month'), moment().endOf('month')],
-          'Last Month'  : [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
-         },
-        startDate: moment().subtract(29, 'days'),
-        endDate  : moment()
-    },
-    function (start, end)
-    {
-        var sessionDate = sessionDateFormat;
-        var sessionDateFinal = sessionDate.toUpperCase();
-
-        sDate = moment(start, 'MMMM D, YYYY').format(sessionDateFinal);
-        $('#startfrom').val(sDate);
-
-        eDate = moment(end, 'MMMM D, YYYY').format(sessionDateFinal);
-        $('#endto').val(eDate);
-
-        $('#daterange-btn span').html('&nbsp;' + sDate + ' - ' + eDate + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;');
-    })
-
-    var startDate = startFromDate;
-    var endDate = startToDate;
-
-    if (startDate == '') {
-        $('#daterange-btn span').html('<i class="fa fa-calendar"></i> &nbsp;&nbsp; Pick a date range &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;');
-    } else {
-        $('#daterange-btn span').html(startDate + ' - ' +endDate + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;');
-    }
 });
 
-$("#daterange-btn").on('mouseover',function() {
-    $(this).css('background-color', 'white');
-    $(this).css('border-color', 'grey !important');
-});
 
 $(document).on('keyup keypress', '#user_input', function (e)
 {
@@ -107,24 +63,5 @@ $('#user_input').autocomplete(
     },
     minLength: 0,
     autoFocus: true
-});
-
-
-function downloadFile(format) {
-    window.location = ADMIN_URL + "/crypto-received-transactions/" + format + "?startfrom=" + $('#startfrom').val() +
-      "&endto=" + $('#endto').val() +
-      "&status=" + $('#status').val() +
-      "&currency=" + $('#currency').val() +
-      "&user_id=" + $('#user_id').val();
-}
-
-$(document).on('click', '#csv', function (e) {
-    e.preventDefault();
-    downloadFile('csv');
-});
-
-$(document).on('click', '#pdf', function (e) {
-    e.preventDefault();
-    downloadFile('pdf');
 });
 

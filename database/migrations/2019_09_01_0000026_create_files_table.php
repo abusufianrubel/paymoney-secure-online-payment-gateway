@@ -15,19 +15,12 @@ class CreateFilesTable extends Migration
     {
         Schema::create('files', function (Blueprint $table)
         {
-            $table->increments('id');
+            $table->id();
 
-            $table->integer('admin_id')->unsigned()->index()->nullable();
-            $table->foreign('admin_id')->references('id')->on('admins')->onUpdate('cascade')->onDelete('cascade');
-
-            $table->integer('user_id')->unsigned()->index()->nullable();
-            $table->foreign('user_id')->references('id')->on('users')->onUpdate('cascade')->onDelete('cascade');
-
-            $table->integer('ticket_id')->unsigned()->index()->nullable();
-            $table->foreign('ticket_id')->references('id')->on('tickets')->onUpdate('cascade')->onDelete('cascade');
-
-            $table->integer('ticket_reply_id')->unsigned()->index()->nullable();
-            $table->foreign('ticket_reply_id')->references('id')->on('ticket_replies')->onUpdate('cascade')->onDelete('cascade');
+            $table->foreignId('admin_id')->nullable()->constrained('admins')->onUpdate('cascade')->onDelete('cascade');
+            $table->foreignId('user_id')->nullable()->constrained('users')->onUpdate('cascade')->onDelete('cascade');
+            $table->foreignId('ticket_id')->nullable()->constrained('tickets')->onUpdate('cascade')->onDelete('cascade');
+            $table->foreignId('ticket_reply_id')->nullable()->constrained('ticket_replies')->onUpdate('cascade')->onDelete('cascade');
 
             $table->string('filename')->nullable();
             $table->string('originalname')->nullable();

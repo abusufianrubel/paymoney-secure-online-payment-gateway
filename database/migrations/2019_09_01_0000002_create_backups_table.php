@@ -14,7 +14,7 @@ class CreateBackupsTable extends Migration
     {
         Schema::create('backups', function (Blueprint $table)
         {
-            $table->increments('id');
+            $table->id();
             $table->string('name', 31);
             $table->timestamps();
         });

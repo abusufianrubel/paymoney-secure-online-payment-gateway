@@ -3,9 +3,11 @@
 namespace Modules\TatumIo\Http\Controllers\Users;
 
 use App\Models\Transaction;
+use App\Models\Wallet;
 use Exception;
 use Illuminate\Routing\Controller;
 use Modules\TatumIo\Class\TatumIoTransaction;
+use Modules\TatumIo\Entities\CryptoToken;
 
 class CryptoReceiveController extends Controller
 {
@@ -32,6 +34,39 @@ class CryptoReceiveController extends Controller
 
             $data['address'] = encrypt($address);
             return view('tatumio::user.crypto.receive.create', $data);
+
+        } catch (Exception $th) {
+            $data['message'] = __($th->getMessage());
+            return view('user_dashboard.users.check_crypto_currency_status', $data);
+        }
+
+    }
+
+
+    public function receiveToken($walletCurrencyCode, $walletId)
+    {
+        //set the session for validating the action
+        setActionSession();
+
+        $walletCurrencyCode = decrypt($walletCurrencyCode);
+        $walletId = decrypt($walletId);
+        $user_id = auth()->id();
+
+        $data['walletCurrencyCode'] = strtoupper($walletCurrencyCode);
+
+        try {
+
+            $wallet = Wallet::find($walletId);
+            $data['cryptoToken'] = $cryptoToken = CryptoToken::where(['symbol' => $walletCurrencyCode, 'currency_id' => $wallet->currency_id ])->first();
+            $network =  $cryptoToken->network; 
+
+            $this->tatumIo = new TatumIoTransaction($network);
+            $this->tatumIo->tatumIoAsset();
+            $this->tatumIo->checkUserTatumWallet($user_id);
+            $address = $this->tatumIo->getUserAddress();
+
+            $data['address'] = encrypt($address);
+            return view('tatumio::user.token.receive.create', $data);
 
         } catch (Exception $th) {
             $data['message'] = __($th->getMessage());

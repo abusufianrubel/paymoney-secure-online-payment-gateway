@@ -1,7 +1,7 @@
 @extends('user.layouts.app')
 
 @push('css')
-    <link rel="stylesheet" href="{{ asset('public/dist/plugins/intl-tel-input-17.0.19/css/intlTelInput.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('public/dist/plugins/intl-tel-input/css/intlTelInput.min.css') }}">
 @endpush
 
 @section('content')
@@ -218,13 +218,118 @@
                     </div>
                 </div>
             </div>
-            <!-- Email Div -->
-            <div class="profile-qr-bootom d-flex justify-content-between align-items-center mt-27">
+            <!-- Phone Div -->
+            <div class="profile-qr-bootom d-flex justify-content-between align-items-center mt-26">
                 <div class="d-flex align-items-center">
-                    {!! svgIcons('envalop') !!}
-                    <p class="ml-12 mb-0 f-16 leading-20 gilroy-medium text-dark">{{ __('Email Address') }}</p>
+                    {!! svgIcons('phone') !!}
+                    <p class="ml-12 mb-0 f-16 leading-20 gilroy-medium text-dark">{{ __('Phone') }}</p>
                 </div>
-                <p class="mb-0 f-15 leading-18 gilroy-medium d-flex align-items-center text-gray-100 responsive-mail-text">{{ $user->email }}</p>
+                <div class="d-flex align-items-center">
+                    <div class="mb-0 f-16 leading-20 gilroy-medium d-flex align-items-center text-gray-100 phone-text pass-height">{{ $user->formattedPhone ?? 'N/A' }}</div>
+                    <div class="cursor-pointer" data-bs-toggle="modal" data-bs-target="#exampleModal-4">
+                        {!! svgIcons('edit_icon_background') !!}
+                    </div>
+                    <div class="modal fade modal-overly" id="exampleModal-4" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered modal-lg res-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header w-modal-header">
+                                    <p class="modal-title gilroy-Semibold text-dark ">{{ $user->formattedPhone ? __('Phone Update') : __('Add Phone') }}</p>
+                                    <button type="button" class="cursor-pointer close-btn" data-bs-dismiss="modal" aria-label="Close">
+                                        <span class="close-div position-absolute modal-close-btn rtl-wrap-four text-gray-100 d-flex align-items-center justify-content-center">
+                                            {!! svgIcons('cross_icon') !!}
+                                        </span>
+                                    </button>
+                                </div>
+                                <div class="modal-body modal-body-pxy">
+                                    <form method="post" action="{{ url('profile/complete-phone-verification')}}"
+                                    id="profileResetPasswordForm">
+                                        @csrf
+                                        <input type="hidden" value="{{ $is_sms_env_enabled }}" 
+                                        name="is_sms_env_enabled" id="is_sms_env_enabled" />
+                                        <input type="hidden" value="{{ $checkPhoneVerification }}" 
+                                        name="checkPhoneVerification" id="checkPhoneVerification" />
+                                        <input type="hidden" value="{{ $user->id }}" name="user_id" id="user_id" />
+
+                                        <input type="hidden" name="hasVerificationCode" id="hasVerificationCode" />
+                                        <input type="hidden" name="defaultCountry" 
+                                        id="defaultCountry" class="form-control">
+
+                                        <input type="hidden" name="carrierCode" id="carrierCode" class="form-control">
+
+                                        <input type="hidden" name="countryName" 
+                                        id="countryName" class="form-control">                           
+                                        
+                                        <div>
+                                            <!-- Phone -->
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                    <div class="label-top mt-withdraw">
+                                                        <label id="subheader_text"  
+                                                        class="gilroy-medium text-gray-100 
+                                                        mb-2 f-14 leading-17 r-mt-amount r-mt-6" >
+                                                            {{ __('Phone') }}
+                                                        </label>
+                                                        <div class="phone_group">
+                                                            <input type="tel" class="form-control apply-bg"
+                                                                id="phone" name="phone">
+                                                            <span id="phone-error"></span>
+                                                            <span id="tel-error"></span>
+                                                        </div>
+                                                        
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <label id="verification-message" class="gilroy-medium text-gray-100 mb-2 f-14 
+                                            leading-17 mt-20 r-mt-amount r-mt-6 success d-none">
+                                                {{ __('To make sure this number is yours, we will send you a verification code.')}}
+                                            </label>
+                                            
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                    <div class="label-top mt-withdraw 
+                                                    phone_verification_section d-none">
+                                                        <label
+                                                            class="gilroy-medium text-gray-100 mb-2 f-14 
+                                                            leading-17 mt-20 r-mt-amount r-mt-6"
+                                                        > 
+                                                        {{ __('Verification Code') }}
+                                                        </label>
+                                                        <input type="text" min="6"
+                                                        class="form-control input-form-control 
+                                                        input-form-control-withdraw apply-bg"
+                                                         name="phone_verification_code" id="phone_verification_code" 
+                                                         placeholder="{{ __('Provide verification code') }}" 
+                                                         required data-value-missing="{{ __('This field is required.') }}">
+                                                    </div>
+                                                </div>
+                                
+                                            </div>
+
+                                            <span class="error d-none" id="message"></span>
+                                        </div>
+
+                                        @php
+                                            $bothDisabled = ($is_sms_env_enabled == false && $checkPhoneVerification == "Disabled");
+                                        @endphp
+                                        <div class="row mt-20">
+                                            <div class="col-md-12 pd-bottom pb-2">
+                                                <button type="button"
+                                                    class="btn bg-primary add-option-btn w-100 setting-btn f-16 leading-20 gilroy-medium common_button next"
+                                                    id="phoneSubmitBtn">
+                                                    <div class="spinner spinner-border text-white spinner-border-sm mx-2 d-none" role="status">
+                                                        <span class="visually-hidden"></span>
+                                                    </div>
+                                                    <span id="profileResetPasswordSubmitBtnText">{{ __('Add phone') }}</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>                        
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -279,18 +384,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <!-- Phone -->
-                            <div class="row">
-                                <div class="col-12">
-                                    <div class="label-top mt-withdraw">
-                                        <label class="gilroy-medium text-gray-100 mb-2 f-14 leading-17 mt-20 r-mt-amount r-mt-6" >{{ __('Phone') }}</label>
-                                        <input type="tel" class="form-control apply-bg"
-                                            id="phone" name="phone">
-                                        <span id="phone-error"></span>
-                                        <span id="tel-error"></span>
-                                    </div>
-                                </div>
-                            </div>
+                            
                             <div class="row">
                                 <!-- Adress 1 -->
                                 <div class="col-6 column-pl-unset2">
@@ -392,8 +486,8 @@
                 <p class="mb-0 f-15 leading-18 text-gray-100 gilroy-medium text-align-end">{{ getColumnValue($user) }}</p>
             </div>
             <div class="d-flex gap-3 justify-content-between profile-borders-bottom">
-                <p class="mb-0 f-15 leading-18 text-dark gilroy-medium text-align-initial">{{ __('Phone') }}</p>
-                <p class="mb-0 f-15 leading-18 text-gray gilroy-medium text-align-end">{{ $user->formattedPhone ?? 'N/A' }}</p>
+                <p class="mb-0 f-15 leading-18 text-dark gilroy-medium text-align-initial">{{ __('Email') }}</p>
+                <p class="mb-0 f-15 leading-18 text-gray gilroy-medium text-align-end">{{ $user->email ?? 'N/A' }}</p>
             </div>
             <div class="d-flex gap-3 justify-content-between profile-borders-bottom">
                 <p class="mb-0 f-15 leading-18 text-dark gilroy-medium text-align-initial">{{ __('Address 1') }}</p>
@@ -427,8 +521,8 @@
 @endsection
 
 @push('js')
-<script src="{{ asset('public/dist/plugins/html5-validation-1.0.0/validation.min.js') }}" type="text/javascript"></script>
-<script src="{{ asset('public/dist/plugins/intl-tel-input-17.0.19/js/intlTelInput-jquery.min.js') }}" type="text/javascript"></script>
+<script src="{{ asset('public/dist/plugins/html5-validation/validation.min.js') }}" type="text/javascript"></script>
+<script src="{{ asset('public/dist/plugins/intl-tel-input/js/intlTelInput-jquery.min.js') }}" type="text/javascript"></script>
 <script src="{{ asset('public/dist/js/isValidPhoneNumber.min.js') }}" type="text/javascript"></script>
 <script src="{{ asset('public/dist/libraries/sweetalert/sweetalert-unpkg.min.js') }}" type="text/javascript"></script>
 <script>
@@ -436,7 +530,7 @@
     var csrfToken = '{{ csrf_token() }}';
     var userId = $('#id').val();
     var countryShortCode = '{{ getDefaultCountry() }}';
-    var utilsScriptLoadingPath = '{{ asset("public/dist/plugins/intl-tel-input-17.0.19/js/utils.min.js") }}';
+    var utilsScriptLoadingPath = '{{ asset("public/dist/plugins/intl-tel-input/js/utils.min.js") }}';
     var validPhoneNumberErrorText = '{{ __("Please enter a valid international phone number.") }}';
     var formattedPhoneNumber = "{{ !empty($user->formattedPhone) ? $user->formattedPhone : null }}";
     var defaultCountry = "{{ !empty($user->defaultCountry) ? $user->defaultCountry : null }}";
@@ -450,6 +544,26 @@
     var errorText = '{{ __("Error!") }}';
     var updateQrCodeText = "{{ __('Update QR Code') }}";
     var submitButtonText = "{{ __('Submitting...') }}";
+    var getVerificationCodeUrl = "{{ url('profile/getVerificationCode') }}";
+    var completeVerificationCodeUrl = "{{ url('profile/complete-phone-verification') }}";
+    var phoneNumberAddUrl = "{{ url('profile/add-phone-number') }}";
+    var phoneNumberUpdateUrl = "{{ url('profile/update-phone-number') }}";
+    var nextText = '{{ __("Next") }}';
+    var getCodeText = '{{ __("Get Code") }}';
+    var verificationCodeText = '{{ __("To make sure this number is yours, we will send you a verification code.") }}';
+    var phoneNumberText = '{{ __("Enter the number you’d like to use") }}';
+    var smsCodeSentText = '{{ __("Verification code has been sent, please check your phone")}}' ;
+    var smsCodeSubmitText = '{{ __("Enter it to verify your phone.") }}';
+    var verifyText = '{{ __("Verify") }}';
+    var verifyPhoneText = '{{ __("Verify Phone") }}'
+    var minPasswordCharacterLength = '{{ __("Please enter at least :x characters.") }}';
+    var passwordSameValue = '{{ __("Please enter the same value again.") }}';
+    var submittingText = '{{ __("Submitting...") }}';
+    var submitText = '{{ __("Submit") }}';
+    var updatePhoneText = '{{ __("Phone Update") }}';
+    var successText = '{{ __("Success") }}';
+    var smsFailText = '{{ __("SMS not send") }}';
+
 </script>
 <script src="{{ asset('public/user/customs/js/phone.min.js') }}" type="text/javascript"></script>
 <script src="{{ asset('public/user/customs/js/profile.min.js')}}" type="text/javascript"></script>

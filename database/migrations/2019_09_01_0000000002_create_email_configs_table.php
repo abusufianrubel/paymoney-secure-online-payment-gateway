@@ -14,7 +14,7 @@ class CreateEmailConfigsTable extends Migration
     public function up()
     {
         Schema::create('email_configs', function (Blueprint $table) {
-            $table->increments('id');
+            $table->id();
             $table->string('email_protocol');
             $table->string('email_encryption');
             $table->string('smtp_host');
@@ -24,7 +24,7 @@ class CreateEmailConfigsTable extends Migration
             $table->string('smtp_password');
             $table->string('from_address');
             $table->string('from_name');
-            $table->tinyInteger('status')->default('0');
+            $table->tinyInteger('status')->default(0);
         });
     }
 

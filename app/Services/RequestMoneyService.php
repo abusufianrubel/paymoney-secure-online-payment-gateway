@@ -20,11 +20,8 @@ use App\Models\{
     Currency,
     User,
 };
-use App\Services\{
-    Mail\RequestMoneyAcceptorMailService,
-    Sms\RequestMoneyAcceptorSmsService
-};
-
+use App\Services\Mail\RequestMoney\RequestReceiverMailService;
+use App\Services\Sms\ReceiveMoneySmsService;
 use Exception, DB;
 
 class RequestMoneyService
@@ -51,26 +48,36 @@ class RequestMoneyService
      *
      * @param email $userId
      * @param string $receiverEmail
-     * @return bool
+     * @return array
      * @throws RequestMoneyException
      */
-    public function checkRequestSenderEmail($userId, $receiverEmail): bool
+    public function checkRequestSenderEmail($userId, $receiverEmail): array
     {
         $user     = User::where('id', '=', $userId)->first(['email']);
+
         if (!$user) {
             throw new RequestMoneyException(__('The :x does not exist.', ['x' => __('user')]));
         }
-        $receiver = User::where('email', '=', $receiverEmail)->first(['email', 'status']);
+
+        $receiver = User::where('email', '=', $receiverEmail)->first(['first_name', 'last_name', 'email', 'status']);
+
         if ($receiver) {
+
             if ($user->email == $receiver->email) {
                 throw new RequestMoneyException(__('You cannot request money to yourself.'));
             }
+
             $status = strtolower($receiver->status);
+
             if ("active" != $status) {
                 throw new RequestMoneyException(__("The recipient is :x .", ["x" => $receiver->status]));
             }
         }
-        return true;
+        
+        return [
+            'status' => true,
+            'receiver' => getColumnValue($receiver)
+        ];
     }
 
     /**
@@ -78,29 +85,40 @@ class RequestMoneyService
      *
      * @param int $userId
      * @param string $receiverPhone
-     * @return bool
+     * @return array
      * @throws RequestMoneyException
      */
-    public function checkRequestSenderPhone($userId, $receiverPhone): bool
+    public function checkRequestSenderPhone($userId, $receiverPhone): array
     {
         $user     = User::where('id', '=', $userId)->first(['formattedPhone']);
+
         if (!$user) {
             throw new RequestMoneyException(__("User doesn't exists."));
         }
-        $receiver = User::where('formattedPhone', '=', $receiverPhone)->first(['formattedPhone', 'status']);
+
+        $receiver = User::where('formattedPhone', '=', $receiverPhone)->first(['first_name', 'last_name','formattedPhone', 'status']);
+
         if (empty($user->formattedPhone)) {
             throw new RequestMoneyException(__('Please set your phone number first!'));
         }
+
         if ($receiver) {
+
             if ($user->formattedPhone == $receiver->formattedPhone) {
                 throw new RequestMoneyException(__('You Cannot Request Money To Yourself.'));
             }
+
             $status = strtolower($receiver->status);
+            
             if ("active" != $status) {
                 throw new RequestMoneyException(__("The recipient is :x .", ["x" => $receiver->status]));
             }
         }
-        return true;
+
+        return [
+            'status' => true,
+            'receiver' => getColumnValue($receiver)
+        ];
     }
 
     /**
@@ -230,14 +248,14 @@ class RequestMoneyService
         $phoneRegex          = $this->helper->validatePhoneInput($requestPayment->phone);
 
         if ($emailFilterValidate && "email" == $processedBy) {
-            return (new RequestMoneyAcceptorMailService())->send($requestPayment);
+            return (new RequestReceiverMailService())->send($requestPayment);
         } elseif ($phoneRegex && "phone" == $processedBy) {
-            return (new RequestMoneyAcceptorSmsService())->send($requestPayment);
+            return (new ReceiveMoneySmsService())->send($requestPayment);
         } elseif ("email_or_phone" == $processedBy) {
             if ($emailFilterValidate) {
-                return (new RequestMoneyAcceptorMailService())->send($requestPayment);
+                return (new RequestReceiverMailService())->send($requestPayment);
             } elseif ($phoneRegex) {
-                return (new RequestMoneyAcceptorSmsService())->send($requestPayment);
+                return (new ReceiveMoneySmsService())->send($requestPayment);
             }
         }
     }

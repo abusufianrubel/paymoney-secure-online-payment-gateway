@@ -1,7 +1,7 @@
 @extends('user.layouts.app')
 
 @push('css')
-    <link rel="stylesheet" href="{{ asset('public/dist/plugins/daterangepicker-3.14.1/daterangepicker.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('public/dist/plugins/daterangepicker/daterangepicker.min.css') }}">
 @endpush
 
 @section('content')
@@ -196,13 +196,16 @@
 @endsection
 
 @push('js')
-<script src="{{ asset('public/dist/plugins/daterangepicker-3.14.1/moment.min.js') }}"></script>
-<script src="{{ asset('public/dist/plugins/daterangepicker-3.14.1/daterangepicker.min.js') }}"></script>
+<script src="{{ asset('public/dist/plugins/daterangepicker/moment.min.js') }}"></script>
+<script src="{{ asset('public/dist/plugins/daterangepicker/daterangepicker.min.js') }}"></script>
 <script>
     'use strict';
     let dateRangePickerText = '{{ __("Pick a date range") }}';
+    var sessionDateFormateType = "{{Session::get('date_format_type')}}";
     var startDate = "{!! $from !!}";
     var endDate = "{!! $to !!}";
 </script>
 <script src="{{ asset('public/user/customs/js/merchant.min.js')}}" type="text/javascript"></script>
+<script src="{{ asset('public/user/customs/js/daterange-select.min.js') }}"></script> 
+
 @endpush

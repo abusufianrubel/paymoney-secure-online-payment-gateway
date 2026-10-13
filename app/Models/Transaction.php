@@ -13,6 +13,7 @@ use App\Models\{Currency,
 };
 use Illuminate\Support\Collection;
 use Carbon\Carbon;
+use Exception;
 
 class Transaction extends Model
 {
@@ -137,7 +138,7 @@ class Transaction extends Model
 
     public function cryptoAssetApiLog()
     {
-        return $this->hasOne(CryptoAssetApiLog::class, 'object_id')->whereIn('object_type', ["crypto_sent", "crypto_received", "crypto_exchange_from", "crypto_exchange_to", "fiat_exchange_from", "fiat_exchange_to"]);
+        return $this->hasOne(CryptoAssetApiLog::class, 'object_id')->whereIn('object_type', ["crypto_sent", "crypto_received", "token_sent", "token_received", "crypto_exchange_from", "crypto_exchange_to", "fiat_exchange_from", "fiat_exchange_to"]);
     }
 
     // MobileMoney
@@ -228,9 +229,9 @@ class Transaction extends Model
         $conditions = [];
         if (empty($from) || empty($to)) {
             $date_range = null;
-        } else if (empty($from)) {
+        } elseif (empty($from)) {
             $date_range = null;
-        } else if (empty($to)) {
+        } elseif (empty($to)) {
             $date_range = null;
         } else {
             $date_range = 'Available';
@@ -240,7 +241,19 @@ class Transaction extends Model
         $whereInCondition = self::$transactionTypes;
 
         if (!empty($type) && $type != 'all') {
-            $whereInCondition = [getPaymoneySettings('transaction_types')['mobile']['all'][getTransactionTypes($type)]];
+            switch ($type) {
+                case 'payment_sent':
+                    $whereInCondition = getPaymoneySettings('transaction_types')['payment_sent'];
+                    $whereInCondition[] = Payment_Sent;
+                    break;
+                case 'payment_received':
+                    $whereInCondition = getPaymoneySettings('transaction_types')['payment_received'];
+                    $whereInCondition[] = Payment_Received;
+                    break;
+                default:
+                    $whereInCondition = [getPaymoneySettings('transaction_types')['mobile']['all'][getTransactionTypes($type)]];
+                    break;
+            }
         }
 
         if (!empty($currency) && $currency != 'all') {
@@ -264,8 +277,11 @@ class Transaction extends Model
             'transfer.sender:id,first_name,last_name',
         ];
 
-        if (module('BlockIo')) {
+        if (moduleExists('TatumIo')) {
             array_push($relations, 'cryptoAssetApiLog:id,object_id,payload,confirmations');
+        }
+        if (moduleExists('Invoice')) {
+            array_push($relations, 'invoicePayment');
         }
 
         if (empty($date_range)) {
@@ -274,23 +290,10 @@ class Transaction extends Model
             ->whereIn('transactions.transaction_type_id', $whereInCondition)
             ->orderBy('transactions.id', 'desc')->select('transactions.*')
             ->paginate(10);
-        }
-        else
-        {
+        } else {
             $from        = date('Y-m-d', strtotime($from));
             $to          = date('Y-m-d', strtotime($to));
-            $transaction = $this->with([
-                'end_user:id,first_name,last_name,picture',
-                'transaction_type:id,name',
-                'payment_method:id,name',
-                'bank:id,file_id,bank_name',
-                'bank.file:id,filename',
-                'merchant:id,business_name,logo',
-                'currency:id,code,symbol,logo',
-                'dispute:id,transaction_id',
-                'transfer:id,sender_id',
-                'transfer.sender:id,first_name,last_name',
-            ])
+            $transaction = $this->with($relations)
             ->where($conditions)
             ->whereIn('transactions.transaction_type_id', $whereInCondition)
             ->whereDate('transactions.created_at', '>=', $from)
@@ -299,10 +302,15 @@ class Transaction extends Model
             ->select('transactions.*')
             ->paginate(10);
         }
+
+        $transaction->appends([
+            'from' => $from, 'to' => $to, 'type' => $type, 'status' => $status, 'wallet' => $currency
+        ]);
+
         return $transaction;
     }
 
-    function transactionRelationships() : array 
+    function transactionRelationships() : array
     {
         $relationships = [
             'user:id,first_name,last_name',
@@ -339,7 +347,7 @@ class Transaction extends Model
             'request_payment.receiver:id,first_name,last_name',
             'cryptoAssetApiLog:id,object_id,network,payload'
         ];
-    
+
         $query->with(array_merge($this->transactionRelationships(), $relationships));
 
         if (!empty($status) && $status != 'all') {
@@ -351,7 +359,22 @@ class Transaction extends Model
         }
 
         if (!empty($type) && $type != 'all') {
-            $query->where('transaction_type_id', $type);
+            switch ($type) {
+                case Payment_Sent:
+                    $type = getPaymoneySettings('transaction_types')['payment_sent'];
+                    $type[] = Payment_Sent;
+                    $query->whereIn('transaction_type_id', $type);
+                    break;
+        
+                case Payment_Received:
+                    $type = getPaymoneySettings('transaction_types')['payment_received'];
+                    $type[] = Payment_Received;
+                    $query->whereIn('transaction_type_id', $type);
+                    break;
+                default:
+                    $query->where('transaction_type_id', $type);
+                    break;
+            }
         }
 
         if (!empty($user)) {
@@ -362,7 +385,7 @@ class Transaction extends Model
         }
 
         if (!empty($from) && !empty($to)) {
-            $query->whereBetween('transactions.created_at', [$from, $to]);
+            $query->whereDate('created_at', '>=', $from)->whereDate('created_at', '<=', $to);
         }
 
         return $query;
@@ -445,7 +468,7 @@ class Transaction extends Model
     public function getRevenuesList($from, $to, $currency, $type)
     {
         $query = Transaction::query();
-    
+
         $query->with($this->transactionRelationships())
             ->where('transactions.status', 'Success');
 
@@ -458,7 +481,7 @@ class Transaction extends Model
         }
 
         if (!empty($from) && !empty($to)) {
-            $query->whereBetween('transactions.created_at', [$from, $to]);
+            $query->whereDate('created_at', '>=', $from)->whereDate('created_at', '<=', $to);
         }
 
         $query->where(function ($q) {
@@ -810,13 +833,13 @@ class Transaction extends Model
         ->whereIn('transactions.transaction_type_id', $whereInCondition)
         ->orderBy('transactions.id', 'desc')
         ->select([
-            'transactions.id as id', //
-            'transactions.user_id',  //
+            'transactions.id as id',
+            'transactions.user_id',
             'transactions.end_user_id',
-            'transactions.currency_id',       //
-            'transactions.payment_method_id', //
+            'transactions.currency_id',      
+            'transactions.payment_method_id', 
             'transactions.merchant_id as merchant_id',
-            'transactions.transaction_type_id', //
+            'transactions.transaction_type_id',
             'transactions.transaction_reference_id as transaction_reference_id',
             'transactions.charge_percentage as charge_percentage',
             'transactions.charge_fixed as charge_fixed',
@@ -830,57 +853,50 @@ class Transaction extends Model
             'transactions.created_at as t_created_at',
         ])->first();
 
-        if (@$transaction->user_id)
-        {
-            $transaction->user_id     = @$transaction->user_id;
-            $transaction->user_f_name = @$transaction->user->first_name;
-            $transaction->user_l_name = @$transaction->user->last_name;
-            $transaction->user_email  = @$transaction->user->email;
-            $transaction->user_phone  = @$transaction->user->formattedPhone;
-            $transaction->user_photo  = @$transaction->user->picture;
+        if (!empty($transaction->user_id)) {
+            $transaction->user_id     = $transaction->user_id;
+            $transaction->user_f_name = $transaction->user?->first_name;
+            $transaction->user_l_name = $transaction->user?->last_name;
+            $transaction->user_email  = $transaction->user?->email;
+            $transaction->user_phone  = $transaction->user?->formattedPhone;
+            $transaction->user_photo  = $transaction->user?->picture;
         }
 
-        if (@$transaction->end_user_id)
-        {
-            $transaction->end_user_id     = @$transaction->end_user_id;
-            $transaction->end_user_f_name = @$transaction->end_user->first_name;
-            $transaction->end_user_l_name = @$transaction->end_user->last_name;
-            $transaction->end_user_email  = @$transaction->end_user->email;
-            $transaction->end_user_phone  = @$transaction->end_user->formattedPhone;
-            $transaction->end_user_photo  = @$transaction->end_user->picture;
+        if (!empty($transaction->end_user_id)) {
+            $transaction->end_user_id     = $transaction->end_user_id;
+            $transaction->end_user_f_name = $transaction->end_user?->first_name;
+            $transaction->end_user_l_name = $transaction->end_user?->last_name;
+            $transaction->end_user_email  = $transaction->end_user?->email;
+            $transaction->end_user_phone  = $transaction->end_user?->formattedPhone;
+            $transaction->end_user_photo  = $transaction->end_user?->picture;
         }
 
-        $transaction->curr_code   = @$transaction->currency->code;
-        $transaction->curr_symbol = @$transaction->currency->symbol;
+        $transaction->curr_code   = $transaction->currency?->code;
+        $transaction->curr_symbol = $transaction->currency?->symbol;
 
         //formatNumber - starts
         $transaction->total = moneyFormat(optional($transaction->currency)->symbol, formatNumber($transaction->total, $transaction->currency_id));
 
         $transaction->subtotal = moneyFormat(optional($transaction->currency)->symbol, formatNumber($transaction->subtotal, $transaction->currency_id));
 
-        if ($transaction->currency->type != 'fiat')
-        {
+        if ($transaction->currency?->type != 'fiat') {
             $transaction->totalFees = (($transaction->charge_percentage == 0) && ($transaction->charge_fixed == 0)) ? moneyFormat(optional($transaction->currency)->symbol, formatNumber(0, $transaction->currency_id)) :
             moneyFormat(optional($transaction->currency)->symbol, formatNumber($transaction->charge_fixed, $transaction->currency_id));
-        }
-        else
-        {
+        } else {
             $transaction->totalFees = (($transaction->charge_percentage == 0) && ($transaction->charge_fixed == 0)) ? moneyFormat(optional($transaction->currency)->symbol, formatNumber(0, $transaction->currency_id)) : moneyFormat(optional($transaction->currency)->symbol, formatNumber($transaction->charge_percentage + $transaction->charge_fixed, $transaction->currency_id));
         }
+        
         //formatNumber - ends
-
-        if (@$transaction->payment_method_id)
-        {
-            $transaction->payment_method_name = @$transaction->payment_method->name;
-            $transaction->company_name        = settings('name');
+        if (!empty($transaction->payment_method_id))  {
+            $transaction->payment_method_name = $transaction->payment_method?->name;
+            $transaction->business_name = settings('name');
         }
 
-        if (@$transaction->merchant_id)
-        {
-            $transaction->merchant_name = @$transaction->merchant->business_name;
+        if (!empty($transaction->merchant_id)) {
+            $transaction->merchant_name = $transaction->merchant?->business_name;
         }
-        $transaction->type_id      = @$transaction->transaction_type->id;
-        $transaction->type         = @$transaction->transaction_type->name;
+        $transaction->type_id = $transaction->transaction_type?->id;
+        $transaction->type = $transaction->transaction_type?->name;
         $transaction->t_created_at = dateFormat($transaction->t_created_at, $user_id);
 
         return $transaction;
@@ -899,7 +915,7 @@ class Transaction extends Model
         return $transactions;
     }
 
-    public function getCryptoSentTransactions($from, $to, $status, $currency, $user)
+    public function getCryptoSentTransactions($from, $to, $status, $currency, $user, $transactionType = Crypto_Sent)
     {
         $conditions = [];
 
@@ -923,7 +939,7 @@ class Transaction extends Model
             'currency:id,code',
             'cryptoAssetApiLog:id,object_id,payload',
         ])
-        ->where('transaction_type_id', Crypto_Sent)
+        ->where('transaction_type_id', $transactionType)
         ->where($conditions);
 
         // If user is not empty, check both user_id & end_user_id columns
@@ -934,14 +950,13 @@ class Transaction extends Model
         }
 
         if (!empty($date_range)) {
-            $cryptoSenttransactions->whereDate('transactions.created_at', '>=', $from)->whereDate('transactions.created_at', '<=', $to)->exclude(self::$cryptoTransactionsExcludes);
-        } else {
-            $cryptoSenttransactions->exclude(self::$cryptoTransactionsExcludes);
+            $cryptoSenttransactions->whereDate('transactions.created_at', '>=', $from)->whereDate('transactions.created_at', '<=', $to);
         }
-        return $cryptoSenttransactions;
+
+        return $cryptoSenttransactions->select('transactions.id', 'transactions.user_id', 'transactions.end_user_id', 'transactions.currency_id', 'transactions.payment_method_id', 'transactions.uuid', 'transactions.created_at', 'transactions.subtotal', 'transactions.status');
     }
 
-    public function getCryptoReceivedTransactions($from, $to, $currency, $user)
+    public function getCryptoReceivedTransactions($from, $to, $currency, $user, $transactionType = Crypto_Received)
     {
         $conditions = [];
         if (!empty($from) && !empty($to)) {
@@ -959,7 +974,7 @@ class Transaction extends Model
             'currency:id,code',
             'cryptoAssetApiLog:id,object_id,payload',
         ])
-        ->where('transaction_type_id', Crypto_Received)
+        ->where('transaction_type_id', $transactionType)
         ->where($conditions);
 
         //if user is not empty, check both user_id & end_user_id columns
@@ -970,15 +985,12 @@ class Transaction extends Model
         }
 
         if (!empty($date_range)) {
-            $cryptoSenttransactions->whereDate('transactions.created_at', '>=', $from)->whereDate('transactions.created_at', '<=', $to)
-                ->exclude(self::$cryptoTransactionsExcludes);
-        } else {
-            $cryptoSenttransactions->exclude(self::$cryptoTransactionsExcludes);
+            $cryptoSenttransactions->whereDate('transactions.created_at', '>=', $from)->whereDate('transactions.created_at', '<=', $to);
         }
 
-        return $cryptoSenttransactions;
+        return $cryptoSenttransactions->select('transactions.id', 'transactions.user_id', 'transactions.end_user_id', 'transactions.currency_id', 'transactions.payment_method_id', 'transactions.uuid', 'transactions.created_at', 'transactions.subtotal', 'transactions.status');
     }
-    
+
     /**
      * updateTransactionStatus
      *
@@ -989,12 +1001,123 @@ class Transaction extends Model
     public static function updateTransactionStatus(int $transactionId, string $status): object
     {
         $transaction = Transaction::find($transactionId);
-        
+
         if ($transaction) {
             $transaction->status = $status;
             $transaction->save();
         }
 
         return $transaction;
+    }
+
+
+    /**
+     * Update the transaction status based on webhook notification.
+     *
+     * @param string $transactionUuid The UUID of the transaction.
+     * @param string $status The new status of the transaction.
+     * @return void
+     */
+    public static function webHookTransactionUpdate(string $transactionUuid, string $status): void
+    {
+        // Find the transaction by UUID and pending status
+        $transaction = Transaction::where(['uuid' => $transactionUuid, 'status' => 'Pending'])
+            ->first(['id', 'user_id', 'currency_id', 'subtotal', 'transaction_type_id', 'payment_status', 'status', 'uuid']);
+
+        if (empty($transaction)) {
+            return;
+        }
+
+        if (in_array($transaction->transaction_type_id, [Deposit, Payment_Received])) {
+
+            try {
+                DB::transaction(function () use ($transaction, $status) {
+                    // Update the transaction status
+                    $transaction->payment_status = $status;
+                    $transaction->status = $status;
+                    $transaction->save();
+
+                    // Update specific transaction type status
+                    if ($transaction->transaction_type_id == Deposit) {
+                        Deposit::where('uuid', $transaction->uuid)->update(['status' => $status]);
+                    } else {
+                        MerchantPayment::where('uuid', $transaction->uuid)->update(['status' => $status]);
+                    }
+
+                    if ($status == 'Success') {
+                        // Determine wallet user ID
+                        $walletUserId = isset($transaction->merchant_id)
+                        ? Merchant::find($transaction->merchant_id)->user_id
+                        : $transaction->user_id;
+
+                        // Update or create wallet and adjust balance
+                        $wallet = Wallet::firstOrCreate(
+                            ['user_id' => $walletUserId, 'currency_id' => $transaction->currency_id],
+                            ['balance' => 0]
+                        );
+                        $wallet->balance += $transaction->subtotal;
+                        $wallet->save();
+                    }
+                });
+            } catch (\Exception $e) {
+                throw new Exception($e->getMessage());
+            }
+            return;
+        }
+
+        $addons = \Modules\Addons\Entities\Addon::all();
+
+        foreach ($addons as $addon) {
+            // Skip if the addon is core
+            if ($addon->get('core')) {
+                continue;
+            }
+
+            // Get the transaction types supported by the addon
+            $transactionType =  Config( $addon->getLowerName() . '.transaction_types');
+
+            if (empty($transactionType)) {
+                continue;
+            }
+            
+            // If the addon is active and the transaction type is supported, update the transaction
+            if (isActive($addon) && in_array($transaction->transaction_type_id, $transactionType) ) {
+                $moduleFunction = lcfirst($addon->getName()).'TransactionUpdate';
+                if (function_exists($moduleFunction)) {
+                    $moduleFunction($transaction, $status);
+                }
+                return;
+            }
+        }
+    }
+
+    /**
+     * Defines a relationship where this transaction belongs to a Cashin instance.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function cashin()
+    {
+        return $this->belongsTo(\Modules\Agent\Entities\Cashin::class, 'transaction_reference_id', 'id');
+    }
+
+    /**
+     * Defines a relationship where this transaction belongs to a Cashout instance.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function cashout()
+    {
+        return $this->belongsTo(\Modules\Agent\Entities\Cashout::class, 'transaction_reference_id', 'id');
+    }
+
+    /**
+     * Defines a relationship where this transaction belongs to an Agent instance.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function agent()
+    {
+        return $this->belongsTo(\Modules\Agent\Entities\Agent::class);
     }
 }

@@ -55,9 +55,9 @@
 @endsection
 
 @push('extra_body_scripts')
-    <script src="{{ asset('public/dist/plugins/debounce-1.1/jquery.ba-throttle-debounce.min.js')}}" type="text/javascript"></script>
+    <script src="{{ asset('public/dist/plugins/debounce/jquery.ba-throttle-debounce.min.js')}}" type="text/javascript"></script>
     <script src="{{ asset('public/dist/libraries/sweetalert/sweetalert-unpkg.min.js')}}" type="text/javascript"></script>
-    <script src="{{ asset('public/dist/plugins/html5-validation-1.0.0/validation.min.js') }}"  type="text/javascript" ></script>
+    <script src="{{ asset('public/dist/plugins/html5-validation/validation.min.js') }}"  type="text/javascript" ></script>
 
     @include('common.restrict_number_to_pref_decimal')
     @include('common.restrict_character_decimal_point')

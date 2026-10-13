@@ -3,7 +3,7 @@
 @section('title', __('Add User'))
 
 @section('head_style')
-  <link rel="stylesheet" type="text/css" href="{{ asset('public/dist/plugins/intl-tel-input-17.0.19/css/intlTelInput.min.css') }}">
+  <link rel="stylesheet" type="text/css" href="{{ asset('public/dist/plugins/intl-tel-input/css/intlTelInput.min.css') }}">
 @endsection
 
 @section('page_content')
@@ -118,7 +118,10 @@
                 <div class="row">
                     <div class="col-sm-6 offset-md-3">
                         <a class="btn btn-theme-danger f-14 me-1" href="{{ url(config('adminPrefix').'/users') }}" id="users_cancel">{{ __('Cancel') }}</a>
-                        <button type="submit" class="btn btn-theme f-14" id="users_create"><i class="fa fa-spinner fa-spin d-none"></i> <span id="users_create_text">{{ __('Create') }}</span></button>
+                        <button type="submit" class="btn btn-theme f-14" id="users_create">
+                            <i class="fa fa-spinner fa-spin d-none"></i> 
+                            <span id="users_create_text">{{ __('Create') }}</span>
+                        </button>
                     </div>
                 </div>
 
@@ -128,8 +131,8 @@
 
 @endsection
 @push('extra_body_scripts')
-<script src="{{ asset('public/dist/plugins/html5-validation-1.0.0/validation.min.js') }}" type="text/javascript"></script>
-<script src="{{ asset('public/dist/plugins/intl-tel-input-17.0.19/js/intlTelInput-jquery.min.js') }}" type="text/javascript"></script>
+<script src="{{ asset('public/dist/plugins/html5-validation/validation.min.js') }}" type="text/javascript"></script>
+<script src="{{ asset('public/dist/plugins/intl-tel-input/js/intlTelInput-jquery.min.js') }}" type="text/javascript"></script>
 <script src="{{ asset('public/dist/js/isValidPhoneNumber.min.js') }}" type="text/javascript"></script>
 <script type="text/javascript">
     'use strict';
@@ -138,7 +141,7 @@
     var userNameLengthError = '{{ __("Name length can not be more than 30 characters") }}';
     var passwordMatchErrorText = '{{ __("Please enter same value as the password field.") }}';
     var creatingText = '{{ __("Creating...") }}';
-    var utilsScriptLoadingPath = '{{ asset("public/dist/plugins/intl-tel-input-17.0.19/js/utils.min.js") }}';
+    var utilsScriptLoadingPath = '{{ asset("public/dist/plugins/intl-tel-input/js/utils.min.js") }}';
     var validPhoneNumberErrorText = '{{ __("Please enter a valid international phone number.") }}';
 </script>
 <script src="{{ asset('public/admin/customs/js/user/user.min.js') }}" type="text/javascript"></script>

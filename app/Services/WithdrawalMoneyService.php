@@ -20,7 +20,7 @@ use App\Models\{
     Withdrawal
 };
 use Exception, DB;
-use App\Services\Mail\Withdrawal\WithdrawalViaAdminMailService;
+use App\Services\Mail\Withdrawal\NotifyAdminOnWithdrawMailService;
 
 class WithdrawalMoneyService
 {
@@ -180,7 +180,7 @@ class WithdrawalMoneyService
 
             DB::commit();
 
-            (new WithdrawalViaAdminMailService)->send($withdraw, 'payout');
+            (new NotifyAdminOnWithdrawMailService)->send($withdraw, ['type' => 'withdraw', 'medium' => 'email']);
 
             return [
                 'status' => true,

@@ -1,6 +1,7 @@
 {
     "Addons": true,
-    "BlockIo": true,
     "Upgrader": true,
-    "TatumIo": true
+    "TatumIo": true,
+    "KycVerification": true,
+    "Virtualcard": true
 }

@@ -3,8 +3,8 @@
 /**
  * @package SystemUpdateController
  * @author TechVillage <support@techvill.org>
- * @contributor Md. Mostafijur Rahman <[mostafijur.techvill@gmail.com]>
- * @created 01-03-2023
+ * @contributor Foisal Ahmed <[foisal.techvill@gmail.com]>
+ * @created 20-05-2026
  */
 
 namespace Modules\Upgrader\Http\Controllers;
@@ -19,67 +19,87 @@ use GuzzleHttp\Client;
 use Modules\Addons\Entities\Envato;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use ZipArchive;
 
 class SystemUpdateController extends Controller
 {
-    protected $helper;
-
-    public function __construct()
-    {
-        $this->helper = new Common();
-    }
     /**
      * Display the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\Response|\Illuminate\Http\JsonResponse
      */
     public function upgrade(Request $request)
     {
         if ($request->isMethod('get')) {
-
-            // Waiting for upgrade
-            if ($request->has('waiting')) {
-                $this->waiting();
-                return;
+            if ($request->get('upgrade') === 'run') {
+                return $this->showUpgrading($request);
             }
 
-            // Process the upgrade
-            if ($request->has('process')) {
-                $this->process();
-                return;
+            if ($request->get('process') === 'files') {
+                return $this->processFiles($request);
+            }
+
+            if ($request->get('process') === 'finalize') {
+                return $this->processFinalize($request);
+            }
+
+            if ($request->get('eligible') === '1') {
+                return $this->showEligibleAfterUpload();
             }
 
             $data['menu'] = 'system-update';
             $data['applicationVersion'] = config('paymoney.version');
+
             return view('upgrader::update', $data);
         }
 
-        // Store the upgrade zip file
         if ($request->isMethod('post')) {
+            if (checkDemoEnvironment()) {
+                Common::one_time_message('error', __('System upgrade is not allowed in demo site.'));
+                return back();
+            }
+
+            $configurationError = $this->getConfigurationError();
+
+            if ($configurationError !== null) {
+                Common::one_time_message('error', $configurationError);
+
+                return back();
+            }
+
+            $uploadError = $this->getUploadErrorMessage($request);
+
+            if ($uploadError !== null) {
+                Common::one_time_message('error', $uploadError);
+
+                return back()->withInput();
+            }
+
             $validator = Validator::make($request->all(), [
-                'attachment' => 'required|mimes:zip,rar,7zip',
-                'purchaseCode' => 'required',
+                'envatoUsername' => 'required|string',
+                'purchaseCode' => 'required|string',
+                'attachment' => 'required|file|mimes:zip,rar,7zip',
             ]);
 
-
             if ($validator->fails()) {
-                $message = $this->configuration();
+                Common::one_time_message('error', $validator->errors()->first());
 
-                $this->helper->one_time_message('error', $message);
-                return redirect()->back();
+                return back()->withInput();
             }
 
             $purchaseData = Envato::isValidPurchaseCode($request->purchaseCode, $request->envatoUsername, config('installer.item_id'));
 
-            if (!$purchaseData->status) {
-                $this->helper->one_time_message('error', __('Please provide valid purchase code and username.'));
-                return redirect()->back();
+            if (! $purchaseData->status) {
+                Common::one_time_message('error', __('Please provide valid purchase code and username.'));
+
+                return back();
             }
 
-            if (!class_exists('ZipArchive')) {
-                $this->helper->one_time_message('error', __('Something went wrong please try again.'));
-                return redirect()->back();
+            if (! class_exists('ZipArchive')) {
+                Common::one_time_message('error', __('Something went wrong please try again.'));
+
+                return back();
             }
 
             $zip = new ZipArchive;
@@ -92,67 +112,209 @@ class SystemUpdateController extends Controller
             }
 
             if ($res === true) {
-                $res = $zip->extractTo($upgraderDirecotory);
+                $zip->extractTo($upgraderDirecotory);
                 $zip->close();
             }
 
-            $upgrader = (new UpgradeManager)->isValid();
+            UpgradeManager::createUpgradeToken();
 
-            return view('upgrader::eligible', compact('upgrader'));
+            return redirect()->route('systemUpdate.upgrade', ['eligible' => '1']);
         }
 
         return back();
     }
 
     /**
-     * Redirect to waiting page
+     * Show the single-page upgrade progress UI.
      */
-    private function waiting()
+    private function showUpgrading(Request $request)
     {
-       echo (new UpgradeManager)->view(route('systemUpdate.upgrade', ['process' => true]));
+        $token = (string) $request->query('token', '');
+
+        $manager = new UpgradeManager;
+
+        if ($token === '' || ! $manager->validateUpgradeToken($token)) {
+            Common::one_time_message('error', __('Invalid upgrade session. Please upload the update package again.'));
+
+            return redirect()->route('systemUpdate.upgrade');
+        }
+
+        if (! file_exists(storage_path('updates/updater.json'))) {
+            Common::one_time_message('error', __('Update package not found. Please upload again.'));
+
+            return redirect()->route('systemUpdate.upgrade');
+        }
+        $isValid = $manager->isValid();
+
+        if (! $isValid['status']) {
+            Common::one_time_message('error', $isValid['message']);
+
+            return redirect()->route('systemUpdate.upgrade');
+        }
+
+        return view('upgrader::upgrading', [
+            'menu' => 'system-update',
+            'upgradeToken' => $token,
+            'currentVersion' => config('paymoney.version'),
+            'targetVersion' => $isValid['json']['version'],
+            'filesUrl' => route('systemUpdate.upgrade', ['process' => 'files', 'token' => $token]),
+            'finalizeUrl' => route('systemUpdate.upgrade', ['process' => 'finalize', 'token' => $token]),
+            'homeUrl' => url('/'),
+            'retryUrl' => route('systemUpdate.upgrade', ['upgrade' => 'run', 'token' => $token]),
+        ]);
     }
 
     /**
-     * Process the upgrade
+     * Phase 1: delete and copy files.
      */
-    private function process()
+    private function processFiles(Request $request)
     {
-        (new UpgradeManager)->run();
+        return $this->runUpgradePhase(function () use ($request) {
+            $token = (string) $request->query('token', '');
 
-        echo "<p>" . __("You will be redirect to the system. If not, click :x", ['x' => "<a href='".url('/')."'>" . __('here') . "</a>"]) . "</p><meta http-equiv=\"refresh\" content=\"5;URL='".url('/')."'\" />";
+            return (new UpgradeManager)->runFilesPhase($token);
+        });
     }
 
     /**
-     * Check php configuration
+     * Phase 2: migrations, seeds, cleanup, optimize.
+     */
+    private function processFinalize(Request $request)
+    {
+        return $this->runUpgradePhase(function () use ($request) {
+            UpgradeManager::bootstrapForDatabaseWork();
+
+            $token = (string) $request->query('token', '');
+
+            return (new UpgradeManager)->runFinalizePhase($token);
+        });
+    }
+
+    /**
+     * Always return JSON for upgrade phase endpoints (never HTML error pages).
      *
-     * @return string
+     * @param  callable(): array{success: bool, logs: array, message?: string}  $phase
      */
-    private function configuration()
+    private function runUpgradePhase(callable $phase)
     {
-        $message = __('Validation failed.');
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
 
-        $systemError = __('Please check system configuration, go to :x', ["x" => route("systemInfo.index")]);
+        ob_start();
 
+        try {
+            @ini_set('max_execution_time', '900');
+            @set_time_limit(900);
+
+            if (session()->isStarted()) {
+                session()->save();
+            }
+
+            $result = $phase();
+            ob_end_clean();
+
+            return response()->json($result, ($result['success'] ?? false) ? 200 : 500);
+        } catch (\Throwable $e) {
+            ob_end_clean();
+
+            Log::error('Upgrader - Phase request failed', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'logs' => [],
+            ], 500);
+        }
+    }
+
+    /**
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\View\View
+     */
+    private function showEligibleAfterUpload()
+    {
+        if (! file_exists(storage_path('updates/updater.json'))) {
+            Common::one_time_message('error', __('Update package not found. Please upload again.'));
+
+            return redirect()->route('systemUpdate.upgrade');
+        }
+
+        return $this->eligibleView();
+    }
+
+    /**
+     * @return \Illuminate\View\View
+     */
+    private function eligibleView()
+    {
+        $upgrader = (new UpgradeManager)->isValid();
+        $upgradeToken = null;
+
+        if ($upgrader['status']) {
+            $upgradeToken = session('upgrader.token');
+
+            if (! is_string($upgradeToken) || $upgradeToken === '') {
+                $upgradeToken = UpgradeManager::readStoredUpgradeToken()
+                    ?? UpgradeManager::createUpgradeToken();
+            }
+        }
+
+        return view('upgrader::eligible', compact('upgrader', 'upgradeToken'));
+    }
+
+    /**
+     * Return a configuration error message, or null if the server is ready for upgrade uploads.
+     */
+    private function getConfigurationError(): ?string
+    {
         $configurations = PhpInfo::phpinfo_configuration();
+
         if (empty($configurations)) {
             return __('phpinfo() is disabled. Please contact with your hosting provider.');
         }
 
-        $config = [
-            (int)str_replace('M', '', $configurations['upload_max_filesize']) < 128,
-            (int)$configurations['max_file_uploads'] < 20,
-            (int)str_replace('M', '', $configurations['post_max_size']) < 128,
-            (int)$configurations['max_execution_time'] < 600,
-            (int)$configurations['max_input_time'] < 120,
-            (int)$configurations['max_input_vars'] < 1000,
-            (int)str_replace('M', '', $configurations['memory_limit']) < 256
+        $limitsTooLow = [
+            (int) str_replace('M', '', $configurations['upload_max_filesize']) < 128,
+            (int) $configurations['max_file_uploads'] < 20,
+            (int) str_replace('M', '', $configurations['post_max_size']) < 128,
+            (int) $configurations['max_execution_time'] < 600,
+            (int) $configurations['max_input_time'] < 120,
+            (int) $configurations['max_input_vars'] < 1000,
+            (int) str_replace('M', '', $configurations['memory_limit']) < 256,
         ];
 
-        if (in_array(true, $config)) {
-            return $systemError;
+        if (in_array(true, $limitsTooLow, true)) {
+            return __('Please check system configuration, go to :x', ['x' => route('systemInfo.index')]);
         }
 
-        return $message;
+        return null;
+    }
+
+    /**
+     * Return a message when PHP rejected the upload before Laravel validation (e.g. file too large).
+     */
+    private function getUploadErrorMessage(Request $request): ?string
+    {
+        if (! $request->hasFile('attachment')) {
+            return null;
+        }
+
+        $file = $request->file('attachment');
+
+        if ($file->isValid()) {
+            return null;
+        }
+
+        return match ($file->getError()) {
+            UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => __('The uploaded file exceeds the server upload size limit.'),
+            UPLOAD_ERR_PARTIAL => __('The file was only partially uploaded. Please try again.'),
+            UPLOAD_ERR_NO_FILE => __('No file was uploaded.'),
+            default => __('The file upload failed. Please try again.'),
+        };
     }
 
     /**
@@ -170,31 +332,48 @@ class SystemUpdateController extends Controller
         try {
             $response = Http::get($apiEndpoint);
 
-            if (!$response->successful() || !isset($response->json()['response']['records']['version'])) {
-                return view('upgrader::version', ['currentVersion' => $version, 'latestVersion' => $newVersion, 'status' => 'fail', 'menu' => 'system-update', 'message' => $response->json()['response']['status']['message']]);
+            if (! $response->successful() || ! isset($response->json()['response']['records']['version'])) {
+                return view(
+                    'upgrader::version',
+                    [
+                        'currentVersion' => $version,
+                        'latestVersion' => $newVersion,
+                        'status' => 'fail',
+                        'menu' => 'system-update',
+                        'message' => $response->json()['response']['status']['message'],
+                    ]
+                );
             }
 
             $newVersion = $response->json()['response']['records']['version'];
 
-            return view('upgrader::version', ['currentVersion' => $version, 'latestVersion' => $newVersion, 'status' => 'success', 'menu' => 'system-update', 'message' => $response->json()['response']['records']['message']]);
+            return view('upgrader::version', [
+                'currentVersion' => $version,
+                'latestVersion' => $newVersion,
+                'status' => 'success',
+                'menu' => 'system-update',
+                'message' => $response->json()['response']['records']['message'],
+            ]);
         } catch (\Exception $e) {
-            return view('upgrader::version', ['currentVersion' => $version, 'latestVersion' => $newVersion, 'status' => 'fail', 'message' => $e->getMessage()]);
+            return view('upgrader::version', [
+                'currentVersion' => $version,
+                'latestVersion' => $newVersion,
+                'status' => 'fail',
+                'message' => $e->getMessage(),
+            ]);
         }
     }
 
-      /**
+    /**
      * Download latest version
-     *
-     * @param Request $request
      */
     public function downloadVersion(Request $request)
     {
         $itemCode = config('paymoney.item_code');
         $serverUrl = config('paymoney.server_url');
-        $apiEndpoint = $serverUrl . "/api/v1/version/download"; // Replace with the API endpoint
-        $storagePath = storage_path('app/downloaded-files'); // Define the storage directory
+        $apiEndpoint = $serverUrl . '/api/v1/version/download';
+        $storagePath = storage_path('app/downloaded-files');
 
-        // Create a Guzzle HTTP client
         $client = new Client();
 
         try {
@@ -203,19 +382,17 @@ class SystemUpdateController extends Controller
                     'item_code' => $itemCode,
                     'version' => $request->version,
                     'domain' => request()->getSchemeAndHttpHost(),
-                    'purchase_code' => $request->purchase_code
+                    'purchase_code' => $request->purchase_code,
                 ],
             ]);
 
-            // Extract the file name from the Content-Disposition header
             $header = $response->getHeader('Content-Disposition');
             $fileExplode = explode('filename=', $header[0]);
             $fileName = end($fileExplode);
 
-            // Save the file with the original name and extension
             $response->getBody()->rewind();
 
-            if (!is_dir($storagePath)) {
+            if (! is_dir($storagePath)) {
                 mkdir($storagePath, config('app.filePermission'), true);
             }
 
@@ -231,23 +408,23 @@ class SystemUpdateController extends Controller
             }
 
             if ($res === true) {
-                $res = $zip->extractTo($upgraderDirecotory);
+                $zip->extractTo($upgraderDirecotory);
                 $zip->close();
             }
 
-            $upgrader = (new UpgradeManager)->isValid();
+            UpgradeManager::createUpgradeToken();
 
-            return view('upgrader::eligible', compact('upgrader'));
+            return redirect()->route('systemUpdate.upgrade', ['eligible' => '1']);
         } catch (\GuzzleHttp\Exception\RequestException $e) {
             $downloadDirectory = storage_path('app' . DIRECTORY_SEPARATOR . 'downloaded-files');
 
             if (File::isDirectory($downloadDirectory)) {
                 File::deleteDirectory($downloadDirectory);
             }
-            $this->helper->one_time_message('error', __('Purchase code not verified'));
-            return redirect()->back();
+
+            Common::one_time_message('error', __('Purchase code not verified'));
+
+            return back();
         }
     }
-
-
 }

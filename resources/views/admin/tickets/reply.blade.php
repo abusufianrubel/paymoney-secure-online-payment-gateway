@@ -47,66 +47,67 @@
         </div>
     </div>
 
+    @if ($ticket->ticket_status?->name != 'Closed')
+        <div class="box-body">
+            <form class="form-horizontal" id="reply_form" action="{{url(config('adminPrefix').'/tickets/reply/store')}}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <input type="hidden" name="ticket_id" value="{{ $ticket->id }}">
+                <input type="hidden" name="user_id" value="{{ $ticket->user_id }}">
+                <input type="hidden" name="name" value="{{ getColumnValue($ticket->user) }}">
+                <input type="hidden" name="email" value="{{ getColumnValue($ticket->user, 'email', 'email') }}">
 
-    <div class="box-body">
-        <form class="form-horizontal" id="reply_form" action="{{url(config('adminPrefix').'/tickets/reply/store')}}" method="POST" enctype="multipart/form-data">
-            @csrf
-            <input type="hidden" name="ticket_id" value="{{ $ticket->id }}">
-            <input type="hidden" name="user_id" value="{{ $ticket->user_id }}">
-            <input type="hidden" name="name" value="{{ getColumnValue($ticket->user) }}">
-            <input type="hidden" name="email" value="{{ getColumnValue($ticket->user, 'email', 'email') }}">
-
-            <div class="row">
-                <div class="col-md-12">
-                    <div class="form-group row">
-                        <label class="col-sm-1 control-label f-14 fw-bold text-sm-end require" for="message">{{ __('Reply') }}</label>
-                        <div class="col-sm-11">
-                            <textarea name="message" id="message" class="message form-control f-14" cols="30" rows="1"></textarea>
-                            @if($errors->has('message'))
-                                <span class="help-block">
-                                  <strong class="text-danger">{{ $errors->first('message') }}</strong>
-                                </span>
-                            @endif
-                            <div id="error-message"></div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group row">
+                            <label class="col-sm-1 control-label f-14 fw-bold text-sm-end require" for="message">{{ __('Reply') }}</label>
+                            <div class="col-sm-11">
+                                <textarea name="message" id="message" class="message form-control f-14" cols="30" rows="1"></textarea>
+                                @if($errors->has('message'))
+                                    <span class="help-block">
+                                    <strong class="text-danger">{{ $errors->first('message') }}</strong>
+                                    </span>
+                                @endif
+                                <div id="error-message"></div>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="col-md-12">
-                 <div class="row">
-                  <div class="col-md-4">
-                      <div class="form-group row align-items-center">
-                          <label class="col-sm-3 control-label f-14 fw-bold text-sm-end" for="status_id">{{ __('Status') }}</label>
-                          <div class="col-sm-6">
-                              <select name="status_id" class="form-control f-14 select2" id="status_id">
-                                @foreach($ticket_status as $status)
-                                    <option {{ $status->id == $ticket->ticket_status_id ? 'selected':'' }}  value="{{ $status->id }}">{{ $status->name }}</option>
-                                @endforeach
-                              </select>
-                          </div>
-                      </div>
-                  </div>
-                  <div class="col-md-4">
-                      <div class="form-group row align-items-center">
-                          <label class="col-sm-3 control-label f-14 fw-bold text-sm-end" for="file">{{ __('File') }}</label>
-                          <div class="col-sm-9">
-                            <input type="file" name="file" class="form-control f-14 input-file-field" id="file">
-                            @if($errors->has('file'))
-                                <span class="help-block">
-                                  <strong class="text-danger">{{ $errors->first('file') }}</strong>
-                                </span>
-                            @endif
-                          </div>
-                      </div>
-                  </div>
-                  <div class="col-md-4">
-                      <button type="submit" class="btn btn-primary pull-right btn-flat f-14 rounded" id="reply"><i class="fa fa-spinner fa-spin d-none"></i> <span id="reply_text">{{ __('Reply') }}</span></button>
-                  </div>
+                    <div class="col-md-12">
+                    <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group row align-items-center">
+                            <label class="col-sm-3 control-label f-14 fw-bold text-sm-end" for="status_id">{{ __('Status') }}</label>
+                            <div class="col-sm-6">
+                                <select name="status_id" class="form-control f-14 select2" id="status_id">
+                                    @foreach($ticket_status as $status)
+                                        <option {{ $status->id == $ticket->ticket_status_id ? 'selected':'' }}  value="{{ $status->id }}">{{ $status->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group row align-items-center">
+                            <label class="col-sm-3 control-label f-14 fw-bold text-sm-end" for="file">{{ __('File') }}</label>
+                            <div class="col-sm-9">
+                                <input type="file" name="file" class="form-control f-14 input-file-field" id="file">
+                                @if($errors->has('file'))
+                                    <span class="help-block">
+                                    <strong class="text-danger">{{ $errors->first('file') }}</strong>
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-primary pull-right btn-flat f-14 rounded" id="reply"><i class="fa fa-spinner fa-spin d-none"></i> <span id="reply_text">{{ __('Reply') }}</span></button>
+                    </div>
+                    </div>
+                    </div>
                 </div>
-                </div>
-            </div>
-        </form>
-    </div>
+            </form>
+        </div>
+    @endif
 </div>
 
 <!-- Show Customer Query -->
@@ -270,8 +271,8 @@
 @endsection
 
 @push('extra_body_scripts')
-<script src="{{ asset('public/dist/plugins/jquery-validation-1.17.0/dist/jquery.validate.min.js') }}" type="text/javascript"></script>
-<script src="{{ asset('public/dist/plugins/jquery-validation-1.17.0/dist/additional-methods.min.js') }}" type="text/javascript"></script>
+<script src="{{ asset('public/dist/plugins/jquery-validation/dist/jquery.validate.min.js') }}" type="text/javascript"></script>
+<script src="{{ asset('public/dist/plugins/jquery-validation/dist/additional-methods.min.js') }}" type="text/javascript"></script>
 <script src="{{ asset('public/dist/plugins/bootstrap-wysihtml5/bootstrap3-wysihtml5.all.min.js') }}" type="text/javascript"></script>
 
 <script type="text/javascript">

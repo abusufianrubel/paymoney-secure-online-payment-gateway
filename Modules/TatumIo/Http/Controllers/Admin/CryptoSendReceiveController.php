@@ -93,7 +93,7 @@ class CryptoSendReceiveController extends Controller
 
         if ($response['status'] == 401) {
             $this->helper->one_time_message('error', $response['message']);
-            return redirect()->route('admin.crypto_send.create', ['code' => encrypt($request->network)]);
+            return redirect()->route('admin.tatum.crypto_send.create', ['code' => encrypt($request->network)]);
         }
         // For confirm page only
         $data['cryptoTrx'] = $response['cryptoTrx'];
@@ -217,7 +217,7 @@ class CryptoSendReceiveController extends Controller
 
     /* Crypto Receive :: Confirm */
     public function eachUSerCryptoReceiveConfirm(Request $request)
-    {
+    { 
         actionSessionCheck();
 
         $data['menu'] = 'crypto_providers';
@@ -235,7 +235,7 @@ class CryptoSendReceiveController extends Controller
 
     /* Crypto Sent :: success */
     public function eachUserCryptoSentSuccess(Request $request)
-    {
+    {  
         actionSessionCheck();
 
         $res = $this->cryptoSendReceiveSuccess($request, 'send');
@@ -254,7 +254,7 @@ class CryptoSendReceiveController extends Controller
         $res = $this->cryptoSendReceiveSuccess($request, 'receive');
         if ($res['status'] == 401) {
             $this->helper->one_time_message('error', $res['message']);
-            return redirect()->route('admin.crypto_receive.create', [$request->network]);
+            return redirect()->route('admin.tatum.crypto_receive.create', [encrypt($request->network)]);
         }
 
         return view('tatumio::admin.crypto.receive.success', $res['data']);
@@ -490,6 +490,28 @@ class CryptoSendReceiveController extends Controller
                 'message' => $e->getMessage(),
             ]);
         }
+    }
+
+    public function merchantCryptoSentReceivedTransactionPrintPdf($id)
+    {
+        $id = decrypt($id);
+        $data['transaction'] = $transaction = \App\Models\Transaction::with(['currency:id,symbol', 'cryptoAssetApiLog:id,object_id,payload,confirmations'])->where(['id' => $id])->first();
+
+        // Get crypto asset api log details for Crypto_Sent & Crypto_Received (via custom relationship)
+        if (!empty($transaction->cryptoAssetApiLog)) {
+            $getCryptoDetails = getCryptoPayloadConfirmationsDetails($transaction->transaction_type_id, $transaction->cryptoAssetApiLog?->payload, $transaction->cryptoAssetApiLog?->confirmations);
+            if (count($getCryptoDetails) > 0) {
+                // For "Tracking block io account receiver address changes, if amount is sent from other payment gateways like CoinBase, CoinPayments, etc"
+                if (isset($getCryptoDetails['senderAddress'])) {
+                    $data['senderAddress'] = $getCryptoDetails['senderAddress'];
+                }
+                $data['receiverAddress'] = $getCryptoDetails['receiverAddress'];
+                $data['confirmations'] = $getCryptoDetails['confirmations'];
+                $data['network_fee'] = isset($getCryptoDetails['network_fee']) ? $getCryptoDetails['network_fee'] : 0.00000000;
+            }
+        }
+
+        generatePDF('tatumio::user.transactions.crypto_transaction_pdf', 'crypto-transaction_', $data);
     }
 
 }

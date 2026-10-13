@@ -1,5 +1,5 @@
 /*!
- *   AdminLTE v2.4.0
+ *   AdminLTE
  *   Author: Almsaeed Studio
  *   Website: Almsaeed Studio <https://adminlte.io>
  *   License: Open source - MIT
@@ -2344,82 +2344,6 @@ a:focus {
     display: inline-block;
     cursor: move;
     margin: 0 5px;
-}
-
-/* Chat widget (DEPRECATED - this will be removed in the next major release. Use Direct Chat instead)*/
-.chat {
-    padding: 5px 20px 5px 10px;
-}
-
-.chat .item {
-    margin-bottom: 10px;
-}
-
-.chat .item:before,
-.chat .item:after {
-    content: " ";
-    display: table;
-}
-
-.chat .item:after {
-    clear: both;
-}
-
-.chat .item > img {
-    width: 40px;
-    height: 40px;
-    border: 2px solid transparent;
-    border-radius: 50%;
-}
-
-.chat .item > .online {
-    border: 2px solid #00a65a;
-}
-
-.chat .item > .offline {
-    border: 2px solid #dd4b39;
-}
-
-.chat .item > .message {
-    margin-left: 55px;
-    margin-top: -40px;
-}
-
-.chat .item > .message > .name {
-    display: block;
-    font-weight: 600;
-}
-
-.chat .item > .attachment {
-    border-radius: 3px;
-    background: #f4f4f4;
-    margin-left: 65px;
-    margin-right: 15px;
-    padding: 10px;
-}
-
-.chat .item > .attachment > h4 {
-    margin: 0 0 5px 0;
-    font-weight: 600;
-    font-size: 14px;
-}
-
-.chat .item > .attachment > p,
-.chat .item > .attachment > .filename {
-    font-weight: 600;
-    font-size: 13px;
-    font-style: italic;
-    margin: 0;
-}
-
-.chat .item > .attachment:before,
-.chat .item > .attachment:after {
-    content: " ";
-    display: table;
-}
-
-.chat .item > .attachment:after {
-    clear: both;
 }
 
 .box-input {

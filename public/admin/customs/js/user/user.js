@@ -17,7 +17,7 @@ if ($('.content-wrapper').find('#user-create').length) {
     }
 
     $(document).on('submit', '#user_form', function() {
-        $('#users_creat').attr('disabled', true);
+        $('#users_create').attr('disabled',true);
         $('#users_cancel').attr('disabled',true);
         $('.fa-spin').removeClass('d-none');
         $('#users_create_text').text(creatingText);
@@ -39,8 +39,19 @@ if ($('.content-wrapper').find('#user-create').length) {
             $('#defaultCountry').val($('#phone').intlTelInput('getSelectedCountryData').iso2);
             $('#carrierCode').val($('#phone').intlTelInput('getSelectedCountryData').dialCode);
 
-            if ($('#phone').val != '') {
-                $("#formattedPhone").val($('#phone').intlTelInput("getNumber").replace(/-|\s/g,""));
+            if ($('#phone').val() != '') {
+                // Get the raw input value to preserve leading zeros
+                let rawInput = $.trim($('#phone').val());
+                let dialCode = $('#phone').intlTelInput('getSelectedCountryData').dialCode;
+
+                // If the input already starts with +, use it as-is (preserves full number format)
+                if (rawInput.startsWith('+')) {
+                    $("#formattedPhone").val(rawInput.replace(/-|\s/g, ""));
+                } else {
+                    // Otherwise, construct the full number: +{dialCode}{rawInput}
+                    // This preserves leading zeros in the national number part
+                    $("#formattedPhone").val('+' + dialCode + rawInput.replace(/-|\s/g, ""));
+                }
             }
             resolve();
         });  

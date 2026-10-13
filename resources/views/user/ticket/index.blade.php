@@ -33,7 +33,7 @@
             </div>
             <div class="ticket-mid-description ml-24">
                 <div class="d-flex mobile-flex mt-2p gap-14">
-                    <p class="mb-0 f-18 leading-22 text-dark gilroy-Semibold w-status-m">{{ $ticket->subject }}</p>
+                    <p class="mb-0 f-18 leading-22 text-dark gilroy-Semibold w-status-m text-beak-all">{{ $ticket->subject }}</p>
                     <div class="custom-badge d-flex justify-content-center align-items-center bg-{{ getBgColor($ticket->ticket_status?->name) }} r-mt-open"><span class="text-white f-11 gilroy-medium">{{ $ticket->ticket_status?->name }}</span></div>
                 </div>
                 <div class="priority-section d-flex align-items-center mt-6">

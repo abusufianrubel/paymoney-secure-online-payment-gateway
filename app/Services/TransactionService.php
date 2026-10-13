@@ -37,9 +37,9 @@ class TransactionService
             $type = (new Transaction)::$transactionTypes;
         }
         $transaction = Transaction::with([
-            'currency:id,type,code,symbol',
-            'user:id,first_name,last_name,picture',
-            'end_user:id,first_name,last_name,picture',
+            'currency:id,type,code,symbol,logo',
+            'user:id,first_name,last_name,picture,email',
+            'end_user:id,first_name,last_name,picture,email',
             'payment_method:id,name',
             'transaction_type:id,name',
             'merchant:id,business_name,logo',
@@ -90,7 +90,7 @@ class TransactionService
     public function details($trId, $userId) : TransactionDetailResource
     {
         $conditions       = ['transactions.id' => $trId, 'transactions.user_id' => $userId];
-        $whereInCondition = Transaction::$transactionTypes;
+        $whereInCondition = (new Transaction)::$transactionTypes;
 
         $transaction = Transaction::with([
             'currency:id,type,code,symbol',

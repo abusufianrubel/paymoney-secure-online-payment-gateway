@@ -26,7 +26,7 @@
                         <td>
                             @if (isset($transaction->user))
                                 {{ getColumnValue($transaction->user) }}
-                            @elseif (module('CryptoExchange') && isset($transaction->crypto_exchange) && !empty($transaction->crypto_exchange))
+                            @elseif (moduleExists('CryptoExchange') && isset($transaction->crypto_exchange) && !empty($transaction->crypto_exchange))
                                 {{ optional($transaction->crypto_exchange)->email_phone }}
                             @else
                                 {{ __('-') }}
@@ -35,8 +35,8 @@
                     @elseif (in_array($transaction->transaction_type_id, getPaymoneySettings('transaction_types')['web']['received']))
                         <td>{{ getColumnValue($transaction->end_user) }}</td>
                     @endif
-
-                    <td>{{ str_replace('_', ' ', optional($transaction->transaction_type)->name) }}</td>
+                    
+                    <td>{{ transactionTypeName($transaction->transaction_type) }}</td>
 
                     <!-- Amount -->
                     <td>{{ formatNumber($transaction->subtotal, $transaction->currency_id) }}</td>
@@ -54,9 +54,9 @@
                         @case(Deposit)
                         @case(Exchange_From)
                         @case(Exchange_To)
-                        @case(module('CryptoExchange') ? Crypto_Buy : false):
-                        @case(module('CryptoExchange') ? Crypto_Sell : false):
-                        @case(module('CryptoExchange') ? Crypto_Swap : false):
+                        @case(moduleExists('CryptoExchange') ? Crypto_Buy : false):
+                        @case(moduleExists('CryptoExchange') ? Crypto_Sell : false):
+                        @case(moduleExists('CryptoExchange') ? Crypto_Swap : false):
                         @case(Withdrawal)
                         @case(Payment_Sent)
                             <td>{{ getColumnValue($transaction->end_user) }}</td>

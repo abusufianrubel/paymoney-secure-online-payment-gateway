@@ -1,0 +1,17 @@
+{
+    "name": "KycVerification",
+    "alias": "kycverification",
+    "description": "",
+    "version": "1.0.0",
+    "core": true,
+    "kyc": true,
+    "provider_alias": "manual",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\KycVerification\\Providers\\KycVerificationServiceProvider"
+    ],
+    "files": [
+        "Helpers/helper.php"
+    ]
+}

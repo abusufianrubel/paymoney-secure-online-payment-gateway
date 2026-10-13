@@ -15,21 +15,14 @@ class CreateDisputesTable extends Migration
     {
         Schema::create('disputes', function (Blueprint $table)
         {
-            $table->increments('id');
+            $table->id();
 
-            $table->integer('claimant_id')->unsigned()->index()->nullable();
-            $table->foreign('claimant_id')->references('id')->on('users')->onUpdate('cascade')->onDelete('cascade');
+            $table->foreignId('claimant_id')->constrained('users')->onUpdate('cascade')->onDelete('cascade');
+            $table->foreignId('defendant_id')->nullable()->constrained('users')->onUpdate('cascade')->onDelete('cascade');
+            $table->foreignId('transaction_id')->constrained('transactions')->onUpdate('cascade')->onDelete('cascade');
+            $table->foreignId('reason_id')->constrained('reasons')->onUpdate('cascade')->onDelete('cascade');
 
-            $table->integer('defendant_id')->unsigned()->index()->nullable();
-            $table->foreign('defendant_id')->references('id')->on('users')->onUpdate('cascade')->onDelete('cascade');
-
-            $table->integer('transaction_id')->unsigned()->index()->nullable();
-            $table->foreign('transaction_id')->references('id')->on('transactions')->onUpdate('cascade')->onDelete('cascade');
-
-            $table->integer('reason_id')->unsigned()->index()->nullable();
-            $table->foreign('reason_id')->references('id')->on('reasons')->onUpdate('cascade')->onDelete('cascade');
-
-            $table->string('title')->nullable();
+            $table->string('title');
             $table->text('description')->nullable();
             $table->string('code', 45)->nullable();
             $table->string('status', 7)->default('Open')->comment('Open, Closed, Solved');

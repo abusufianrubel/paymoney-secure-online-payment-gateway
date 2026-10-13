@@ -9,7 +9,8 @@
                      <div class="bg-content">
                         <div class="d-flex justify-content-start"> 
                             <div class="logo-div">
-                                <a href="{{ url('/') }}"><img src="{{ image(settings('logo'), 'logo') }}" alt="{{ __('Brand Logo') }}"></a>
+                                <img src="{{ image(settings('logo'), 'logo') }}" alt="{{ __('Brand Logo') }}" class="light-logo">
+                                <img src="{{ image(settings('dark_logo'), 'dark_logo') }}" alt="{{ __('Brand Logo') }}" class="dark-logo">
                             </div>
                         </div> 
                         <div class="transaction-block">
@@ -77,7 +78,7 @@
 @endsection
 
 @section('js')
-    <script src="{{ asset('public/dist/plugins/html5-validation-1.0.0/validation.min.js') }}"></script>
+    <script src="{{ asset('public/dist/plugins/html5-validation/validation.min.js') }}"></script>
     <script>
         'use strict';
         let submitBtnText = "{{ __('Sending...') }}"

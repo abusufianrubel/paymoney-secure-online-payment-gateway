@@ -5,7 +5,8 @@ namespace Modules\TatumIo\Http\Controllers\Admin;
 use App\Http\Helpers\Common;
 
 use App\Models\{CryptoAssetApiLog,
-    CryptoAssetSetting
+    CryptoAssetSetting,
+    CryptoProvider
 };
 use Exception;
 use Illuminate\Contracts\Support\Renderable;
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\TatumIo\Class\{CryptoNetwork,
     TatumIoTransaction
 };
+use Modules\TatumIo\Datatables\WebhookListDataTable;
 use Modules\TatumIo\Http\Requests\TatumAssetStoreRequest;
 
 class TatumIoAssetSettingController extends Controller
@@ -24,6 +26,8 @@ class TatumIoAssetSettingController extends Controller
     protected $cryptoNetwork;
     protected $xpub;
     protected $mnemonic;
+    protected $tatumAddress;
+    protected $tatumKey;
 
     const NETWORK = ['BTC', 'LTC', 'DOGE', 'ETH', 'TRX', 'BTCTEST', 'LTCTEST', 'DOGETEST', 'ETHTEST', 'TRXTEST'];
 
@@ -49,11 +53,9 @@ class TatumIoAssetSettingController extends Controller
             DB::beginTransaction();
 
             $this->validationRequestData($request);
-
+            $this->createTatumAssetSettings($request);
             $currency = $this->storeOrUpdateCurrency($request);
-
-            $this->createTatumAssetSettings($request, $currency);
-
+            $this->createAsset($request, $currency);
             DB::commit();
 
             (new Common())->one_time_message('success', __('Asset added successfully.'));
@@ -66,16 +68,6 @@ class TatumIoAssetSettingController extends Controller
             return redirect()->route('admin.tatumio_asset.create')->withInput();
         }
 
-    }
-
-    /**
-     * Show the specified resource.
-     * @param int $id
-     * @return Renderable
-     */
-    public function show($id)
-    {
-        return view('tatumio::show');
     }
 
     /**
@@ -114,12 +106,8 @@ class TatumIoAssetSettingController extends Controller
 
         try {
             $this->validationRequestData($request);
-
-            DB::beginTransaction();
             $currency = $this->storeOrUpdateCurrency($request, 'update');
             $this->updateTatumAssetSettings($request, $currency);
-            DB::commit();
-
             (new Common())->one_time_message('success', __('Crypto Asset Updated successfully.'));
             return redirect()->route('admin.crypto_providers.list', 'TatumIo');
 
@@ -128,16 +116,6 @@ class TatumIoAssetSettingController extends Controller
             return redirect()->route('admin.tatumio_asset.edit', $coin)->withInput();
         }
 
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     * @param int $id
-     * @return Renderable
-     */
-    public function destroy($id)
-    {
-        //
     }
 
     private function validationRequestData(Request $request)
@@ -185,41 +163,53 @@ class TatumIoAssetSettingController extends Controller
     }
 
 
-    public function createTatumAssetSettings($request, $currency)
+    public function createTatumAssetSettings($request)
     {
-        $this->cryptoNetwork = new CryptoNetwork($request->api_key, $request->network);
+        try {
+            $this->cryptoNetwork = new CryptoNetwork($request->api_key, $request->network);
 
-        if (!is_null($this->cryptoNetwork->getTatumAssetSetting()) ) {
-            throw new Exception(__(':x Network is already available on TatumIo provider', ['x' => $request->network]));
+            if (!is_null($this->cryptoNetwork->getTatumAssetSetting()) ) {
+                throw new Exception(__(':x Network is already available on TatumIo provider', ['x' => $request->network]));
+            }
+
+            if ($this->cryptoNetwork->networkName() !== strtolower($request->name)) {
+                throw new Exception(__(':x is not appropriate Coin name for  :y Network', ['x' => $request->name, 'y' => $request->network]));
+            }
+
+            $index = 0;
+            $cryptoWallet  = $this->cryptoNetwork->generateWallet();
+
+            $this->xpub = $cryptoWallet['xpub'];
+            $this->mnemonic = $cryptoWallet['mnemonic'];
+
+            $tatumAddress = $this->cryptoNetwork->generateAddress($this->xpub , $index);
+            $this->tatumAddress = $tatumAddress['address'];
+            $this->tatumKey = $this->cryptoNetwork->generateAddressPrivateKey($index,  $this->mnemonic);
+           
+
+        } catch (Exception $e) {
+            throw new Exception($e->getMessage());
         }
+    }
 
-        if ($this->cryptoNetwork->networkName() !== strtolower($request->name)) {
-            throw new Exception(__(':x is not appropriate Coin name for  :y Network', ['x' => $request->name, 'y' => $request->network]));
-        }
-
-        $index = 0;
-        $cryptoWallet  = $this->cryptoNetwork->generateWallet();
-
-        $this->xpub = $cryptoWallet['xpub'];
-        $this->mnemonic = $cryptoWallet['mnemonic'];
-
-        $tatumAddress = $this->cryptoNetwork->generateAddress($this->xpub , $index);
-        $tatumKey = $this->cryptoNetwork->generateAddressPrivateKey($index,  $this->mnemonic);
-        $tatumBalance = ( $this->cryptoNetwork->networkName()  ==  'tron' ) ? 0 : $this->cryptoNetwork->getBalanceOfAddress($tatumAddress['address']);
+    public function createAsset($request, $currency)
+    {
+        try {
+        $tatumBalance = ( $this->cryptoNetwork->networkName()  ==  'tron' ) ? 0 : $this->cryptoNetwork->getBalanceOfAddress($this->tatumAddress);
 
         $tatumAssetSettings = new CryptoAssetSetting();
         $tatumAssetSettings->payment_method_id = TatumIo;
         $tatumAssetSettings->currency_id = $currency->id;
-        $tatumAssetSettings->crypto_provider_id = 2;
+        $tatumAssetSettings->crypto_provider_id = CryptoProvider::getIdByAlias('TatumIo');
         $tatumAssetSettings->network = $request->network;
 
         $tatumNetworkArray = [];
         $tatumNetworkArray['api_key'] = $request->api_key;
         $tatumNetworkArray['coin'] =  $request->name;
         $tatumNetworkArray['mnemonic'] = isset($this->mnemonic) ? $this->mnemonic : '';
-        $tatumNetworkArray['address'] = isset($tatumAddress['address']) ? $tatumAddress['address'] : '';
+        $tatumNetworkArray['address'] =  $this->tatumAddress;
         $tatumNetworkArray['xpub'] = isset( $this->xpub) ?  $this->xpub : '';
-        $tatumNetworkArray['key'] = isset($tatumKey['key']) ? $tatumKey['key'] : '';
+        $tatumNetworkArray['key'] = isset($this->tatumKey['key']) ? $this->tatumKey['key'] : '';
         $tatumNetworkArray['balance'] = $tatumBalance;
         $tatumAssetSettings->network_credentials = json_encode($tatumNetworkArray);
         $tatumAssetSettings->status = $currency->status;
@@ -229,6 +219,9 @@ class TatumIoAssetSettingController extends Controller
             $this->createUsersNetworkAddress($currency->code, $currency->id);
         }
 
+        } catch (Exception $e) {
+            throw new Exception($e->getMessage());
+        }
     }
 
     public function updateTatumAssetSettings($request, $currency)
@@ -380,8 +373,116 @@ class TatumIoAssetSettingController extends Controller
         return $tatumIo->checkAddress($address);
     }
 
+    /**
+     * Display the webhook list for a given network.
+     *
+     * @param WebhookListDataTable $dataTable The data table instance.
+     * @param string $network The encrypted network.
+     * @throws Exception If there is an error decrypting the network or displaying the webhook list.
+     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse The rendered webhook list view or a redirect response.
+     */
+    public function webhookList(WebhookListDataTable $dataTable, $network)
+    {
+        try {
+            $data['menu'] = 'crypto_providers';
+            $data['network'] = decrypt($network);
+            return $dataTable->render('tatumio::admin.subscription.index', $data);
+        } catch (Exception $e) {
+            (new common)->one_time_message('error', $e->getMessage());
+            return redirect()->route('admin.crypto_providers.list');
+        }
+    }
 
+    /**
+     * Remove a webhook subscription for a given network and subscription ID.
+     *
+     * @return \Illuminate\Http\RedirectResponse Redirects to the webhook list page with the encrypted network.
+     * @throws \Exception If there is an error deleting the subscription.
+     */
+    public function webhookRemove()
+    {
+        try {
+            $network   = request()->network;
+            $subscriptionId  = request()->id;
+            $tatumIo = new TatumIoTransaction($network);
+            $tatumIo->tatumIoAsset();
+            $api_key = $tatumIo->getMerchantApiKey();
+            $cryptoNetwork = new CryptoNetwork($api_key, $network);
+            $cryptoNetwork->deleteSubscription($subscriptionId);
+            (new Common())->one_time_message('success',  __('Subscription has been Deleted'));
+            return redirect()->route('admin.tatumio_asset.webhooklist', encrypt($network));    
+        } catch (Exception $e) {
+            (new Common())->one_time_message('error', $e->getMessage());
+            return redirect()->route('admin.tatumio_asset.webhooklist',  encrypt($network) );
+        }
+        
+    }
 
+    /**
+     * Create a webhook subscription creation page for a given network.
+     *
+     * @return \Illuminate\View\View The view for creating a webhook subscription.
+     */
+    public function webhookCreate()
+    {
+        $data['menu'] = 'crypto_providers';
+        $data['network'] = $network   = request()->network;
 
+        $data['currency'] = \App\Models\Currency::where(['code' => $network, 'type' => 'crypto_asset'])->first([
+            'id', 'type', 'status'
+        ]);
+        $currencyId = $data['currency']->id;
 
+        $data['users'] = \App\Models\User::whereHas('wallets.cryptoAssetApiLogs', function ($q) use ($currencyId, $network) {
+            $q->where('wallets.currency_id', $currencyId);
+            $q->where([
+                'crypto_asset_api_logs.payment_method_id' => TatumIo,
+                'crypto_asset_api_logs.network' => $network
+            ]);
+        })
+            ->whereStatus('Active')
+            ->get();
+
+        return view('tatumio::admin.subscription.create', $data);
+    }
+
+    /**
+     * Store a new webhook subscription for a given network and user address.
+     *
+     * @param Request $request The HTTP request object containing the network and user address.
+     * @throws Exception If the feature is not available in the localhost environment.
+     * @throws Exception If there is an error creating the subscription.
+     * @return \Illuminate\Http\RedirectResponse Redirects to the webhook list page with the encrypted network.
+     */
+    public function webhookStore(Request $request)
+    {
+        try {
+            $network   = $request->network;
+            $address = $request->userAddress;
+
+            if (isLocalhost()) {
+                throw new Exception(__('This feature is not available in localhost environment'));
+            }
+
+            $tatumIo = new TatumIoTransaction($network);
+            $tatumIo->tatumIoAsset();
+            $api_key = $tatumIo->getMerchantApiKey();
+            $cryptoNetwork = new CryptoNetwork($api_key, $network);
+            $response = $cryptoNetwork->createSubscription($address);
+
+            if (isset($response->statusCode) && $response->statusCode == 403 ) {
+                throw new Exception($response->message);
+            }
+
+            if (isset($response->statusCode) && $response->statusCode == 400) {
+                throw new Exception($response->data[0]);
+            }
+
+            (new Common())->one_time_message('success',  __('Subscription has been Added'));
+            return redirect()->route('admin.tatumio_asset.webhooklist', encrypt($network));
+        } catch (Exception $e) {
+            (new Common())->one_time_message('error', $e->getMessage());
+            return redirect()->route('admin.tatumio_asset.webhooklist',  encrypt($network) );
+        }
+    }
 }

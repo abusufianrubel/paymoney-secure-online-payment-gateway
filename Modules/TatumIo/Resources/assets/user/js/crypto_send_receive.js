@@ -108,7 +108,7 @@ if ($('.main-containt').find('#crypto-send-create').length) {
         priority = getPriority($('#priority').val());
         return new Promise(function(resolve, reject)
         {
-            // Minimum Amounts You can prepare transactions for sending at least 0.02 DOGE, 0.00002 BTC, or 0.0002 LTC. (BlockIo)
+            // Minimum Amounts You can prepare transactions for sending at least 0.02 DOGE, 0.00002 BTC, or 0.0002 LTC. (Tatumio)
             if ((walletCurrencyCode == 'DOGE' || walletCurrencyCode == 'DOGETEST') && amount < 2) {
                 checkMinimumAmount(`${minCryptoAmount.replace(':x', 2 + ' ' + walletCurrencyCode)}`)
             }

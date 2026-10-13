@@ -62,6 +62,11 @@ class CryptoNetwork implements NetworkInterface
         return $this->networkProvider->createTransaction($sender, $key, $receiver, $amount, $priority);
     }
 
+    public function tokenTransaction($tokenAddress, $key, $receiver, $amount)
+    {
+        return $this->networkProvider->tokenTransfer($tokenAddress, $key, $receiver, $amount);
+    }
+
     public function transactionDetails($hash)
     {
         return $this->networkProvider->getTransactionDetails($hash);
@@ -92,7 +97,7 @@ class CryptoNetwork implements NetworkInterface
 
     public function checkApiKey()
     {
-        $url = "https://api.tatum.io/v3/tatum/version";
+        $url = tatumApiUrl('tatum/version');
 
         $response = Http::withHeaders([
             'x-api-key' => $this->apiKey,
@@ -136,15 +141,18 @@ class CryptoNetwork implements NetworkInterface
 
     public function createSubscription($address)
     {
-        $url = "https://api.tatum.io/v3/subscription";
+        $url = tatumApiUrl('subscription');
 
         $subscriptionUrl = route('tatumio.balance.notification');
+
+        $network = str_replace('TEST', '', $this->network);
+        $network = str_replace('TRX', 'TRON', $network);
 
         $payload = array(
             "type" => "ADDRESS_TRANSACTION",
             "attr" => array(
                 "address" => $address,
-                "chain" => str_replace('TEST', '', $this->network),
+                "chain" => str_replace('TEST', '', $network),
                 "url" => $subscriptionUrl,
             ),
         );
@@ -155,6 +163,102 @@ class CryptoNetwork implements NetworkInterface
 
         return json_decode($response);
     }
+
+    public function subscriptionList()
+    {
+        $url = tatumApiUrl('subscription?pageSize=30&offset=0');
+
+        $curl = curl_init();
+
+        curl_setopt_array($curl, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => "",
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => "GET",
+            CURLOPT_HTTPHEADER => [
+                "accept: application/json",
+                "x-api-key:".$this->apiKey
+            ],
+        ]);
+
+        $response = curl_exec($curl);
+        $err = curl_error($curl);
+
+        curl_close($curl);
+
+        if ($err) {
+            echo "cURL Error #:" . $err;
+        } else {
+            $response = json_decode($response);
+
+            $data = collect($response);
+
+            $coin = str_replace('TEST', '', $this->network);
+            $coin = str_replace('TRX', 'TRON', $coin);
+
+
+            return $data->filter(function ($item) use ($coin) {
+                return $item->attr->chain === $coin;
+            });
+            
+        }
+    }
+
+    public function deleteSubscription($subscriptionId)
+    {
+        $url = tatumApiUrl("subscription/" . $subscriptionId);
+        $curl = curl_init();
+
+        curl_setopt_array($curl, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => "",
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => "DELETE",
+            CURLOPT_HTTPHEADER => [
+                "accept: application/json",
+                "x-api-key:".$this->apiKey
+            ],
+        ]);
+
+        $response = curl_exec($curl);
+        $err = curl_error($curl);
+
+        curl_close($curl);
+
+        if ($err) {
+            echo "cURL Error #:" . $err;
+        } 
+        
+        return $response;
+        
+    }
+
+    public function deploySmartContract($arr) 
+    {
+        return $this->networkProvider->deploySmartContract20($arr);
+    }
+
+    public function getSmartContractList($address, $network) 
+    {
+        return $this->networkProvider->getTokenList($address, $network);
+    }
+
+    public function getTokenDetails($address, $txId) 
+    {
+        return $this->networkProvider->tokenDetails($address, $txId);
+    }
+
+    public function tokenTransactionDetails($txId) 
+    {
+        return $this->networkProvider->tokenTransactonDetails($txId);
+    }
+
 
 
 

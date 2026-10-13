@@ -1,6 +1,6 @@
 @if(session('message') || session('success') || session('error') || !empty($error))
 <div class="d-flex justify-content-end alert-px">
-	<div class="alert alert-dismissible fade show alert-animate bg-white border-1p" role="alert">
+	<div class="alert alert-dismissible fade show alert-animate bg-white border-1p z-index-alert-1002" role="alert">
 		<div class="alert-body">
 			<div class="d-flex gap-20">
 				<div class="alert-icon">
@@ -42,7 +42,7 @@
 @if ($errors->any())
 	@foreach ($errors->all() as $error)
 		<div class="d-flex justify-content-end alert-px">
-			<div class="alert alert-dismissible fade show alert-animate bg-white border-1p" role="alert">
+			<div class="alert alert-dismissible fade show alert-animate bg-white border-1p z-index-alert-1002" role="alert">
 				<div class="alert-body">
 					<div class="d-flex gap-20">
 						<div class="alert-icon">

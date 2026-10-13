@@ -5,10 +5,10 @@ namespace App\Http\Middleware;
 use Closure;
 use App\Models\UserDetail;
 use App\Http\Helpers\Common;
-use App\Models\EmailTemplate;
 use Illuminate\Support\Facades\Session;
 use App\Http\Controllers\Users\EmailController;
 use App\Services\Mail\TwoFactorVerificationMailService;
+use App\Services\Sms\TowFaSmsService;
 
 class twoFa
 {
@@ -68,8 +68,7 @@ class twoFa
 
         if ($userDetail->two_step_verification_type == 'phone') {
             if (!empty($user->formattedPhone)) {
-                $message = $userDetail->two_step_verification_code . ' is your ' . settings('name') . ' 2-factor authentication code. ';
-                sendSMS($user->formattedPhone, $message);
+                (new TowFaSmsService())->send($user, ['optCode' => $userDetail->two_step_verification_code]);
             }
         } elseif ($userDetail->two_step_verification_type == 'email') {
             $data['optCode'] = $userDetail->two_step_verification_code;

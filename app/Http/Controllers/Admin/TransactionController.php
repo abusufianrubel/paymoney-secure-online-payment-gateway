@@ -49,13 +49,31 @@ class TransactionController extends Controller
             'transactionTypes' => []
         ];
 
-        $results = Transaction::distinct()->get(['status', 'currency_id', 'transaction_type_id']);
+        $transactionId = array_merge(getPaymoneySettings('transaction_types')['payment_sent'], getPaymoneySettings('transaction_types')['payment_received']); 
+
+        $results = Transaction::distinct()->whereNotIn('transaction_type_id', $transactionId)->get(['status', 'currency_id', 'transaction_type_id']);
+
         if (! $results->isEmpty()) {
             foreach ($results as $value) {
                 $data['statuses'][$value->status] = $value->status;
                 $data['currency_id'][$value->currency_id] = $value->currency_id;
                 $data['transaction_type_id'][$value->transaction_type_id] = $value->transaction_type_id;
             }
+
+            if (!isset($data['transaction_type_id'][Payment_Sent])  ) {
+                $paymentSentTransaction = Transaction::whereIn('transaction_type_id', getPaymoneySettings('transaction_types')['payment_sent'])->exists();
+                if ($paymentSentTransaction) {
+                    $data['transaction_type_id'][Payment_Sent] = Payment_Sent;
+                }
+            }
+
+            if (!isset($data['transaction_type_id'][Payment_Received])) {
+                $paymentReceiveTransaction = Transaction::whereIn('transaction_type_id', getPaymoneySettings('transaction_types')['payment_received'])->exists();
+                if ($paymentReceiveTransaction) {
+                    $data['transaction_type_id'][Payment_Received] = Payment_Received;
+                }
+            }
+
             $data['currencies'] = Currency::select(['id', 'code'])->whereIn('id', $data['currency_id'])->get();
             $data['transactionTypes'] = TransactionType::select(['id', 'name'])->whereIn('id', $data['transaction_type_id'])->get();
         }
@@ -77,7 +95,7 @@ class TransactionController extends Controller
 
     public function transactionCsv()
     {
-        return Excel::download(new TransactionsExport(), 'transaction_list_' . time() . '.xlsx');
+        return Excel::download(new TransactionsExport(), 'transaction_list_' . time() . '.csv');
     }
 
     public function transactionPdf()
@@ -133,21 +151,54 @@ class TransactionController extends Controller
 
         $data['transaction'] = $transaction = Transaction::with($relation)->find($id);
 
+        if (empty($transaction)) {
+
+            $this->helper->one_time_message('error', __('The :x does not exist.', ['x' => __('transaction')]));
+
+            return redirect(config('adminPrefix') . '/transactions');
+        }
+
         $modules = getAllModules();
         foreach ($modules as $module) {
             if (!empty(config($module->get('alias') . '.transaction_types'))) {
                 if (in_array($transaction?->transaction_type->id, config($module->get('alias') . '.transaction_types'))) {
 
-                    $moduleName = $module->get('name');
-                    $moduleTransaction = file_exists(("\Modules\\". $moduleName . "\Entities\\" . ucfirst($moduleName) . "Transaction")) . '.php' ? (new ("\Modules\\". $moduleName . "\Entities\\" . ucfirst($moduleName) . "Transaction")($relation)) : '';
+                    $originalModuleName = $module->get('name');
+
+                    // Check if it's a virtual card module
+                    $isManualVirtual = moduleExists('ManualVirtualcard') && isActive('ManualVirtualcard') && $originalModuleName === 'ManualVirtualcard';
+                    $isStripeVirtual = moduleExists('StripeVirtualcard') && isActive('StripeVirtualcard') && $originalModuleName === 'StripeVirtualcard';
+
+                    $isVirtualCard = $isManualVirtual || $isStripeVirtual;
+
+                    // Resolve module name
+                    $moduleName = $isVirtualCard ? 'Virtualcard' : $originalModuleName;
+
+                    // Build class path
+                    $class = "\\Modules\\{$moduleName}\\Entities\\" . ucfirst($moduleName) . "Transaction";
+
+                    // Initialize transaction class if exists
+                    $moduleTransaction = class_exists($class) ? new $class($relation) : null;
+
+                    if (!$moduleTransaction) {
+                        continue;
+                    }
+
+                    // Get data
                     $data = $moduleTransaction->getTransactionDetails($id);
 
-                    return view($module->get('alias') . '::admin.transaction.edit', $data);
+                    // Resolve view
+                    $view = $isVirtualCard ? 'virtualcard' : $module->get('alias');
+
+                    return view("{$view}::admin.transaction.edit", $data);
                 }
             }
         }
-
-        $data['transactionOfRefunded'] = Transaction::where(['uuid' => $transaction->refund_reference, 'transaction_type_id' => $transaction->transaction_type_id])->first(['id']);
+        
+        if (isset($transaction->refund_reference)) {
+            $data['transactionOfRefunded'] = Transaction::where(['uuid' => $transaction->refund_reference, 'transaction_type_id' => $transaction->transaction_type_id])->first(['id']);
+        }
+        
         $data['dispute'] = Dispute::where(['transaction_id' => $id])->select('status')->latest()->first(['status']);
         return view('admin.transactions.edit', $data);
     }
@@ -206,7 +257,7 @@ class TransactionController extends Controller
                         Deposit::updateStatus($request->transaction_reference_id, $request->status);
                         $transaction = $this->transaction->updateTransactionStatus($request->id, $request->status);
                         Wallet::incrementWalletBalance($request->user_id, $request->currency_id, $request->subtotal);
-                        if (module('Referral') && settings('referral_enabled') == 'Yes') {
+                        if (moduleExists('Referral') && settings('referral_enabled') == 'Yes') {
                             $currency   = Currency::find($transaction['currency_id'], ['code']);
                             $refAwardData = [
                                 'userId'          => $transaction['user_id'],
@@ -222,7 +273,7 @@ class TransactionController extends Controller
                         Deposit::updateStatus($request->transaction_reference_id, $request->status);
                         $transaction = $this->transaction->updateTransactionStatus($request->id, $request->status);
                         Wallet::incrementWalletBalance($request->user_id, $request->currency_id, $request->subtotal);
-                        if (module('Referral') && settings('referral_enabled') == 'Yes') {
+                        if (moduleExists('Referral') && settings('referral_enabled') == 'Yes') {
                             $currency   = Currency::find($transaction['currency_id'], ['code']);
                             $refAwardData = [
                                 'userId'          => $transaction['user_id'],
@@ -240,7 +291,7 @@ class TransactionController extends Controller
 
                 DB::commit();
 
-                if (module('Referral') && settings('referral_enabled') == 'Yes' && !empty($awardResponse)) {
+                if (moduleExists('Referral') && settings('referral_enabled') == 'Yes' && !empty($awardResponse)) {
                     if (isset($awardResponse['email_status']) && $awardResponse['email_status'] === 200 && !empty($awardResponse['email_details'])) {
                         $awardInfo = (new \Modules\Referral\Services\Email\ReferralAwardMailService)->send($awardResponse['email_details']);
                         \Modules\Referral\Jobs\ProcessRewardEmail::dispatch($awardInfo);
@@ -251,7 +302,7 @@ class TransactionController extends Controller
 
             } catch (Exception $e) {
                 DB::rollBack();
-                $this->helper->one_time_message('success', $e->getMessage());
+                $this->helper->one_time_message('error', $e->getMessage());
                 return redirect(config('adminPrefix').'/transactions');
             }
         }
@@ -430,17 +481,7 @@ class TransactionController extends Controller
                         ]);
 
                         //sender wallet entry update
-                        $sender_wallet = Wallet::where([
-                            'user_id'     => $request->user_id,
-                            'currency_id' => $request->currency_id,
-                        ])->select('balance')->first();
-
-                        Wallet::where([
-                            'user_id'     => $request->user_id,
-                            'currency_id' => $request->currency_id,
-                        ])->update([
-                            'balance' => $sender_wallet->balance + trim($request->total, '-'),
-                        ]);
+                        Wallet::incrementWalletBalance($request->user_id, $request->currency_id, trim($request->total, '-'));
 
                         $data = [
                             'amount' => moneyFormat(optional($transfers->currency)->symbol, formatNumber(trim($request->total, '-'))),
@@ -478,17 +519,7 @@ class TransactionController extends Controller
 
                         if (isset($transfers->receiver)) {
                             //add amount to receiver wallet only
-                            $receiver_wallet = Wallet::where([
-                                'user_id'     => $transfers->receiver->id,
-                                'currency_id' => $request->currency_id,
-                            ])->select('balance')->first();
-
-                            Wallet::where([
-                                'user_id'     => $transfers->receiver->id,
-                                'currency_id' => $request->currency_id,
-                            ])->update([
-                                'balance' => $receiver_wallet->balance + $request->subtotal,
-                            ]);
+                            Wallet::incrementWalletBalance($transfers->receiver?->id, $request->currency_id, $request->subtotal);
 
                             $data = [
                                 'amount' => moneyFormat(optional($transfers->currency)->symbol, formatNumber(trim($request->total, '-'))),
@@ -533,31 +564,11 @@ class TransactionController extends Controller
                     ]);
 
                     //sender wallet entry update
-                    $sender_wallet = Wallet::where([
-                        'user_id'     => $request->user_id,
-                        'currency_id' => $request->currency_id,
-                    ])->select('balance')->first();
-
-                    Wallet::where([
-                        'user_id'     => $request->user_id,
-                        'currency_id' => $request->currency_id,
-                    ])->update([
-                        'balance' => $sender_wallet->balance - trim($request->total, '-'),
-                    ]);
+                    Wallet::deductAmountFromWallet($request->user_id, $request->currency_id, trim($request->total, '-'));
 
                     if (isset($transfers->receiver)) {
                         //receiver wallet entry update
-                        $receiver_wallet = Wallet::where([
-                            'user_id'     => $transfers->receiver->id,
-                            'currency_id' => $request->currency_id,
-                        ])->select('balance')->first();
-
-                        Wallet::where([
-                            'user_id'     => $transfers->receiver->id,
-                            'currency_id' => $request->currency_id,
-                        ])->update([
-                            'balance' => $receiver_wallet->balance + $request->subtotal,
-                        ]);
+                        Wallet::incrementWalletBalance($transfers->receiver?->id, $request->currency_id, $request->subtotal);
                     }
 
                     // Notification send
@@ -623,18 +634,7 @@ class TransactionController extends Controller
                         ]);
 
                         //sender wallet entry update
-                        $sender_wallet = Wallet::where([
-                            'user_id'     => $request->user_id,
-                            'currency_id' => $request->currency_id,
-                        ])->select('balance')->first();
-
-                        Wallet::where([
-                            'user_id'     => $request->user_id,
-                            'currency_id' => $request->currency_id,
-                        ])->update([
-                            'balance' => $sender_wallet->balance - trim($request->total, '-'),
-                        ]);
-
+                        Wallet::deductAmountFromWallet($request->user_id, $request->currency_id, trim($request->total, '-'));
 
                         // Notification send
                         $data = [
@@ -673,17 +673,7 @@ class TransactionController extends Controller
 
                         if (isset($transfers->receiver)) {
                             //deduct amount from receiver wallet only
-                            $receiver_wallet = Wallet::where([
-                                'user_id'     => $transfers->receiver->id,
-                                'currency_id' => $request->currency_id,
-                            ])->select('balance')->first();
-
-                            Wallet::where([
-                                'user_id'     => $transfers->receiver->id,
-                                'currency_id' => $request->currency_id,
-                            ])->update([
-                                'balance' => $receiver_wallet->balance - $request->subtotal,
-                            ]);
+                            Wallet::deductAmountFromWallet($transfers->receiver?->id, $request->currency_id, $request->subtotal);
                         }
 
                         if (isset($transfers->receiver)) {
@@ -730,17 +720,7 @@ class TransactionController extends Controller
                     ]);
 
                     //sender wallet entry update
-                    $sender_wallet = Wallet::where([
-                        'user_id'     => $request->user_id,
-                        'currency_id' => $request->currency_id,
-                    ])->select('balance')->first();
-
-                    Wallet::where([
-                        'user_id'     => $request->user_id,
-                        'currency_id' => $request->currency_id,
-                    ])->update([
-                        'balance' => $sender_wallet->balance - trim($request->total, '-'),
-                    ]);
+                    Wallet::deductAmountFromWallet($request->user_id, $request->currency_id, trim($request->total, '-'));
 
                     // Notification send
                     $data = [
@@ -790,32 +770,12 @@ class TransactionController extends Controller
                     ]);
 
                     //sender wallet entry update
-                    $sender_wallet = Wallet::where([
-                        'user_id'     => $request->user_id,
-                        'currency_id' => $request->currency_id,
-                    ])->select('balance')->first();
-
-                    Wallet::where([
-                        'user_id'     => $request->user_id,
-                        'currency_id' => $request->currency_id,
-                    ])->update([
-                        'balance' => $sender_wallet->balance + trim($request->total, '-'),
-                    ]);
+                    Wallet::incrementWalletBalance($request->user_id, $request->currency_id, trim($request->total, '-'));
 
                     if (isset($transfers->receiver))
                     {
                         //receiver wallet entry update
-                        $receiver_wallet = Wallet::where([
-                            'user_id'     => $transfers->receiver->id,
-                            'currency_id' => $request->currency_id,
-                        ])->select('balance')->first();
-
-                        Wallet::where([
-                            'user_id'     => $transfers->receiver->id,
-                            'currency_id' => $request->currency_id,
-                        ])->update([
-                            'balance' => $receiver_wallet->balance - $request->subtotal,
-                        ]);
+                        Wallet::deductAmountFromWallet($transfers->receiver?->id, $request->currency_id, $request->subtotal);
                     }
 
                     // Notification send
@@ -877,17 +837,7 @@ class TransactionController extends Controller
                     ]);
 
                     //sender wallet entry update
-                    $sender_wallet = Wallet::where([
-                        'user_id'     => $request->user_id,
-                        'currency_id' => $request->currency_id,
-                    ])->select('balance')->first();
-
-                    Wallet::where([
-                        'user_id'     => $request->user_id,
-                        'currency_id' => $request->currency_id,
-                    ])->update([
-                        'balance' => $sender_wallet->balance + trim($request->total, '-'),
-                    ]);
+                    Wallet::incrementWalletBalance($request->user_id, $request->currency_id, trim($request->total, '-'));
 
                     // Notification send
                     $data = [
@@ -983,31 +933,11 @@ class TransactionController extends Controller
                     $refund_t_B->save();
 
                     //sender wallet entry update
-                    $sender_wallet = Wallet::where([
-                        'user_id'     => $request->user_id,
-                        'currency_id' => $request->currency_id,
-                    ])->select('balance')->first();
-
-                    Wallet::where([
-                        'user_id'     => $request->user_id,
-                        'currency_id' => $request->currency_id,
-                    ])->update([
-                        'balance' => $sender_wallet->balance + trim($request->total, '-'),
-                    ]);
+                    Wallet::incrementWalletBalance($request->user_id, $request->currency_id, trim($request->total, '-'));
 
                     if (isset($transfers->receiver)) {
                         //receiver wallet entry update
-                        $receiver_wallet = Wallet::where([
-                            'user_id'     => $transfers->receiver->id,
-                            'currency_id' => $request->currency_id,
-                        ])->select('balance')->first();
-
-                        Wallet::where([
-                            'user_id'     => $transfers->receiver->id,
-                            'currency_id' => $request->currency_id,
-                        ])->update([
-                            'balance' => $receiver_wallet->balance - $request->subtotal,
-                        ]);
+                        Wallet::deductAmountFromWallet($transfers->receiver?->id, $request->currency_id, $request->subtotal);
                     }
 
                     // Notification send
@@ -2946,7 +2876,7 @@ class TransactionController extends Controller
         }
 
         // Crypto Exchange
-        if (module('CryptoExchange') && ($request->transaction_type_id == Crypto_Swap || $request->transaction_type_id == Crypto_Buy || $request->transaction_type_id == Crypto_Sell)) {
+        if (moduleExists('CryptoExchange') && ($request->transaction_type_id == Crypto_Swap || $request->transaction_type_id == Crypto_Buy || $request->transaction_type_id == Crypto_Sell)) {
             if (!isActive('CryptoExchange')) {
                 $this->helper->one_time_message('error',  __('Crypto Exchange module is Inactive'));
                 return redirect(config('adminPrefix') . '/transactions');
@@ -3073,7 +3003,7 @@ class TransactionController extends Controller
         }
 
         // Referral Award
-        if(module('Referral') && $request->transaction_type_id == Referral_Award) {
+        if(moduleExists('Referral') && $request->transaction_type_id == Referral_Award) {
 
             if ($request->status == $t->status) {
                 $this->helper->one_time_message('success', __('Transaction is already :x', ['x' => $request->status]));

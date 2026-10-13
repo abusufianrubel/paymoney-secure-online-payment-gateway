@@ -31,6 +31,15 @@ class Guest
                 return redirect()->route('admin');
             }
         }
+        else if(($guard == 'agent')) {
+            $guards = config('auth.guards');
+
+            if ($guard && isset($guards[$guard]['provider']) && $guard === $guards[$guard]['provider']) {
+                if (!auth($guard)->check()) {
+                    return redirect()->route($guard);
+                }
+            }
+        }
         return $next($request);
     }
 }

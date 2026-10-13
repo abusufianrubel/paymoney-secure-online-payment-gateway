@@ -51,7 +51,7 @@ class RequestPaymentController extends Controller
 
     public function requestpaymentCsv()
     {
-        return Excel::download(new RequestPaymentsExport(), 'requestpayments_list_' . time() . '.xlsx');
+        return Excel::download(new RequestPaymentsExport(), 'requestpayments_list_' . time() . '.csv');
     }
 
     public function requestpaymentPdf()

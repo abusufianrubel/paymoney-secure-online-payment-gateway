@@ -16,8 +16,10 @@ class RevenueController extends Controller
 
         $revenueTransactionTypes = [Deposit, Withdrawal, Exchange_From, Transferred, Request_Received, Payment_Received]; 
 
-        if (module('CryptoExchange') ) {
-            array_push($revenueTransactionTypes, Crypto_Swap, Crypto_Buy, Crypto_Sell);
+        foreach (getAllModules() as $module) {
+            if (!empty(config($module->get('alias') . '.transaction_types'))) {
+                $revenueTransactionTypes = array_unique(array_merge(config($module->get('alias') . '.transaction_types'), $revenueTransactionTypes));
+            }
         }
 
         $data['revenues_currency'] = (new Transaction())->where(function($query) {
@@ -64,7 +66,7 @@ class RevenueController extends Controller
 
     public function revenueCsv()
     {
-        return Excel::download(new RevenuesExport(), 'revenues_list_' . time() . '.xlsx');
+        return Excel::download(new RevenuesExport(), 'revenues_list_' . time() . '.csv');
     }
 
     public function revenuePdf()

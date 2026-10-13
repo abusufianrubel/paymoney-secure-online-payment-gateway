@@ -16,7 +16,7 @@ class CreateMetasTable extends Migration
         Schema::dropIfExists('metas');
         Schema::create('metas', function (Blueprint $table)
         {
-            $table->increments('id');
+            $table->id();
             $table->string('url');
             $table->string('title')->nullable();
             $table->text('description')->nullable();

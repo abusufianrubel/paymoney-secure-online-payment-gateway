@@ -2,60 +2,62 @@
 
 namespace Database\Seeders;
 
-use App\Models\NotificationType;
+use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 
 class NotificationTypesTableSeeder extends Seeder
 {
     /**
-     * Run the database seeds.
+     * Auto generated seed file
      *
      * @return void
      */
     public function run()
     {
-        NotificationType::truncate();
-        NotificationType::insert([
+        \DB::table('notification_types')->delete();
+        
+        \DB::table('notification_types')->insert([
             [
-                'id'         => '1',
-                'name'       => 'Deposit',
-                'alias'      => 'deposit',
-                'status'     => 'Active',
+                'name' => 'Deposit',
+                'alias' => 'deposit',
+                'status' => 'Active',
+                'created_at' => Carbon::now()->subDays(600),
+                'updated_at' => Carbon::now()->subDays(600),
             ],
-
             [
-                'id'         => '2',
-                'name'       => 'Withdraw',
-                'alias'      => 'withdraw',
-                'status'     => 'Active',
+                'name' => 'Payout',
+                'alias' => 'payout',
+                'status' => 'Active',
+                'created_at' => Carbon::now()->subDays(600),
+                'updated_at' => Carbon::now()->subDays(600),
             ],
-
             [
-                'id'         => '3',
-                'name'       => 'Send',
-                'alias'      => 'send',
-                'status'     => 'Active',
+                'name' => 'Send',
+                'alias' => 'send',
+                'status' => 'Active',
+                'created_at' => Carbon::now()->subDays(600),
+                'updated_at' => Carbon::now()->subDays(600),
             ],
-
             [
-                'id'         => '4',
-                'name'       => 'Request',
-                'alias'      => 'request',
-                'status'     => 'Active',
+                'name' => 'Request',
+                'alias' => 'request',
+                'status' => 'Active',
+                'created_at' => Carbon::now()->subDays(600),
+                'updated_at' => Carbon::now()->subDays(600),
             ],
-
             [
-                'id'         => '5',
-                'name'       => 'Exchange',
-                'alias'      => 'exchange',
-                'status'     => 'Active',
+                'name' => 'Exchange',
+                'alias' => 'exchange',
+                'status' => 'Active',
+                'created_at' => Carbon::now()->subDays(600),
+                'updated_at' => Carbon::now()->subDays(600),
             ],
-
             [
-                'id'         => '6',
-                'name'       => 'Payment',
-                'alias'      => 'payment',
-                'status'     => 'Active',
+                'name' => 'Payment',
+                'alias' => 'payment',
+                'status' => 'Active',
+                'created_at' => Carbon::now()->subDays(600),
+                'updated_at' => Carbon::now()->subDays(600),
             ],
         ]);
     }

@@ -17,10 +17,9 @@ class CreateNotificationSettingsTable extends Migration
         {
             Schema::create('notification_settings', function (Blueprint $table)
             {
-                $table->increments('id');
+                $table->id();
 
-                $table->integer('notification_type_id')->unsigned()->index();
-                $table->foreign('notification_type_id')->references('id')->on('notification_settings')->onDelete('cascade');
+                $table->foreignId('notification_type_id')->constrained('notification_types')->onUpdate('cascade')->onDelete('cascade');
 
                 $table->string('recipient_type')->nullable()->default(null);
                 $table->string('recipient')->index()->nullable()->default(null);

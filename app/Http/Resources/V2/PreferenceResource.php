@@ -16,10 +16,15 @@ class PreferenceResource extends JsonResource
     {
         return [
             "money_format"                 => preference("money_format") ?? "before",
+            "file_size"                    => preference("file_size"),
             "decimal_format_amount"        => preference("money_format") ?? "before",
             "thousand_separator"           => preference("thousand_separator") ?? ",",
             "decimal_format_amount"        => preference("decimal_format_amount") ? preference("decimal_format_amount") : 2,
             "decimal_format_amount_crypto" => preference("decimal_format_amount_crypto") ? preference("decimal_format_amount_crypto") : 8,
+            "crypto_exchange_transaction" => preference("transaction_type") ? preference("transaction_type") : null,
+            'kyc_mandatory'             => settings('kyc_mandatory'),
+            'kyc_required_for'          => settings('kyc_required_for'),
+
         ];
     }
 }

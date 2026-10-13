@@ -10,6 +10,12 @@
     border: 1px solid #d7d7d7;
 }
 
+.crypto-cards {
+    border-radius: 5px;
+    position: relative;
+    border: 1px solid #d7d7d7;
+}
+
 .crypto-card-header {
     margin-top: 20px;
     display: flex;
@@ -24,7 +30,13 @@
     color: #2C2C2C;
     margin-top: 23px;
 }
-
+.token-name{
+    font-weight: 600;
+    font-size: 18px;
+    margin-bottom: 10px;
+    line-height: 20px;
+    color: #554f4f;
+}
 .crypto-logo img {
     width: 80px;
     height: 80px;
@@ -63,10 +75,10 @@
 }
 
 .text-light {
-    font-weight: 600 !important;
-    font-size: 12px;
+    font-weight: 500 !important;
+    font-size: 14px;
     line-height: 15px;
-    color: #9B9B9B !important;
+    color: #7a7979 !important;
     white-space: nowrap;
 }
 
@@ -76,8 +88,13 @@
     padding-right: 20px;
 }
 
+.crypto-information-aligns {
+    display: flex;
+    padding: 10px 20px;
+    justify-content: space-between;
+}
+
 .crypto-balance {
-    margin-left: 10px;
     margin-right: 45px;
 }
 
@@ -93,35 +110,26 @@
 .crypto-address .address {
     display: block;
     font-weight: 600;
-    font-size: 10px;
-    line-height: 15px;
-    text-align: center;
-    color: #858585;
-    margin-top: 4px;
-}
-
-.crypto-address .address {
-    display: block;
-    font-weight: 600;
-    font-size: 12px;
+    font-size: 15px;
     line-height: 15px;
     color: #858585;
+   
     margin-top: 4px;
 }
 
 .crypto-address .address-name {
-    font-size: 12px;
+    font-size: 16px;
     display: block;
-    line-height: 13px;
     color: #9B9B9B;
     margin-bottom: 15px;
-    margin-top: 13px;
+    margin-top: 13px; 
+    word-break: break-all;
+    padding: 0px 8px;
 }
 
 .text-deep {
     font-weight: 600;
-    font-size: 14px;
-    line-height: 18px;
+    font-size: 16px;
     color: #000000;
 }
 
@@ -317,10 +325,11 @@ input:checked+.slider:before {
     border-radius: 2px;
     color: white;
     border: none;
-    padding: 8px 47px !important;
+    width: 100%;
     font-weight: 600;
-    font-size: 14px;
-    line-height: 18px;
+    font-size: 16px;
+    padding: 8px;
+    text-align: center;
 }
 .crypto-send-btn:hover,.crypto-rec-btn:hover {
     color: white !important;
@@ -331,15 +340,20 @@ input:checked+.slider:before {
     border-radius: 2px;
     color: white;
     border: none;
-    padding: 8px 37px;
+    padding: 8px;
     font-weight: 600;
-    font-size: 14px;
-    line-height: 18px;
-    margin-left: 6px;
+    font-size: 16px;
+    width: 100%;
+    text-align: center;
 }
 
 .crypto-btn-container {
-    margin: 20px 20px 20px 20px;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 20px;
+    gap: 8px;
 }
 
 .box-body-customize {
@@ -347,9 +361,10 @@ input:checked+.slider:before {
 }
 
 .dropdown-menu.pull-right {
-    right: 45px !important;
-    left: auto;
-    top: -10px !important;
+    width: max-content; 
+    inset: unset !important;
+    right: 38px !important;
+    top: 10px !important;
 }
 
 .box-body-navbar {

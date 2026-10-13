@@ -15,7 +15,7 @@
                     <div class="box-header with-border">
                         <h3 class="box-title underline">{{ $templateGroupName }}</h3>
                     </div>
-                    <div class="box-body no-padding d-inline-block">
+                    <div class="box-body no-padding">
                         <ul class="nav nav-pills nav-stacked row">
                             @foreach ($templates as $templateName => $template)
                                 <li class="{{ $templateAlias === $template['en']->alias ? 'active' : '' }}">

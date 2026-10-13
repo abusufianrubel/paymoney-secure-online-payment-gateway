@@ -2,7 +2,7 @@
 @section('title', __('Currency Conversion Rate Api'))
 
 @section('head_style')
-    <link rel="stylesheet" type="text/css" href="{{ asset('public/dist/plugins/select2-4.1.0-rc.0/css/select2.min.css')}}">
+    <link rel="stylesheet" type="text/css" href="{{ asset('public/dist/plugins/select2/css/select2.min.css')}}">
 @endsection
 
 
@@ -124,9 +124,9 @@
 @push('extra_body_scripts')
 
 <!-- jquery.validate -->
-<script src="{{ asset('public/dist/plugins/jquery-validation-1.17.0/dist/jquery.validate.min.js') }}" type="text/javascript"></script>
-<script src="{{ asset('public/dist/js/additional-methods.min.js') }}" type="text/javascript"></script>
-<script src="{{ asset('public/dist/plugins/select2-4.1.0-rc.0/js/select2.min.js') }}" type="text/javascript"></script>
+<script src="{{ asset('public/dist/plugins/jquery-validation/dist/jquery.validate.min.js') }}" type="text/javascript"></script>
+<script src="{{ asset('public/dist/plugins/jquery-validation/dist/additional-methods.min.js') }}" type="text/javascript"></script>
+<script src="{{ asset('public/dist/plugins/select2/js/select2.min.js') }}" type="text/javascript"></script>
 
 <script type="text/javascript">
 

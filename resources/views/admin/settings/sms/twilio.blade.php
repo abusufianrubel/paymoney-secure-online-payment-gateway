@@ -3,7 +3,7 @@
 
 @section('head_style')
     <!-- bootstrap-toggle -->
-    <link rel="stylesheet" href="{{ asset('public/dist/plugins/bootstrap-toggle-2.2.0/css/bootstrap-toggle.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('public/dist/plugins/bootstrap-toggle/css/bootstrap-toggle.min.css') }}">
 @endsection
 
 @section('page_content')
@@ -138,7 +138,7 @@
 @push('extra_body_scripts')
 
     <!-- jquery.validate -->
-    <script src="{{ asset('public/dist/plugins/jquery-validation-1.17.0/dist/jquery.validate.min.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('public/dist/plugins/jquery-validation/dist/jquery.validate.min.js') }}" type="text/javascript"></script>
 
     <script type="text/javascript">
 

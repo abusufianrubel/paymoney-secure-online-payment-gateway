@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Transaction;
 use Illuminate\Database\Eloquent\Model;
+use Modules\TatumIo\Entities\CryptoToken;
 
 class Currency extends Model
 {
@@ -68,6 +69,11 @@ class Currency extends Model
     {
         return $this->hasOne(CryptoAssetSetting::class, 'currency_id');
     }
+
+    public function cryptoToken()
+    {
+        return $this->hasOne(CryptoToken::class, 'currency_id');
+    }
     
     /**
      * Relationships - ends
@@ -102,6 +108,11 @@ class Currency extends Model
     public function scopeType($query, $value)
     {
         return $query->where('type', $value);
+    }
+
+    public function country()
+    {
+        return $this->hasOne(Country::class, 'id');
     }
 
 

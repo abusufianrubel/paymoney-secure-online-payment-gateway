@@ -156,8 +156,10 @@ class ExchangeController extends Controller
             if ($toWalletCurrency->exchange_from == "api" && isEnabledExchangeApi()){
                 $destinationCurrencyRate = getApiCurrencyRate($request->fromWalletCode, $toWalletCurrency->code);
                 if ($destinationCurrencyRate == 'error') {
-                    $fromWalletCurrency = $this->helper->getCurrencyObject(['id' => $request->fromWallet], ['rate']);
-                    $destinationCurrencyRate = getLocalCurrencyRate($fromWalletCurrency->rate, $toWalletCurrency->rate);
+                    return response()->json([
+                        'status' => false,
+                        'message' => __('Unable to retrieve the exchange rate at this moment'),
+                    ]); 
                 }
             } else {
                 $fromWalletCurrency      = $this->helper->getCurrencyObject(['id' => $request->fromWallet], ['rate']);
@@ -233,7 +235,7 @@ class ExchangeController extends Controller
             $amountLimitCheck               = $this->amountLimitCheck($request);
             $request['currency_id']         = $to_currency_id;
             if ($amountLimitCheck->getData()->success->status == 200) {
-                if (!($amountLimitCheck->getData()->success->totalAmount < $amountLimitCheck->getData()->success->balance)) {
+                if ($amountLimitCheck->getData()->success->totalAmount > $amountLimitCheck->getData()->success->balance) {
                     return back()->withErrors(__("Not have enough balance !"))->withInput();
                 }
             }

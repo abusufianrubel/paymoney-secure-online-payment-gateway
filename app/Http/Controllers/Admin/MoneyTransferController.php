@@ -51,7 +51,7 @@ class MoneyTransferController extends Controller
 
     public function transferCsv()
     {
-        return Excel::download(new TransfersExport(), 'transfer_list_'. time() .'.xlsx');
+        return Excel::download(new TransfersExport(), 'transfer_list_'. time() .'.csv');
     }
 
     public function transferPdf()
@@ -77,7 +77,8 @@ class MoneyTransferController extends Controller
         $res = [
             'status' => 'fail',
         ];
-        if (count($user) > 0) {
+        
+        if (!empty($user) && count($user) > 0) {
             $res = [
                 'status' => 'success',
                 'data'   => $user,

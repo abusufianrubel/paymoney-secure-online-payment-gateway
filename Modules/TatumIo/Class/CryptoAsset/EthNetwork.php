@@ -63,7 +63,7 @@ class EthNetwork implements NetworkInterface
 
     public function getTransactionDetails($hash)
     {
-        $url = "https://api.tatum.io/v3/ethereum/transaction/" . $hash;
+        $url = tatumApiUrl('ethereum/transaction/' . $hash);
 
         $response = Http::withHeaders([
             'x-api-key' =>  $this->apiKey,
@@ -101,11 +101,12 @@ class EthNetwork implements NetworkInterface
 
     public function ethereumChainType()
     {
-        return ($this->getEnvironment() == 'mainnet') ? 'ethereum-mainnet' : 'ethereum-sepolia';
+        return 'ethereum-sepolia';
     }
 
     public function getEstimateGasFees($from, $to, $amount, $prior)
     {
+        $url = tatumApiUrl('ethereum/gas');
         $payload = [
             "from" => $from,
             "to" => $to,
@@ -122,7 +123,7 @@ class EthNetwork implements NetworkInterface
             "Content-Type" => "application/json",
             "x-api-key" =>  $this->apiKey
         ])
-            ->post("https://api.tatum.io/v3/ethereum/gas", $payload);
+            ->post($url , $payload);
 
         $data = json_decode($response, true);
 
@@ -132,6 +133,8 @@ class EthNetwork implements NetworkInterface
 
     public function createTransaction($sender, $key, $receiver, $amount, $priority)
     {
+        $url = tatumApiUrl('ethereum/transaction');
+        
         $payload = [
             "to" => $receiver,
             "amount" => $amount,
@@ -143,7 +146,7 @@ class EthNetwork implements NetworkInterface
             "Content-Type" => "application/json",
             "x-api-key" => $this->apiKey
         ])
-            ->post("https://api.tatum.io/v3/ethereum/transaction", $payload);
+            ->post($url, $payload);
 
         return json_decode($response);
     }

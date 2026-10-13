@@ -1,6 +1,6 @@
 @if (session('message') || session('status') || session('warning') || session('success') || session('error'))
 <div class="d-flex justify-content-end alert-px">
-	<div class="alert alert-error alert-dismissible fade show alert-animate top-right bg-white border-1p" role="alert">
+	<div class="alert alert-error alert-dismissible fade show alert-animate top-right bg-white border-1p z-index-alert-1002" role="alert" >
 		<div class="alert-body">
 			<div class="d-flex gap-20">
 				<div class="alert-icon">

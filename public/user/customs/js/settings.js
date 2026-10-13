@@ -1,24 +1,5 @@
 'use strict';
 
-if ($('.main-containt').find('#identitiyVerify').length) {
-
-    // Disable Submit Button
-    $('#identitiyVerifyForm').on('submit', function () {
-        $(".spinner").removeClass('d-none');
-        $("#identitiyVerifySubmitBtn").attr("disabled", true);
-        $("#identitiyVerifySubmitBtnText").text(submitButtonText);
-    });
-}
-
-if ($('.main-containt').find('#addressVerify').length) {
-    
-    // Disable Submit Button
-    $('#addressVerifyForm').on('submit', function () {
-        $(".spinner").removeClass('d-none');
-        $("#addressVerifySubmitBtn").attr("disabled", true);
-        $("#addressVerifySubmitBtnText").text(submitButtonText);
-    });
-}
 
 if ($('.main-containt').find('#twofaVerification').length) {
     //check phone
@@ -308,6 +289,25 @@ if ($('.main-containt').find('#2faVerification').length) {
                 }
             });
         });
+    });
+
+    $('.resend-code').on('click', function() {
+
+        $.post({
+            url: resend2faUrl,
+            dataType: 'json',
+            data: {
+                "_token": token,
+            },
+            beforeSend: function () {
+                $('#2faVerifyCode').prop('disabled', true);
+            }
+        })
+            .done(function (data) {
+                $('#message').html(data.message);
+                $('#2faVerifyCode').prop('disabled', false);
+                
+            });
     });
 }
 if ($('.main-containt').find('#google2faVerifySection').length) {

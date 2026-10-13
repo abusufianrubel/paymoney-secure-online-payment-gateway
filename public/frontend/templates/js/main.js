@@ -1,20 +1,30 @@
 "use strict";
 
-$("#switch").on('click', function () {
-    if ($("body").hasClass("dark")) {
-        $("body").removeClass("dark");
-        $(this).find('img').toggle();
-        $("#switch").removeClass("switched");
-        localStorage.setItem('theme', 'dark');
-        localStorage.setItem('dark', '0');
-    }
-    else {
-        $("body").addClass("dark");
-        $(this).find('img').toggle();
-        $("#switch").addClass("switched");
-        localStorage.setItem('theme', 'light');
-        localStorage.setItem('dark', '1');
-    }
+$(document).ready(function () {
+  if (typeof (Storage) !== "undefined") {
+      const isDarkMode = localStorage.getItem('dark') === '1';
+      
+      // Ensure dark class is on body (already applied inline)
+      $("body").toggleClass("dark", isDarkMode);
+      $("#switch").toggleClass("switched", isDarkMode);
+      
+      // Set sun/moon images (backup in case inline script didn't run)
+      if (isDarkMode) {
+          $("img.sun").removeClass("img-none").show();
+          $("img.moon").addClass("img-none").hide();
+      } else {
+          $("img.moon").removeClass("img-none").show();
+          $("img.sun").addClass("img-none").hide();
+      }
+      
+      $("#switch").on('click', function () {
+          const isDark = $("body").toggleClass("dark").hasClass("dark");
+          $(this).toggleClass("switched");
+          $(this).find('img').toggle();
+          localStorage.setItem('dark', isDark ? '1' : '0');
+          localStorage.setItem('theme', isDark ? 'dark' : 'light');
+      });
+  }
 });
 
 $(document).ready(function () {
@@ -83,21 +93,6 @@ $("#eye-icon-hide").on('click',function(){
   $('#show_hide_password input').attr('type', 'password');
   $('#confirm-password-div input').attr('type', 'password');
 })
-
-
-var theme = localStorage.getItem('theme');
-
-if(theme == 'dark') {
-    $("body").removeClass("dark");
-    $("img.moon").removeClass("img-none")
-    $("img.sun").addClass("img-none")
-    $("#switch").removeClass("switched");
-} else {
-    $("body").addClass("dark");
-    $("img.sun").removeClass("img-none")
-    $("img.moon").addClass("img-none")
-    $("#switch").addClass("switched");
-}
 
 (function () {
     var carousels = function () {

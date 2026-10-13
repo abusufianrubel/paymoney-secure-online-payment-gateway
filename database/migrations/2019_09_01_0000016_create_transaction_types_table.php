@@ -15,7 +15,7 @@ class CreateTransactionTypesTable extends Migration
     {
         Schema::create('transaction_types', function (Blueprint $table)
         {
-            $table->increments('id');
+            $table->id();
             $table->string('name', 30);
         });
     }

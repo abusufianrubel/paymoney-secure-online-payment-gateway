@@ -32,8 +32,8 @@
 
                             </h3>
                         </div>
-                        <div class="amount-logo" id="bank_logo">
-                            <img src="{{ asset('public/dist/images/gateways/payments/' . strtolower($gateway) . '.png') }}" class="img-fluid">
+                        <div class="amount-logo" id="bank_logo">  
+                            {!! (strtolower($gateway) == 'mts') ? getSystemLogo() : '<img src="' . asset('public/dist/images/gateways/payments/' . strtolower($gateway) . '.png') . '" class="img-fluid">' !!}
                         </div>
                     </div>
 

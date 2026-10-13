@@ -2,903 +2,2571 @@
 
 namespace Database\Seeders;
 
-use App\Models\TimeZone;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Seeder;
 
 class TimeZonesTableSeeder extends Seeder
 {
     /**
-     * Run the database seeds.
+     * Auto generated seed file
      *
      * @return void
      */
     public function run()
     {
-        TimeZone::truncate();
-
-        foreach (phpDefaultTimeZones() as $timezone)
-        {
-            TimeZone::insert(
-                [
-                    'zone' => $timezone['zone'],
-                    'gmt'  => $timezone['diff_from_GMT'],
-                ]
-            );
-        }
-        // TimeZone::truncate();
-        // TimeZone::insert([
-        //     [
-        //         'id'   => 1,
-        //         'zone' => 'Africa/Abidjan',
-        //         'gmt'  => '0',
-        //     ],
-        //     [
-        //         'id'   => 2,
-        //         'zone' => 'Africa/Accra',
-        //         'gmt'  => '0',
-        //     ],
-        //     [
-        //         'id'   => 3,
-        //         'zone' => 'Africa/Addis_Ababa',
-        //         'gmt'  => '+3',
-        //     ],
-        //     [
-        //         'id'   => 4,
-        //         'zone' => 'Africa/Algiers',
-        //         'gmt'  => '+1',
-        //     ],
-        //     [
-        //         'id'   => 5,
-        //         'zone' => 'Africa/Asmara',
-        //         'gmt'  => '+3',
-        //     ],
-        //     [
-        //         'id'   => 6,
-        //         'zone' => 'Africa/Bamako',
-        //         'gmt'  => '0',
-        //     ],
-        //     [
-        //         'id'   => 7,
-        //         'zone' => 'Africa/Bangui',
-        //         'gmt'  => '+1',
-        //     ],
-        //     [
-        //         'id'   => 8,
-        //         'zone' => 'Africa/Banjul',
-        //         'gmt'  => '0',
-        //     ],
-        //     [
-        //         'id'   => 9,
-        //         'zone' => 'Africa/Bissau',
-        //         'gmt'  => '0',
-        //     ],
-        //     [
-        //         'id'   => 10,
-        //         'zone' => 'Africa/Blantyre',
-        //         'gmt'  => '+2',
-        //     ],
-        //     [
-        //         'id'   => 11,
-        //         'zone' => 'Africa/Brazzaville',
-        //         'gmt'  => '+1',
-        //     ],
-        //     [
-        //         'id'   => 12,
-        //         'zone' => 'Africa/Bujumbura',
-        //         'gmt'  => '+2',
-        //     ],
-        //     [
-        //         'id'   => 13,
-        //         'zone' => 'Africa/Cairo',
-        //         'gmt'  => '+2',
-        //     ],
-        //     [
-        //         'id'   => 14,
-        //         'zone' => 'Africa/Casablanca',
-        //         'gmt'  => '0',
-        //     ],
-        //     [
-        //         'id'   => 15,
-        //         'zone' => 'Africa/Ceuta',
-        //         'gmt'  => '1',
-        //     ],
-        //     [
-        //         'id'   => 16,
-        //         'zone' => 'Africa/Conakry',
-        //         'gmt'  => '0',
-        //     ],
-        //     [
-        //         'id'   => 17,
-        //         'zone' => 'Africa/Dakar',
-        //         'gmt'  => '0',
-        //     ],
-        //     [
-        //         'id'   => 18,
-        //         'zone' => 'Africa/Dar_es_Salaam',
-        //         'gmt'  => '+3',
-        //     ],
-        //     [
-        //         'id'   => 19,
-        //         'zone' => 'Africa/Djibouti',
-        //         'gmt'  => '+3',
-        //     ],
-        //     [
-        //         'id'   => 20,
-        //         'zone' => 'Africa/Douala',
-        //         'gmt'  => '+1',
-        //     ],
-
-        //     [
-        //         'id'   => 21,
-        //         'zone' => 'Africa/El_Aaiun',
-        //         'gmt'  => '0',
-        //     ],
-        //     [
-        //         'id'   => 22,
-        //         'zone' => 'Africa/Freetown',
-        //         'gmt'  => '0',
-        //     ],
-        //     [
-        //         'id'   => 23,
-        //         'zone' => 'Africa/Gaborone',
-        //         'gmt'  => '+2',
-        //     ],
-        //     [
-        //         'id'   => 24,
-        //         'zone' => 'Africa/Harare',
-        //         'gmt'  => '+2',
-        //     ],
-        //     [
-        //         'id'   => 25,
-        //         'zone' => 'Africa/Johannesburg',
-        //         'gmt'  => '+2',
-        //     ],
-        //     [
-        //         'id'   => 26,
-        //         'zone' => 'Africa/Juba',
-        //         'gmt'  => '+3',
-        //     ],
-        //     [
-        //         'id'   => 27,
-        //         'zone' => 'Africa/Kampala',
-        //         'gmt'  => '+3',
-        //     ],
-        //     [
-        //         'id'   => 28,
-        //         'zone' => 'Africa/Khartoum',
-        //         'gmt'  => '+2',
-        //     ],
-        //     [
-        //         'id'   => 29,
-        //         'zone' => 'Africa/Kigali',
-        //         'gmt'  => '+2',
-        //     ],
-        //     [
-        //         'id'   => 30,
-        //         'zone' => 'Africa/Kinshasa',
-        //         'gmt'  => '+1',
-        //     ],
-        //     [
-        //         'id'   => 31,
-        //         'zone' => 'Africa/Lagos',
-        //         'gmt'  => '+1',
-        //     ],
-        //     [
-        //         'id'   => 32,
-        //         'zone' => 'Africa/Libreville',
-        //         'gmt'  => '+1',
-        //     ],
-        //     [
-        //         'id'   => 33,
-        //         'zone' => 'Africa/Lome',
-        //         'gmt'  => '0',
-        //     ],
-        //     [
-        //         'id'   => 34,
-        //         'zone' => 'Africa/Luanda',
-        //         'gmt'  => '+1',
-        //     ],
-        //     [
-        //         'id'   => 35,
-        //         'zone' => 'Africa/Lubumbashi',
-        //         'gmt'  => '+2',
-        //     ],
-        //     [
-        //         'id'   => 36,
-        //         'zone' => 'Africa/Lusaka',
-        //         'gmt'  => '+2',
-        //     ],
-        //     [
-        //         'id'   => 37,
-        //         'zone' => 'Africa/Malabo',
-        //         'gmt'  => '+1',
-        //     ],
-        //     [
-        //         'id'   => 38,
-        //         'zone' => 'Africa/Maputo',
-        //         'gmt'  => '+2',
-        //     ],
-        //     [
-        //         'id'   => 39,
-        //         'zone' => 'Africa/Maseru',
-        //         'gmt'  => '+2',
-        //     ],
-        //     [
-        //         'id'   => 40,
-        //         'zone' => 'Africa/Mbabane',
-        //         'gmt'  => '+2',
-        //     ],
-        //     [
-        //         'id'   => 41,
-        //         'zone' => 'Africa/Mogadishu',
-        //         'gmt'  => '+3',
-        //     ],
-        //     [
-        //         'id'   => 42,
-        //         'zone' => 'Africa/Monrovia',
-        //         'gmt'  => '0',
-        //     ],
-        //     [
-        //         'id'   => 43,
-        //         'zone' => 'Africa/Nairobi',
-        //         'gmt'  => '+3',
-        //     ],
-        //     [
-        //         'id'   => 44,
-        //         'zone' => 'Africa/Ndjamena',
-        //         'gmt'  => '+1',
-        //     ],
-        //     [
-        //         'id'   => 45,
-        //         'zone' => 'Africa/Niamey',
-        //         'gmt'  => '+1',
-        //     ],
-        //     [
-        //         'id'   => 46,
-        //         'zone' => 'Africa/Nouakchott',
-        //         'gmt'  => '0',
-        //     ],
-        //     [
-        //         'id'   => 47,
-        //         'zone' => 'Africa/Ouagadougou',
-        //         'gmt'  => '0',
-        //     ],
-        //     [
-        //         'id'   => 48,
-        //         'zone' => 'Africa/Porto-Novo',
-        //         'gmt'  => '+1',
-        //     ],
-        //     [
-        //         'id'   => 49,
-        //         'zone' => 'Africa/Sao_Tome',
-        //         'gmt'  => '+1',
-        //     ],
-        //     [
-        //         'id'   => 50,
-        //         'zone' => 'Africa/Tripoli',
-        //         'gmt'  => '+2',
-        //     ],
-        //     [
-        //         'id'   => 51,
-        //         'zone' => 'Africa/Tunis',
-        //         'gmt'  => '+1',
-        //     ],
-        //     [
-        //         'id' => 52,
-        //         'zone' => 'Africa/Windhoek',
-        //         'gmt'  => '+2',
-        //     ],
-        //     [
-        //         'id'   => 53,
-        //         'zone' => 'America/Adak',
-        //         'gmt'  => '-10',
-        //     ],
-        //     [
-        //         'id'   => 54,
-        //         'zone' => 'America/Anchorage',
-        //         'gmt'  => '-9',
-        //     ],
-        //     [
-        //         'id'   => 55,
-        //         'zone' => 'America/Anguilla',
-        //         'gmt'  => '-4',
-        //     ],
-        //     [
-        //         'id'   => 56,
-        //         'zone' => 'America/Antigua',
-        //         'gmt'  => '-4',
-        //     ],
-
-        //     [
-        //         'id'   => 57,
-        //         'zone' => 'America/Araguaina',
-        //         'gmt'  => '-3',
-        //     ],
-        //     [
-        //         'id'   => 58,
-        //         'zone' => 'America/Argentina/Buenos_Aires',
-        //         'gmt'  => '-3',
-        //     ],
-        //     [
-        //         'id'   => 59,
-        //         'zone' => 'America/Argentina/Catamarca',
-        //         'gmt'  => '-3',
-        //     ],
-
-        //     [
-        //         'id'   => 60,
-        //         'zone' => 'America/Argentina/Cordoba',
-        //         'gmt'  => '-3',
-        //     ],
-        //     [
-        //         'id'   => 61,
-        //         'zone' => 'America/Argentina/Jujuy',
-        //         'gmt'  => '-3',
-        //     ],
-        //     [
-        //         'id'   => 62,
-        //         'zone' => 'America/Argentina/La_Rioja',
-        //         'gmt'  => '-3',
-        //     ],
-
-        //     [
-        //         'id'   => 63,
-        //         'zone' => 'America/Argentina/Mendoza',
-        //         'gmt'  => '-3',
-        //     ],
-        //     [
-        //         'id'   => 64,
-        //         'zone' => 'America/Argentina/Rio_Gallego',
-        //         'gmt'  => '-3',
-        //     ],
-
-        //     [
-        //         'id'   => 65,
-        //         'zone' => 'America/Argentina/Salta',
-        //         'gmt'  => '-3',
-        //     ],
-        //     [
-        //         'id'   => 66,
-        //         'zone' => 'America/Argentina/San_Juan',
-        //         'gmt'  => '-3',
-        //     ],
-
-        //     [
-        //         'id'   => 67,
-        //         'zone' => 'America/Argentina/San_Luis',
-        //         'gmt'  => '-3',
-        //     ],
-        //     [
-        //         'id'   => 68,
-        //         'zone' => 'America/Argentina/Tucuman',
-        //         'gmt'  => '-3',
-        //     ],
-
-        //     [
-        //         'id' => 69,
-        //         'zone' => 'America/Argentina/Ushuaia',
-        //         'gmt'  => '-3',
-        //     ],
-        //     [
-        //         'id'   => 70,
-        //         'zone' => 'America/Aruba',
-        //         'gmt'  => '-4',
-        //     ],
-        //     [
-        //         'id'   => 71,
-        //         'zone' => 'America/Asuncion',
-        //         'gmt'  => '-4',
-        //     ],
-        //     [
-        //         'id'   => 72,
-        //         'zone' => 'America/Atikokan',
-        //         'gmt'  => '-5',
-        //     ],
-
-        //     [
-        //         'id'   => 73,
-        //         'zone' => 'America/Bahia',
-        //         'gmt'  => '-3',
-        //     ],
-        //     [
-        //         'id'   => 74,
-        //         'zone' => 'America/Bahia_Banderas',
-        //         'gmt'  => '-6',
-        //     ],
-        //     [
-        //         'id'   => 75,
-        //         'zone' => 'America/Barbados',
-        //         'gmt'  => '-5',
-        //     ],
-        //     [
-        //         'id'   => 76,
-        //         'zone' => 'America/Belem',
-        //         'gmt'  => '-3',
-        //     ],
-        //     [
-        //         'id'   => 77,
-        //         'zone' => 'America/Belize',
-        //         'gmt'  => '-6',
-        //     ],
-        //     [
-        //         'id'   => 78,
-        //         'zone' => 'America/Blanc-Sablon',
-        //         'gmt'  => '-4',
-        //     ],
-        //     [
-        //         'id'   => 79,
-        //         'zone' => 'America/Boa_Vista',
-        //         'gmt'  => '-4',
-        //     ],
-
-        //     [
-        //         'id'   => 80,
-        //         'zone' => 'America/Bogota',
-        //         'gmt'  => '-5',
-        //     ],
-
-        //     [
-        //         'id'   => 81,
-        //         'zone' => 'America/Boise',
-        //         'gmt'  => '-7',
-        //     ],
-
-        //     [
-        //         'id'   => 82,
-        //         'zone' => 'America/Cambridge_Bay',
-        //         'gmt'  => '-7',
-        //     ],
-
-        //     [
-        //         'id'   => 83,
-        //         'zone' => 'America/Campo_Grande',
-        //         'gmt'  => '-3',
-        //     ],
-
-        //     [
-        //         'id'   => 84,
-        //         'zone' => 'America/Cancun',
-        //         'gmt'  => '-5',
-        //     ],
-
-        //     [
-        //         'id'   => 85,
-        //         'zone' => 'America/Caracas',
-        //         'gmt'  => '-4',
-        //     ],
-
-        //     [
-        //         'id'   => 86,
-        //         'zone' => 'America/Cayenne',
-        //         'gmt'  => '-3',
-        //     ],
-
-        //     [
-        //         'id'   => 87,
-        //         'zone' => 'America/Cayman',
-        //         'gmt'  => '-5',
-        //     ],
-
-        //     [
-        //         'id'   => 88,
-        //         'zone' => 'America/Chicago',
-        //         'gmt'  => '-6',
-        //     ],
-
-        //     [
-        //         'id'   => 89,
-        //         'zone' => 'America/Chihuahua',
-        //         'gmt'  => '-7',
-        //     ],
-
-        //     [
-        //         'id'   => 90,
-        //         'zone' => 'America/Costa_Rica',
-        //         'gmt'  => '-6',
-        //     ],
-
-        //     [
-        //         'id'   => 91,
-        //         'zone' => 'America/Creston',
-        //         'gmt'  => '-7',
-        //     ],
-
-        //     [
-        //         'id'   => 92,
-        //         'zone' => 'America/Cuiaba',
-        //         'gmt'  => '-4',
-        //     ],
-
-        //     [
-        //         'id'   => 93,
-        //         'zone' => 'America/Curacao',
-        //         'gmt'  => '-4',
-        //     ],
-
-        //     [
-        //         'id'   => 94,
-        //         'zone' => 'America/Danmarkshavn',
-        //         'gmt'  => '0',
-        //     ],
-
-        //     [
-        //         'id'   => 95,
-        //         'zone' => 'America/Dawson',
-        //         'gmt'  => '-8',
-        //     ],
-
-        //     [
-        //         'id'   => 96,
-        //         'zone' => 'America/Dawson_Creek',
-        //         'gmt'  => '-7',
-        //     ],
-
-        //     [
-        //         'id'   => 97,
-        //         'zone' => 'America/Denver',
-        //         'gmt'  => '-7',
-        //     ],
-
-        //     [
-        //         'id'   => 98,
-        //         'zone' => 'America/Detroit',
-        //         'gmt'  => '-5',
-        //     ],
-
-        //     [
-        //         'id'   => 99,
-        //         'zone' => 'America/Dominica',
-        //         'gmt'  => '-4',
-        //     ],
-
-        //     [
-        //         'id'   => 100,
-        //         'zone' => 'America/Edmonton',
-        //         'gmt'  => '-7',
-        //     ],
-
-        //     [
-        //         'id'   => 101,
-        //         'zone' => 'America/Eirunepe',
-        //         'gmt'  => '-5',
-        //     ],
-        //     [
-        //         'id'   => 102,
-        //         'zone' => 'America/El_Salvador',
-        //         'gmt'  => '-5',
-        //     ],
-        //     [
-        //         'id'   => 103,
-        //         'zone' => 'America/Fort_Nelson',
-        //         'gmt'  => '-3',
-        //     ],
-
-        //     [
-        //         'id'   => 104,
-        //         'zone' => 'America/Fortaleza',
-        //         'gmt'  => '-3',
-        //     ],
-
-        //     [
-        //         'id'   => 105,
-        //         'zone' => 'America/Glace_Bay',
-        //         'gmt'  => '-4',
-        //     ],
-
-        //     [
-        //         'id'   => 106,
-        //         'zone' => 'America/Godthab',
-        //         'gmt'  => '-3',
-        //     ],
-
-        //     [
-        //         'id'   => 107,
-        //         'zone' => 'America/Goose_Bay',
-        //         'gmt'  => '-4',
-        //     ],
-
-        //     [
-        //         'id'   => 108,
-        //         'zone' => 'America/Grand_Turk',
-        //         'gmt'  => '-8',
-        //     ],
-
-        //     [
-        //         'id'   => 109,
-        //         'zone' => 'America/Grenada',
-        //         'gmt'  => '-4',
-        //     ],
-
-        //     [
-        //         'id'   => 110,
-        //         'zone' => 'America/Guadeloupe',
-        //         'gmt'  => '-4',
-        //     ],
-
-        //     [
-        //         'id'   => 111,
-        //         'zone' => 'America/Guatemala',
-        //         'gmt'  => '-6',
-        //     ],
-
-        //     [
-        //         'id'   => 112,
-        //         'zone' => 'America/Guayaquil',
-        //         'gmt'  => '-5',
-        //     ],
-
-        //     [
-        //         'id'   => 113,
-        //         'zone' => 'America/Guyana',
-        //         'gmt'  => '-4',
-        //     ],
-
-        //     [
-        //         'id'   => 114,
-        //         'zone' => 'America/Eirunepe',
-        //         'gmt'  => '-7',
-        //     ],
-
-        //     [
-        //         'id'   => 115,
-        //         'zone' => 'America/Havana',
-        //         'gmt'  => '-5',
-        //     ],
-
-        //     [
-        //         'id'   => 116,
-        //         'zone' => 'America/Hermosillo',
-        //         'gmt'  => '-7',
-        //     ],
-
-        //     [
-        //         'id'   => 117,
-        //         'zone' => 'America/Indiana/Indianapo',
-        //         'gmt'  => '-5',
-        //     ],
-
-        //     [
-        //         'id'   => 118,
-        //         'zone' => 'America/Indiana/Knox',
-        //         'gmt'  => '-6',
-        //     ],
-
-        //     [
-        //         'id'   => 119,
-        //         'zone' => 'America/Indiana/Marengo',
-        //         'gmt'  => '-5',
-        //     ],
-
-        //     [
-        //         'id'   => 120,
-        //         'zone' => 'America/Indiana/Petersburg',
-        //         'gmt'  => '-5',
-        //     ],
-        //     [
-        //         'id'   => 121,
-        //         'zone' => 'America/Indiana/Tell_City',
-        //         'gmt'  => '-6',
-        //     ],
-        //     [
-        //         'id'   => 122,
-        //         'zone' => 'America/Indiana/Vevay',
-        //         'gmt'  => '-5',
-        //     ],
-
-        //     [
-        //         'id'   => 123,
-        //         'zone' => 'America/Indiana/Vincennes',
-        //         'gmt'  => '-5',
-        //     ],
-        //     [
-        //         'id'   => 124,
-        //         'zone' => 'AAmerica/Indiana/Winamac',
-        //         'gmt'  => '-5',
-        //     ],
-        //     [
-        //         'id'   => 125,
-        //         'zone' => 'America/Inuvik',
-        //         'gmt'  => '-7',
-        //     ],
-
-        //     [
-        //         'id'   => 126,
-        //         'zone' => 'America/Iqaluit',
-        //         'gmt'  => '-5',
-        //     ],
-        //     [
-        //         'id'   => 127,
-        //         'zone' => 'America/Jamaica',
-        //         'gmt'  => '-5',
-        //     ],
-        //     [
-        //         'id'   => 128,
-        //         'zone' => 'America/Juneau',
-        //         'gmt'  => '-9',
-        //     ],
-        //     [
-        //         'id'   => 129,
-        //         'zone' => 'America/Kentucky/Louisville',
-        //         'gmt'  => '-9',
-        //     ],
-        //     [
-        //         'id'   => 130,
-        //         'zone' => 'America/Kentucky/Monticello',
-        //         'gmt'  => '-5',
-        //     ],
-
-        //     [
-        //         'id'   => 131,
-        //         'zone' => 'America/Kralendijk',
-        //         'gmt'  => '-5',
-        //     ],
-        //     [
-        //         'id'   => 132,
-        //         'zone' => 'America/La_Paz',
-        //         'gmt'  => '-5',
-        //     ],
-        //     [
-        //         'id'   => 133,
-        //         'zone' => 'America/Lima',
-        //         'gmt'  => '-5',
-        //     ],
-
-        //     [
-        //         'id'   => 134,
-        //         'zone' => 'America/Los_Angeles',
-        //         'gmt'  => '-8',
-        //     ],
-        //     [
-        //         'id'   => 135,
-        //         'zone' => 'America/Lower_Princes',
-        //         'gmt'  => '-5',
-        //     ],
-        //     [
-        //         'id'   => 136,
-        //         'zone' => 'America/Maceio',
-        //         'gmt'  => '-3',
-        //     ],
-        //     [
-        //         'id'   => 137,
-        //         'zone' => 'America/Managua',
-        //         'gmt'  => '-6',
-        //     ],
-
-        //     [
-        //         'id'   => 138,
-        //         'zone' => 'America/Manaus',
-        //         'gmt'  => '-3',
-        //     ],
-
-        //     [
-        //         'id'   => 139,
-        //         'zone' => 'America/Marigot',
-        //         'gmt'  => '-4',
-        //     ],
-
-        //     [
-        //         'id'   => 140,
-        //         'zone' => 'America/Martinique',
-        //         'gmt'  => '-4',
-        //     ],
-
-        //     [
-        //         'id'   => 141,
-        //         'zone' => 'America/Matamoros',
-        //         'gmt'  => '-6',
-        //     ],
-
-        //     [
-        //         'id'   => 142,
-        //         'zone' => 'America/Mazatlan',
-        //         'gmt'  => '-7',
-        //     ],
-
-        //     [
-        //         'id'   => 143,
-        //         'zone' => 'America/Menominee',
-        //         'gmt'  => '-6',
-        //     ],
-
-        //     [
-        //         'id'   => 144,
-        //         'zone' => 'America/Merida',
-        //         'gmt'  => '-6',
-        //     ],
-
-        //     [
-        //         'id'   => 145,
-        //         'zone' => 'America/Metlakatlae',
-        //         'gmt'  => '-6',
-        //     ],
-        //     [
-        //         'id'   => 146,
-        //         'zone' => 'America/Mexico_City',
-        //         'gmt'  => '-6',
-        //     ],
-
-        //     [
-        //         'id'   => 147,
-        //         'zone' => 'America/Miquelon',
-        //         'gmt'  => '-3',
-        //     ],
-
-        //     [
-        //         'id'   => 148,
-        //         'zone' => 'America/Moncton',
-        //         'gmt'  => '-4',
-        //     ],
-
-        //     [
-        //         'id'   => 149,
-        //         'zone' => 'America/Monterrey',
-        //         'gmt'  => '-6',
-        //     ],
-
-        //     [
-        //         'id'   => 150,
-        //         'zone' => 'America/Montevideo',
-        //         'gmt'  => '-3',
-        //     ],
-
-        //     [
-        //         'id'   => 151,
-        //         'zone' => 'America/Montserrat',
-        //         'gmt'  => '-4',
-        //     ],
-
-        //     [
-        //         'id'   => 152,
-        //         'zone' => 'America/Nassau',
-        //         'gmt'  => '-5',
-        //     ],
-
-        //     [
-        //         'id'   => 153,
-        //         'zone' => 'America/New_York',
-        //         'gmt'  => '-5',
-        //     ],
-
-        //     [
-        //         'id'   => 154,
-        //         'zone' => 'America/Nipigon',
-        //         'gmt'  => '-7',
-        //     ],
-
-        //     [
-        //         'id'   => 155,
-        //         'zone' => 'America/Nome',
-        //         'gmt'  => '-9',
-        //     ],
-        //     [
-        //         'id'   => 156,
-        //         'zone' => ' America/Noronha',
-        //         'gmt'  => '-6',
-        //     ],
-        //     [
-        //         'id'   => 157,
-        //         'zone' => 'America/North_Dakota/Beulah',
-        //         'gmt'  => '-6',
-        //     ],
-
-        //     [
-        //         'id'   => 158,
-        //         'zone' => 'America/North_Dakota/Center',
-        //         'gmt'  => '-6',
-        //     ],
-
-        //     [
-        //         'id'   => 159,
-        //         'zone' => 'America/North_Dakota/New_Salem',
-        //         'gmt'  => '-6',
-        //     ],
-
-        //     [
-        //         'id'   => 160,
-        //         'zone' => 'America/Ojinaga',
-        //         'gmt'  => '-7',
-        //     ],
-        // ]);
-
+        DB::table('time_zones')->delete();
+        
+        DB::table('time_zones')->insert([
+            [
+                'zone' => 'Africa/Abidjan',
+                'gmt' => 'UTC/GMT +00:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Accra',
+                'gmt' => 'UTC/GMT +00:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Addis_Ababa',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Algiers',
+                'gmt' => 'UTC/GMT +01:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Asmara',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Bamako',
+                'gmt' => 'UTC/GMT +00:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Bangui',
+                'gmt' => 'UTC/GMT +01:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Banjul',
+                'gmt' => 'UTC/GMT +00:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Bissau',
+                'gmt' => 'UTC/GMT +00:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Blantyre',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Brazzaville',
+                'gmt' => 'UTC/GMT +01:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Bujumbura',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Cairo',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Casablanca',
+                'gmt' => 'UTC/GMT +01:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Ceuta',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Conakry',
+                'gmt' => 'UTC/GMT +00:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Dakar',
+                'gmt' => 'UTC/GMT +00:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Dar_es_Salaam',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Djibouti',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Douala',
+                'gmt' => 'UTC/GMT +01:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/El_Aaiun',
+                'gmt' => 'UTC/GMT +01:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Freetown',
+                'gmt' => 'UTC/GMT +00:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Gaborone',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Harare',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Johannesburg',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Juba',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Kampala',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Khartoum',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Kigali',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Kinshasa',
+                'gmt' => 'UTC/GMT +01:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Lagos',
+                'gmt' => 'UTC/GMT +01:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Libreville',
+                'gmt' => 'UTC/GMT +01:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Lome',
+                'gmt' => 'UTC/GMT +00:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Luanda',
+                'gmt' => 'UTC/GMT +01:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Lubumbashi',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Lusaka',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Malabo',
+                'gmt' => 'UTC/GMT +01:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Maputo',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Maseru',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Mbabane',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Mogadishu',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Monrovia',
+                'gmt' => 'UTC/GMT +00:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Nairobi',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Ndjamena',
+                'gmt' => 'UTC/GMT +01:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Niamey',
+                'gmt' => 'UTC/GMT +01:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Nouakchott',
+                'gmt' => 'UTC/GMT +00:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Ouagadougou',
+                'gmt' => 'UTC/GMT +00:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Porto-Novo',
+                'gmt' => 'UTC/GMT +01:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Sao_Tome',
+                'gmt' => 'UTC/GMT +01:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Tripoli',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Tunis',
+                'gmt' => 'UTC/GMT +01:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Africa/Windhoek',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Adak',
+                'gmt' => 'UTC/GMT -09:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Anchorage',
+                'gmt' => 'UTC/GMT -08:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Anguilla',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Antigua',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Araguaina',
+                'gmt' => 'UTC/GMT -03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Argentina/Buenos_Aires',
+                'gmt' => 'UTC/GMT -03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Argentina/Catamarca',
+                'gmt' => 'UTC/GMT -03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Argentina/Cordoba',
+                'gmt' => 'UTC/GMT -03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Argentina/Jujuy',
+                'gmt' => 'UTC/GMT -03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Argentina/La_Rioja',
+                'gmt' => 'UTC/GMT -03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Argentina/Mendoza',
+                'gmt' => 'UTC/GMT -03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Argentina/Rio_Gallegos',
+                'gmt' => 'UTC/GMT -03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Argentina/Salta',
+                'gmt' => 'UTC/GMT -03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Argentina/San_Juan',
+                'gmt' => 'UTC/GMT -03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Argentina/San_Luis',
+                'gmt' => 'UTC/GMT -03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Argentina/Tucuman',
+                'gmt' => 'UTC/GMT -03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Argentina/Ushuaia',
+                'gmt' => 'UTC/GMT -03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Aruba',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Asuncion',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Atikokan',
+                'gmt' => 'UTC/GMT -05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Bahia',
+                'gmt' => 'UTC/GMT -03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Bahia_Banderas',
+                'gmt' => 'UTC/GMT -05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Barbados',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Belem',
+                'gmt' => 'UTC/GMT -03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Belize',
+                'gmt' => 'UTC/GMT -06:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Blanc-Sablon',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Boa_Vista',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Bogota',
+                'gmt' => 'UTC/GMT -05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Boise',
+                'gmt' => 'UTC/GMT -06:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Cambridge_Bay',
+                'gmt' => 'UTC/GMT -06:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Campo_Grande',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Cancun',
+                'gmt' => 'UTC/GMT -05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Caracas',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Cayenne',
+                'gmt' => 'UTC/GMT -03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Cayman',
+                'gmt' => 'UTC/GMT -05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Chicago',
+                'gmt' => 'UTC/GMT -05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Chihuahua',
+                'gmt' => 'UTC/GMT -06:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Costa_Rica',
+                'gmt' => 'UTC/GMT -06:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Creston',
+                'gmt' => 'UTC/GMT -07:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Cuiaba',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Curacao',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Danmarkshavn',
+                'gmt' => 'UTC/GMT +00:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Dawson',
+                'gmt' => 'UTC/GMT -07:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Dawson_Creek',
+                'gmt' => 'UTC/GMT -07:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Denver',
+                'gmt' => 'UTC/GMT -06:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Detroit',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Dominica',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Edmonton',
+                'gmt' => 'UTC/GMT -06:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Eirunepe',
+                'gmt' => 'UTC/GMT -05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/El_Salvador',
+                'gmt' => 'UTC/GMT -06:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Fort_Nelson',
+                'gmt' => 'UTC/GMT -07:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Fortaleza',
+                'gmt' => 'UTC/GMT -03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Glace_Bay',
+                'gmt' => 'UTC/GMT -03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Godthab',
+                'gmt' => 'UTC/GMT -02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Goose_Bay',
+                'gmt' => 'UTC/GMT -03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Grand_Turk',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Grenada',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Guadeloupe',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Guatemala',
+                'gmt' => 'UTC/GMT -06:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Guayaquil',
+                'gmt' => 'UTC/GMT -05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Guyana',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Halifax',
+                'gmt' => 'UTC/GMT -03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Havana',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Hermosillo',
+                'gmt' => 'UTC/GMT -07:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Indiana/Indianapolis',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Indiana/Knox',
+                'gmt' => 'UTC/GMT -05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Indiana/Marengo',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Indiana/Petersburg',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Indiana/Tell_City',
+                'gmt' => 'UTC/GMT -05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Indiana/Vevay',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Indiana/Vincennes',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Indiana/Winamac',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Inuvik',
+                'gmt' => 'UTC/GMT -06:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Iqaluit',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Jamaica',
+                'gmt' => 'UTC/GMT -05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Juneau',
+                'gmt' => 'UTC/GMT -08:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Kentucky/Louisville',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Kentucky/Monticello',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Kralendijk',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/La_Paz',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Lima',
+                'gmt' => 'UTC/GMT -05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Los_Angeles',
+                'gmt' => 'UTC/GMT -07:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Lower_Princes',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Maceio',
+                'gmt' => 'UTC/GMT -03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Managua',
+                'gmt' => 'UTC/GMT -06:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Manaus',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Marigot',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Martinique',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Matamoros',
+                'gmt' => 'UTC/GMT -05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Mazatlan',
+                'gmt' => 'UTC/GMT -06:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Menominee',
+                'gmt' => 'UTC/GMT -05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Merida',
+                'gmt' => 'UTC/GMT -05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Metlakatla',
+                'gmt' => 'UTC/GMT -08:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Mexico_City',
+                'gmt' => 'UTC/GMT -05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Miquelon',
+                'gmt' => 'UTC/GMT -02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Moncton',
+                'gmt' => 'UTC/GMT -03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Monterrey',
+                'gmt' => 'UTC/GMT -05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Montevideo',
+                'gmt' => 'UTC/GMT -03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Montserrat',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Nassau',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/New_York',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Nipigon',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Nome',
+                'gmt' => 'UTC/GMT -08:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Noronha',
+                'gmt' => 'UTC/GMT -02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/North_Dakota/Beulah',
+                'gmt' => 'UTC/GMT -05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/North_Dakota/Center',
+                'gmt' => 'UTC/GMT -05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/North_Dakota/New_Salem',
+                'gmt' => 'UTC/GMT -05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Ojinaga',
+                'gmt' => 'UTC/GMT -06:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Panama',
+                'gmt' => 'UTC/GMT -05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Pangnirtung',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Paramaribo',
+                'gmt' => 'UTC/GMT -03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Phoenix',
+                'gmt' => 'UTC/GMT -07:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Port-au-Prince',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Port_of_Spain',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Porto_Velho',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ], 
+            [
+                'zone' => 'America/Puerto_Rico',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Punta_Arenas',
+                'gmt' => 'UTC/GMT -03:00',
+                'updated_at' => null,
+                'created_at' => null,
+            ],
+            [
+                'zone' => 'America/Rainy_River',
+                'gmt' => 'UTC/GMT -05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Rankin_Inlet',
+                'gmt' => 'UTC/GMT -05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Recife',
+                'gmt' => 'UTC/GMT -03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Regina',
+                'gmt' => 'UTC/GMT -06:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Resolute',
+                'gmt' => 'UTC/GMT -05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Rio_Branco',
+                'gmt' => 'UTC/GMT -05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Santarem',
+                'gmt' => 'UTC/GMT -03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Santiago',
+                'gmt' => 'UTC/GMT -03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Santo_Domingo',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Sao_Paulo',
+                'gmt' => 'UTC/GMT -03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Scoresbysund',
+                'gmt' => 'UTC/GMT +00:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Sitka',
+                'gmt' => 'UTC/GMT -08:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/St_Barthelemy',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/St_Johns',
+                'gmt' => 'UTC/GMT -02:30',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/St_Kitts',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/St_Lucia',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/St_Thomas',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/St_Vincent',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Swift_Current',
+                'gmt' => 'UTC/GMT -06:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Tegucigalpa',
+                'gmt' => 'UTC/GMT -06:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Thule',
+                'gmt' => 'UTC/GMT -03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Thunder_Bay',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Tijuana',
+                'gmt' => 'UTC/GMT -07:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Toronto',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Tortola',
+                'gmt' => 'UTC/GMT -04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Vancouver',
+                'gmt' => 'UTC/GMT -07:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Whitehorse',
+                'gmt' => 'UTC/GMT -07:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Winnipeg',
+                'gmt' => 'UTC/GMT -05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Yakutat',
+                'gmt' => 'UTC/GMT -08:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'America/Yellowknife',
+                'gmt' => 'UTC/GMT -06:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Antarctica/Casey',
+                'gmt' => 'UTC/GMT +08:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Antarctica/Davis',
+                'gmt' => 'UTC/GMT +07:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Antarctica/DumontDUrville',
+                'gmt' => 'UTC/GMT +10:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Antarctica/Macquarie',
+                'gmt' => 'UTC/GMT +11:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Antarctica/Mawson',
+                'gmt' => 'UTC/GMT +05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Antarctica/McMurdo',
+                'gmt' => 'UTC/GMT +12:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Antarctica/Palmer',
+                'gmt' => 'UTC/GMT -03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Antarctica/Rothera',
+                'gmt' => 'UTC/GMT -03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Antarctica/Syowa',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Antarctica/Troll',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Antarctica/Vostok',
+                'gmt' => 'UTC/GMT +06:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Arctic/Longyearbyen',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Aden',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Almaty',
+                'gmt' => 'UTC/GMT +06:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Amman',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Anadyr',
+                'gmt' => 'UTC/GMT +12:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Aqtau',
+                'gmt' => 'UTC/GMT +05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Aqtobe',
+                'gmt' => 'UTC/GMT +05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Ashgabat',
+                'gmt' => 'UTC/GMT +05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Atyrau',
+                'gmt' => 'UTC/GMT +05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Baghdad',
+                'gmt' => 'UTC/GMT +03:00',
+                'updated_at' => null,
+                'created_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Bahrain',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Baku',
+                'gmt' => 'UTC/GMT +04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Bangkok',
+                'gmt' => 'UTC/GMT +07:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Barnaul',
+                'gmt' => 'UTC/GMT +07:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Beirut',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Bishkek',
+                'gmt' => 'UTC/GMT +06:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Brunei',
+                'gmt' => 'UTC/GMT +08:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Chita',
+                'gmt' => 'UTC/GMT +09:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Choibalsan',
+                'gmt' => 'UTC/GMT +08:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Colombo',
+                'gmt' => 'UTC/GMT +05:30',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Damascus',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'created_at' => null,
+                'gmt' => 'UTC/GMT +06:00',
+                'updated_at' => null,
+                'zone' => 'Asia/Dhaka',
+            ],
+            [
+                'zone' => 'Asia/Dili',
+                'gmt' => 'UTC/GMT +09:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Dubai',
+                'gmt' => 'UTC/GMT +04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Dushanbe',
+                'gmt' => 'UTC/GMT +05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Famagusta',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Gaza',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Hebron',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Ho_Chi_Minh',
+                'gmt' => 'UTC/GMT +07:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Hong_Kong',
+                'gmt' => 'UTC/GMT +08:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Hovd',
+                'gmt' => 'UTC/GMT +07:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Irkutsk',
+                'gmt' => 'UTC/GMT +08:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Jakarta',
+                'gmt' => 'UTC/GMT +07:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Jayapura',
+                'gmt' => 'UTC/GMT +09:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Jerusalem',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Kabul',
+                'gmt' => 'UTC/GMT +04:30',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Kamchatka',
+                'gmt' => 'UTC/GMT +12:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Karachi',
+                'gmt' => 'UTC/GMT +05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Kathmandu',
+                'gmt' => 'UTC/GMT +05:45',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Khandyga',
+                'gmt' => 'UTC/GMT +09:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Kolkata',
+                'gmt' => 'UTC/GMT +05:30',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Krasnoyarsk',
+                'gmt' => 'UTC/GMT +07:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Kuala_Lumpur',
+                'gmt' => 'UTC/GMT +08:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Kuching',
+                'gmt' => 'UTC/GMT +08:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Kuwait',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Macau',
+                'gmt' => 'UTC/GMT +08:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Magadan',
+                'gmt' => 'UTC/GMT +11:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Makassar',
+                'gmt' => 'UTC/GMT +08:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Manila',
+                'gmt' => 'UTC/GMT +08:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Muscat',
+                'gmt' => 'UTC/GMT +04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Nicosia',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Novokuznetsk',
+                'gmt' => 'UTC/GMT +07:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Novosibirsk',
+                'gmt' => 'UTC/GMT +07:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Omsk',
+                'gmt' => 'UTC/GMT +06:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Oral',
+                'gmt' => 'UTC/GMT +05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Phnom_Penh',
+                'gmt' => 'UTC/GMT +07:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Pontianak',
+                'gmt' => 'UTC/GMT +07:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Pyongyang',
+                'gmt' => 'UTC/GMT +08:30',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Qatar',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Qyzylorda',
+                'gmt' => 'UTC/GMT +06:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Riyadh',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Sakhalin',
+                'gmt' => 'UTC/GMT +11:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Samarkand',
+                'gmt' => 'UTC/GMT +05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Seoul',
+                'gmt' => 'UTC/GMT +09:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Shanghai',
+                'gmt' => 'UTC/GMT +08:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Singapore',
+                'gmt' => 'UTC/GMT +08:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Srednekolymsk',
+                'gmt' => 'UTC/GMT +11:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Taipei',
+                'gmt' => 'UTC/GMT +08:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Tashkent',
+                'gmt' => 'UTC/GMT +05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Tbilisi',
+                'gmt' => 'UTC/GMT +04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Tehran',
+                'gmt' => 'UTC/GMT +04:30',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Thimphu',
+                'gmt' => 'UTC/GMT +06:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Tokyo',
+                'gmt' => 'UTC/GMT +09:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Tomsk',
+                'gmt' => 'UTC/GMT +07:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Ulaanbaatar',
+                'gmt' => 'UTC/GMT +08:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Urumqi',
+                'gmt' => 'UTC/GMT +06:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Ust-Nera',
+                'gmt' => 'UTC/GMT +10:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Vientiane',
+                'gmt' => 'UTC/GMT +07:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Vladivostok',
+                'gmt' => 'UTC/GMT +10:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Yakutsk',
+                'gmt' => 'UTC/GMT +09:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Yangon',
+                'gmt' => 'UTC/GMT +06:30',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Yekaterinburg',
+                'gmt' => 'UTC/GMT +05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Asia/Yerevan',
+                'gmt' => 'UTC/GMT +04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Atlantic/Azores',
+                'gmt' => 'UTC/GMT +00:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Atlantic/Bermuda',
+                'gmt' => 'UTC/GMT -03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Atlantic/Canary',
+                'gmt' => 'UTC/GMT +01:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Atlantic/Cape_Verde',
+                'gmt' => 'UTC/GMT -01:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Atlantic/Faroe',
+                'gmt' => 'UTC/GMT +01:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Atlantic/Madeira',
+                'gmt' => 'UTC/GMT +01:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Atlantic/Reykjavik',
+                'gmt' => 'UTC/GMT +00:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Atlantic/South_Georgia',
+                'gmt' => 'UTC/GMT -02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Atlantic/St_Helena',
+                'gmt' => 'UTC/GMT +00:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Atlantic/Stanley',
+                'gmt' => 'UTC/GMT -03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Australia/Adelaide',
+                'gmt' => 'UTC/GMT +09:30',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Australia/Brisbane',
+                'gmt' => 'UTC/GMT +10:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Australia/Broken_Hill',
+                'gmt' => 'UTC/GMT +09:30',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Australia/Currie',
+                'gmt' => 'UTC/GMT +10:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Australia/Darwin',
+                'gmt' => 'UTC/GMT +09:30',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Australia/Eucla',
+                'gmt' => 'UTC/GMT +08:45',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Australia/Hobart',
+                'gmt' => 'UTC/GMT +10:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Australia/Lindeman',
+                'gmt' => 'UTC/GMT +10:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Australia/Lord_Howe',
+                'gmt' => 'UTC/GMT +10:30',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Australia/Melbourne',
+                'gmt' => 'UTC/GMT +10:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Australia/Perth',
+                'gmt' => 'UTC/GMT +08:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Australia/Sydney',
+                'gmt' => 'UTC/GMT +10:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Amsterdam',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Andorra',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Astrakhan',
+                'gmt' => 'UTC/GMT +04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Athens',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Belgrade',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Berlin',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Bratislava',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Brussels',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Bucharest',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Budapest',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Busingen',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Chisinau',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Copenhagen',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Dublin',
+                'gmt' => 'UTC/GMT +01:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Gibraltar',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Guernsey',
+                'gmt' => 'UTC/GMT +01:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Helsinki',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Isle_of_Man',
+                'gmt' => 'UTC/GMT +01:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Istanbul',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Jersey',
+                'gmt' => 'UTC/GMT +01:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Kaliningrad',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Kiev',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Kirov',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Lisbon',
+                'gmt' => 'UTC/GMT +01:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Ljubljana',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/London',
+                'gmt' => 'UTC/GMT +01:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Luxembourg',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Madrid',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Malta',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Mariehamn',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Minsk',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Monaco',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Moscow',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Oslo',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Paris',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Podgorica',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Prague',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Riga',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Rome',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Samara',
+                'gmt' => 'UTC/GMT +04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/San_Marino',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Sarajevo',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Saratov',
+                'gmt' => 'UTC/GMT +04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Simferopol',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Skopje',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Sofia',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Stockholm',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Tallinn',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Tirane',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Ulyanovsk',
+                'gmt' => 'UTC/GMT +04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Uzhgorod',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Vaduz',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Vatican',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Vienna',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Vilnius',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Volgograd',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Warsaw',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Zagreb',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Zaporozhye',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Europe/Zurich',
+                'gmt' => 'UTC/GMT +02:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Indian/Antananarivo',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Indian/Chagos',
+                'gmt' => 'UTC/GMT +06:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Indian/Christmas',
+                'gmt' => 'UTC/GMT +07:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Indian/Cocos',
+                'gmt' => 'UTC/GMT +06:30',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Indian/Comoro',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Indian/Kerguelen',
+                'gmt' => 'UTC/GMT +05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Indian/Mahe',
+                'gmt' => 'UTC/GMT +04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Indian/Maldives',
+                'gmt' => 'UTC/GMT +05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Indian/Mauritius',
+                'gmt' => 'UTC/GMT +04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Indian/Mayotte',
+                'gmt' => 'UTC/GMT +03:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Indian/Reunion',
+                'gmt' => 'UTC/GMT +04:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Pacific/Apia',
+                'gmt' => 'UTC/GMT +13:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Pacific/Auckland',
+                'gmt' => 'UTC/GMT +12:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Pacific/Bougainville',
+                'gmt' => 'UTC/GMT +11:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Pacific/Chatham',
+                'gmt' => 'UTC/GMT +12:45',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Pacific/Chuuk',
+                'gmt' => 'UTC/GMT +10:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Pacific/Easter',
+                'gmt' => 'UTC/GMT -05:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Pacific/Efate',
+                'gmt' => 'UTC/GMT +11:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Pacific/Enderbury',
+                'gmt' => 'UTC/GMT +13:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Pacific/Fakaofo',
+                'gmt' => 'UTC/GMT +13:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Pacific/Fiji',
+                'gmt' => 'UTC/GMT +12:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Pacific/Funafuti',
+                'gmt' => 'UTC/GMT +12:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Pacific/Galapagos',
+                'gmt' => 'UTC/GMT -06:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Pacific/Gambier',
+                'gmt' => 'UTC/GMT -09:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Pacific/Guadalcanal',
+                'gmt' => 'UTC/GMT +11:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Pacific/Guam',
+                'gmt' => 'UTC/GMT +10:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Pacific/Honolulu',
+                'gmt' => 'UTC/GMT -10:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Pacific/Kiritimati',
+                'gmt' => 'UTC/GMT +14:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Pacific/Kosrae',
+                'gmt' => 'UTC/GMT +11:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Pacific/Kwajalein',
+                'gmt' => 'UTC/GMT +12:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Pacific/Majuro',
+                'gmt' => 'UTC/GMT +12:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Pacific/Marquesas',
+                'gmt' => 'UTC/GMT -09:30',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Pacific/Midway',
+                'gmt' => 'UTC/GMT -11:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Pacific/Nauru',
+                'gmt' => 'UTC/GMT +12:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Pacific/Niue',
+                'gmt' => 'UTC/GMT -11:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Pacific/Norfolk',
+                'gmt' => 'UTC/GMT +11:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Pacific/Noumea',
+                'gmt' => 'UTC/GMT +11:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Pacific/Pago_Pago',
+                'gmt' => 'UTC/GMT -11:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Pacific/Palau',
+                'gmt' => 'UTC/GMT +09:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Pacific/Pitcairn',
+                'gmt' => 'UTC/GMT -08:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Pacific/Pohnpei',
+                'gmt' => 'UTC/GMT +11:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Pacific/Port_Moresby',
+                'gmt' => 'UTC/GMT +10:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Pacific/Rarotonga',
+                'gmt' => 'UTC/GMT -10:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Pacific/Saipan',
+                'gmt' => 'UTC/GMT +10:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Pacific/Tahiti',
+                'gmt' => 'UTC/GMT -10:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Pacific/Tarawa',
+                'gmt' => 'UTC/GMT +12:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Pacific/Tongatapu',
+                'gmt' => 'UTC/GMT +13:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Pacific/Wake',
+                'gmt' => 'UTC/GMT +12:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'Pacific/Wallis',
+                'gmt' => 'UTC/GMT +12:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+            [
+                'zone' => 'UTC',
+                'gmt' => 'UTC/GMT +00:00',
+                'created_at' => null,
+                'updated_at' => null,
+            ],
+        ]);
     }
 }

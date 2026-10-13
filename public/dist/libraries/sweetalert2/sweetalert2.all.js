@@ -1,5 +1,5 @@
 /*!
-* sweetalert2 v11.7.3
+* sweetalert2
 * Released under the MIT License.
 */
 (function (global, factory) {

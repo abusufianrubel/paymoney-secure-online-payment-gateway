@@ -7,14 +7,19 @@
 
 @section('content')
 <div class="bg-white pxy-62 exchange pt-62 shadow" id="twofaVerification">
-    <p class="mb-0 f-26 gilroy-Semibold text-uppercase text-center">{{ __('Settings') }}</p>
+    <p class="mb-0 f-26 gilroy-Semibold text-uppercase text-center">{{ __('Verifications') }}</p>
     <div class="row">
         <div class="col-12">
             <nav>
                 <div class="nav-tab-parent d-flex justify-content-center mt-4">
                     <div class="d-flex p-2 border-1p rounded-pill gap-1 bg-white nav-tab-child">
-                        <a href="{{ route('user.setting.identitiy_verify') }}" class="tablink-edit text-gray-100">{{ __('Identity Verification') }}</a>
-                        <a href="{{ route('user.setting.address_verify') }}" class="tablink-edit text-gray-100">{{ __('Address Verfication') }}</a>
+
+                        <a href="{{ route('user.kyc.verifications.initiate') }}" class="tablink-edit text-gray-100">{{ __(':x', ['x' => settings('kyc_provider') == 'manual' ? __('Identity Verification') : getProviderNameByAlias(settings('kyc_provider'))]) }}</a>
+
+                        @if (settings('kyc_provider') == 'manual')
+                            <a href="{{ route('user.kyc.verifications.address') }}" class="tablink-edit text-gray-100">{{ __('Address Verification') }}</a>
+                        @endif
+
                         @if ($two_step_verification != 'disabled')
                             <a href="{{ route('user.setting.twoFa') }}" class="tablink-edit text-gray-100 tabactive">{{ __('TwoFa') }}</a>
                         @endif

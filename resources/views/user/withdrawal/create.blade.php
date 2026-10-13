@@ -51,9 +51,6 @@
             <input class="form-control input-form-control apply-bg l-s2"  name="amount" id="amount" onkeypress="return isNumberOrDecimalPointKey(this, event);" placeholder="0.00" type="text" oninput="restrictNumberToPrefdecimalOnInput(this)" required data-value-missing="{{ __('This field is required') }}" value="{{ session('withdrawalData')['amount'] ?? old('amount') }}">
         </div>
         <span class="amountLimit text-danger" id="amountLimit"></span>
-        @error('amount')
-            <div class="error">{{ $message }}</div>
-        @enderror
         <div class="form-group d-none" id="bank">
             <span id="withdrawalMethodInfo"></span>
         </div>
@@ -75,8 +72,8 @@
 @include('common.restrict_number_to_pref_decimal')
 @include('common.restrict_character_decimal_point')
 
-<script src="{{ asset('public/dist/plugins/html5-validation-1.0.0/validation.min.js') }}"></script>
-<script src="{{ asset('public/dist/plugins/debounce-1.1/jquery.ba-throttle-debounce.min.js') }}"></script>
+<script src="{{ asset('public/dist/plugins/html5-validation/validation.min.js') }}"></script>
+<script src="{{ asset('public/dist/plugins/debounce/jquery.ba-throttle-debounce.min.js') }}"></script>
 <script src="{{ asset('public/dist/libraries/sweetalert/sweetalert-unpkg.min.js') }}"></script>
 
 <script type="text/javascript">

@@ -15,9 +15,8 @@ class CreateEmailTemplatesTable extends Migration
     {
         Schema::create('email_templates', function (Blueprint $table)
         {
-            $table->increments('id');
-            $table->integer('language_id')->unsigned()->index('email_templates_language_id_idx')->nullable();
-            $table->foreign('language_id')->references('id')->on('languages')->onUpdate('cascade')->onDelete('cascade');
+            $table->id();
+            $table->foreignId('language_id')->constrained('languages')->onUpdate('cascade')->onDelete('cascade');
             $table->string('name')->index('email_templates_name_idx');
             $table->string('alias')->index('email_templates_alias_idx');
             $table->string('subject')->nullable();

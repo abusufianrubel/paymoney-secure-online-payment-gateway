@@ -197,6 +197,7 @@ class AdminController extends Controller
 
     public function updatePassword(Request $request)
     {
+        
         $this->validate($request, [
             'old_pass' => 'required',
             'new_pass' => 'required',

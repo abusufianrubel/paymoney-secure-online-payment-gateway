@@ -58,7 +58,7 @@ class PayUmoneyProcessor extends PaymentProcessor
             throw new GatewayInitializeFailedException(__("PayUmoney initialize failed."));
         }
 
-        $this->baseurl = ($this->payumoney->mode == 'production') ? 'https://secure.payu.in/_payment' : 'https://sandboxsecure.payu.in/_payment';
+        $this->baseurl = ($this->payumoney->mode == 'live') ? 'https://secure.payu.in/_payment' : 'https://sandboxsecure.payu.in/_payment';
 
     }
 
@@ -87,6 +87,18 @@ class PayUmoneyProcessor extends PaymentProcessor
         } catch (Exception $th) {
             throw new PaymentFailedException($th->getMessage());
         }
+    }
+
+    /**
+     * Method initiateGateway
+     *
+     * @param $data $data
+     *
+     * @return void
+     */
+    public function initiateGateway($data)
+    {
+        return view(('gateways.' . $this->gateway()), $data);
     }
 
     public function paymentView()

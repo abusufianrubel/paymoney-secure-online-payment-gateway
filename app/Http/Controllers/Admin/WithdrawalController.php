@@ -56,7 +56,7 @@ class WithdrawalController extends Controller
 
     public function withdrawalCsv()
     {
-        return Excel::download(new WithdrawalsExport(), 'withdrawals_report_'. time() .'.xlsx');
+        return Excel::download(new WithdrawalsExport(), 'withdrawals_report_'. time() .'.csv');
     }
 
     public function withdrawalPdf()

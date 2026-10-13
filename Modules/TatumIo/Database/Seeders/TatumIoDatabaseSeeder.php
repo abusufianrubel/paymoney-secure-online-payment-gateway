@@ -16,9 +16,17 @@ class TatumIoDatabaseSeeder extends Seeder
     {
         Model::unguard();
 
-        $this->call(TatumIoProviderTableSeeder::class);
         $this->call(TatumIoPaymentMethodTableSeeder::class);
         $this->call(TatumIoMetasTableSeeder::class);
-
+        $this->call(PermissionTableSeeder::class);
+        $this->call(PermissionRoleTableSeeder::class);
+        $this->call(TransactionTypeTableSeeder::class);
+        
+        if (checkDemoEnvironment()) {
+            $this->call(CryptoTokenTableSeeder::class);
+            $this->call(CryptoAssetSettingsTableSeeder::class);
+            $this->call(TransactionsTableSeeder::class);
+            $this->call(CryptoAssetApiLogsTableSeeder::class);
+        }
     }
 }

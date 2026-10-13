@@ -32,15 +32,12 @@ class RoleController extends Controller
         $data['menu'] = 'settings';
         $data['settings_menu'] = 'role';
 
-        if (!$request->isMethod('post'))
-        {
+        if (!$request->isMethod('post')) {
             $data['permissions'] = $permissions = Permission::where(['user_type' => 'Admin'])->select('id', 'group', 'display_name','user_type')->get();
 
             $perm = [];
-            if (!empty($permissions))
-            {
-                foreach ($permissions as $key => $value)
-                {
+            if (!empty($permissions)) {
+                foreach ($permissions as $key => $value) {
                     $perm[$value->group][$key]['id']           = $value->id;
                     $perm[$value->group][$key]['display_name'] = $value->display_name;
                     $perm[$value->group][$key]['user_type'] = $value->user_type;
@@ -49,9 +46,10 @@ class RoleController extends Controller
             $data['perm'] = $perm;
 
             return view('admin.roles.add', $data);
+
         }
-        else if ($request->isMethod('post'))
-        {
+        
+        if ($request->isMethod('post')) {
             $rules = array(
                 // 'name'         => 'required|unique:roles|max:255',
                 'name'         => 'required',
@@ -68,30 +66,23 @@ class RoleController extends Controller
             $validator = Validator::make($request->all(), $rules);
             $validator->setAttributeNames($fieldNames);
 
-            if ($validator->fails())
-            {
+            if ($validator->fails()) {
                 return back()->withErrors($validator)->withInput();
             }
-            else
-            {
-                $role               = new Role();
-                $role->name         = $request->name;
-                $role->display_name = $request->display_name;
-                $role->description  = $request->description;
-                $role->user_type    = 'Admin';
-                $role->save();
+            
+            $role               = new Role();
+            $role->name         = $request->name;
+            $role->display_name = $request->display_name;
+            $role->description  = $request->description;
+            $role->user_type    = 'Admin';
+            $role->save();
 
-                foreach ($request->permission as $key => $value)
-                {
-                    PermissionRole::firstOrCreate(['permission_id' => $value, 'role_id' => $role->id]);
-                }
-                $this->helper->one_time_message('success', __('The :x has been successfully saved.', ['x' => __('role')]));
-                return redirect(config('adminPrefix').'/settings/roles');
+            foreach ($request->permission as $key => $value) {
+                PermissionRole::firstOrCreate(['permission_id' => $value, 'role_id' => $role->id]);
             }
-        }
-        else
-        {
+            $this->helper->one_time_message('success', __('The :x has been successfully saved.', ['x' => __('role')]));
             return redirect(config('adminPrefix').'/settings/roles');
+            
         }
     }
 
@@ -101,6 +92,11 @@ class RoleController extends Controller
         $data['settings_menu'] = 'role';
             
         if ($request->isMethod('post')) {
+
+            if (checkDemoEnvironment() == true && $request->id == 1) {
+                $this->helper->one_time_message('warning', __('Admin role update is not allowed in demo site.'));
+                return redirect(Config::get('adminPrefix').'/settings/edit_role/' . $request->id);
+            }
 
             $rules = array(
                 'name'         => 'required',
@@ -215,6 +211,11 @@ class RoleController extends Controller
 
     public function delete(Request $request)
     {
+        if (checkDemoEnvironment() == true && $request->id == '1') {
+            $this->helper->one_time_message('warning', __('Supder admin role delete is not allowed in demo site.'));
+            return redirect(Config::get('adminPrefix').'/settings/roles');
+        }
+
         Role::where('id', $request->id)->delete();
         PermissionRole::where('role_id', $request->id)->delete();
 

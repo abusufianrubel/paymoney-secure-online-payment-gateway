@@ -14,10 +14,22 @@ class Preference extends Model
     /*FOR CACHE - BELOW*/
     public static function getAll()
     {
-        $data = Cache::get(config('cache.prefix') . '-preferences');
+        $cacheKey = config('cache.prefix') . '-preferences';
+
+        try {
+            $data = Cache::get($cacheKey);
+        } catch (\Throwable $e) {
+            return parent::all();
+        }
+
         if (empty($data)) {
             $data = parent::all();
-            Cache::put(config('cache.prefix') . '-preferences', $data, 30 * 86400);
+
+            try {
+                Cache::put($cacheKey, $data, 30 * 86400);
+            } catch (\Throwable $e) {
+                // Cache store unavailable (e.g. missing cache table during upgrade)
+            }
         }
 
         return $data;

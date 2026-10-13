@@ -15,11 +15,26 @@ class DepositsDataTable extends DataTable
             ->editColumn('created_at', function ($deposit) {
                 return dateFormat($deposit->created_at);
             })->addColumn('user_id', function ($deposit) {
-                $sender = getColumnValue($deposit->user);
-                if ($sender <> '-' && Common::has_permission(auth('admin')->user()->id, 'edit_user')) {
-                    return '<a href="' . url(config('adminPrefix') . '/users/edit/' . $deposit->user->id) . '">' . $sender . '</a>' ;
+
+                [$url, $sender,  $permission] =  ( isActive('Agent') && !empty($deposit->agent_id)) ? 
+                [
+                    url(config('adminPrefix') . '/agent/agents/' . $deposit->agent_id . '/edit'), 
+                    getColumnValue($deposit->agent), 
+                    Common::has_permission(auth('admin')->user()->id,  'edit_agent')
+                ] 
+                : 
+                [
+                    url(config('adminPrefix') . '/users/edit/' . $deposit->user_id), 
+                    getColumnValue($deposit->user), 
+                    Common::has_permission(auth('admin')->user()->id,  'edit_user')
+                ];
+
+                if ($sender <> '-') {
+                    return ($permission && $url) ? '<a href="' . $url . '">' . $sender . '</a>' : $sender;
                 }
                 return $sender;
+
+
             })->editColumn('amount', function ($deposit) {
                 return formatNumber($deposit->amount, $deposit->currency_id);
             })->addColumn('fees', function ($deposit) {

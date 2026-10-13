@@ -61,7 +61,7 @@ $(".provider-status").on('click', function() {
                 });
             } else if (response.status == 400) {
                 swal({
-                    title: notFound,
+                    title: restricted,
                     text: response.message,
                     type: "error"
                 }, function() {
@@ -189,4 +189,18 @@ $('#addressValidationModal').on('hidden.bs.modal', function (e) {
     $('#crypto-address-check-form #address').val('');
     $('#validate-address-error').css('display', 'none');
     $('.alert-class').removeClass('alert alert-success alert-danger');
+});
+
+$(document).on('click', '#refresh', function() {
+    swal({
+        title: refreshList,
+        text: refreshText,
+        icon: 'question', // Question icon
+        showCancelButton: true,
+        confirmButtonText: confirmText,
+        cancelButtonText: cancelText
+    }, function() {
+        $('body').append('<div id="spinner-overlay"><div class="spinner-icon"><i class="fa fa-spinner fa-spin"></i></div></div>');
+        window.location.href = adjustRoute;
+    });
 });

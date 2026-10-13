@@ -44,7 +44,7 @@
                                     <label class="mb-1" for="currency_id">{{ __('Currency') }}</label>
                                     <select class="select2 wallet" name="currency_id" id="currency_id">
                                         @foreach ($wallets as $row)
-                                            <option data-type="{{ getColumnValue($row->active_currency, 'type', '') }}" data-wallet="{{ $row->id }}" value="{{ getColumnValue($row->active_currency, 'id', '') }}">{{ getColumnValue($row->active_currency, 'code', '') }}</option>
+                                            <option data-type="{{ getColumnValue($row->active_currency, 'type', '') }}" data-wallet="{{ $row->id }}" value="{{ getColumnValue($row->active_currency, 'id', '') }}" {{ $row->active_currency->default == 1 ? 'selected' : '' }}>{{ getColumnValue($row->active_currency, 'code', '') }}</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -65,7 +65,7 @@
                             </div>
                         </div>
                         <div class="mt-3">
-                            <a href="{{ url(config('adminPrefix').'/users/edit/', $users->id) }}" class="btn btn-theme-danger me-1"><span class="f-14"><i class="fa fa-angle-left"></i>&nbsp;{{ __('Back') }}</span></a>
+                            <a href="{{ url(config('adminPrefix').'/users/edit', $users->id) }}" class="btn btn-theme-danger me-1"><span class="f-14"><i class="fa fa-angle-left"></i>&nbsp;{{ __('Back') }}</span></a>
                             <button type="submit" class="btn btn-theme" id="withdrawal-create">
                                 <i class="fa fa-spinner fa-spin f-14 d-none"></i>
                                 <span id="withdrawal-create-text" class="f-14">{{ __('Next') }}&nbsp;<i class="fa fa-angle-right"></i></span>
@@ -81,7 +81,7 @@
 @push('extra_body_scripts')
 
 <!-- jquery.validate -->
-<script src="{{ asset('public/dist/plugins/jquery-validation-1.17.0/dist/jquery.validate.min.js') }}" type="text/javascript"></script>
+<script src="{{ asset('public/dist/plugins/jquery-validation/dist/jquery.validate.min.js') }}" type="text/javascript"></script>
 
 @include('common.restrict_number_to_pref_decimal')
 @include('common.restrict_character_decimal_point')
@@ -167,8 +167,6 @@
         })
         .done(function (response)
         {
-            // console.log(response);
-
             if (response.success.status == 200)
             {
                 $("#percentage_fee").val(response.success.feesPercentage);

@@ -14,6 +14,7 @@ use App\Services\Mail\{UserStatusChangeMailService,
     UserVerificationMailService
 };
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Response;
 use Illuminate\Http\Request;
 use App\Http\Helpers\Common;
 use App\Models\{ActivityLog,
@@ -34,6 +35,8 @@ use App\Models\{ActivityLog,
     User,
     Role
 };
+use App\Services\Sms\DepositViaAdminSMSService;
+use App\Services\Sms\WithdrawViaAdminSMSService;
 
 class UserController extends Controller
 {
@@ -112,17 +115,9 @@ class UserController extends Controller
                     if (settings('allowed_wallets') != 'none') {
                         $this->user->createUserAllowedWallets($user->id, settings('allowed_wallets'));
                     }
+                  
 
-                    if (isActive('BlockIo') && CryptoProvider::getStatus('BlockIo') == 'Active' && $user->status == 'Active') {
-                        $generateUserCryptoWalletAddress = $this->user->generateUserBlockIoWalletAddress($user);
-                        if ($generateUserCryptoWalletAddress['status'] == 401) {
-                            DB::rollBack();
-                            $this->helper->one_time_message('error', $generateUserCryptoWalletAddress['message']);
-                            return redirect(config('adminPrefix').'/users');
-                        }
-                    }
-
-                    if (isActive('TatumIo') && CryptoProvider::getStatus('TatumIo') == 'Active' && $user->status == 'Active') {
+                    if (!checkDemoEnvironment() && isActive('TatumIo') && CryptoProvider::getStatus('TatumIo') == 'Active' && $user->status == 'Active') {
                         $generateUserCryptoWalletAddress = $this->user->generateUserTatumIoWalletAddress($user);
                         if ($generateUserCryptoWalletAddress['status'] == 401) {
                             DB::rollBack();
@@ -182,6 +177,11 @@ class UserController extends Controller
 
         $data['users'] = User::find($id);
 
+        if (empty($data['users'])) {
+            $this->helper->one_time_message('error', __('User does not exist.'));
+            return redirect(config('adminPrefix').'/users');
+        }
+
         $data['roles'] = Role::select('id', 'display_name')->where('user_type', "User")->get();
         if(!g_c_v() && a_u_c_v()) {
             Session::flush();
@@ -194,6 +194,25 @@ class UserController extends Controller
     public function update(Request $request)
     {
         if ($request->isMethod('post')) {
+            if (checkDemoEnvironment()) {
+                switch ($request->status || $request->email) {
+                    case in_array($request->status, ['Inactive', 'Suspended']):
+                        $this->helper->one_time_message('warning', __('Demo user status update is not allowed in demo site.'));
+                        return redirect(Config::get('adminPrefix').'/users/edit/' . $request->id);
+                        break;
+                    case in_array($request->email, ['kyla@gmail.com', 'irish@gmail.com']):
+                        if (isset($request->password)) {
+                            $this->helper->one_time_message('warning', __('Demo user password update is not allowed in demo site.'));
+                            return redirect(Config::get('adminPrefix').'/users/edit/' . $request->id);
+                        } else {
+                            $this->helper->one_time_message('warning', __('Demo user email update is not allowed in demo site.'));
+                            return redirect(Config::get('adminPrefix').'/users/edit/' . $request->id);
+                        }
+
+                        break;
+                }
+            }
+
             $rules = array(
                 'first_name' => 'required|max:30|regex:/^[a-zA-Z\s]*$/',
                 'last_name' => 'required|max:30|regex:/^[a-zA-Z\s]*$/',
@@ -217,8 +236,10 @@ class UserController extends Controller
                     $user->email      = $request->email;
                     $user->role_id    = $request->role;
                     $user->status     = $request->status;
+                    $user->type       = Role::where('id', $request->role)->first()->customer_type;
 
                     $formattedPhone = ltrim($request->phone, '0');
+
                     if (!empty($request->phone)) {
                         $user->phone          = preg_replace("/[\s-]+/", "", $formattedPhone);
                         $user->defaultCountry = $request->user_defaultCountry;
@@ -234,6 +255,7 @@ class UserController extends Controller
                     if (!is_null($request->password) && !is_null($request->password_confirmation)) {
                         $user->password = \Hash::make($request->password);
                     }
+
                     $user->save();
 
                     RoleUser::where(['user_id' => $request->id, 'user_type' => 'User'])->update(['role_id' => $request->role]);
@@ -265,8 +287,14 @@ class UserController extends Controller
         $data['user_tab_menu'] = 'user_profile';
 
         $data['users'] = User::find($id, ['id', 'first_name', 'last_name']);
+
+        if (empty($data['users'])) {
+            $this->helper->one_time_message('error', __('User does not exist.'));
+            return redirect(config('adminPrefix') . '/users');
+        }
+
         $data['payment_met']     = $payment_met     = PaymentMethod::where(['name' => 'Mts', 'status' => 'Active'])->first(['id', 'name']);
-        $data['active_currency'] = $activeCurrency = Currency::where(['status' => 'Active'])->get(['id', 'status', 'code', 'type']);
+        $data['active_currency'] = $activeCurrency = Currency::where(['status' => 'Active'])->get(['id', 'status', 'code', 'type', 'default']);
         $feesLimitCurrency       = FeesLimit::where(['transaction_type_id' => Deposit, 'payment_method_id' => $payment_met->id, 'has_transaction' => 'Yes'])->get(['currency_id', 'has_transaction']);
         $data['activeCurrencyList'] = $this->currencyList($activeCurrency, $feesLimitCurrency);
 
@@ -320,6 +348,7 @@ class UserController extends Controller
                     $selectedCurrency[$aCurrency->id]['id']   = $aCurrency->id;
                     $selectedCurrency[$aCurrency->id]['code'] = $aCurrency->code;
                     $selectedCurrency[$aCurrency->id]['type'] = $aCurrency->type;
+                    $selectedCurrency[$aCurrency->id]['default'] = $aCurrency->default;
                 }
             }
         }
@@ -400,7 +429,7 @@ class UserController extends Controller
                 $wallet->save();
             }
 
-            if (module('Referral') && settings('referral_enabled') == 'Yes') {
+            if (moduleExists('Referral') && settings('referral_enabled') == 'Yes') {
             
                 $refAwardData = [
                     'userId'          => $deposit->user_id,
@@ -418,18 +447,15 @@ class UserController extends Controller
 
             // Notification Email/SMS
             (new DepositViaAdminMailService)->send($deposit);
-            if (module('Referral') && settings('referral_enabled') == 'Yes' && !empty($awardResponse)) {
+            // Send deposit sms to user
+            if (checkAppSmsEnvironment()) {
+                (new DepositViaAdminSMSService)->send($deposit);
+            }
+
+            if (moduleExists('Referral') && settings('referral_enabled') == 'Yes' && !empty($awardResponse)) {
                 if (isset($awardResponse['email_status']) && $awardResponse['email_status'] === 200 && !empty($awardResponse['email_details'])) {
                     $awardInfo = (new \Modules\Referral\Services\Email\ReferralAwardMailService)->send($awardResponse['email_details']);
                     \Modules\Referral\Jobs\ProcessRewardEmail::dispatch($awardInfo);
-                }
-            }
-
-            // Send deposit sms to admin
-            if (checkAppSmsEnvironment()) {
-                $payoutMessage = 'Amount ' . moneyFormat(optional($deposit->currency)->symbol, formatNumber($deposit->amount)) . ' was deposited by System Administrator.';
-                if (!empty($deposit->user->formattedPhone)) {
-                    sendSMS($deposit->user->formattedPhone, $payoutMessage);
                 }
             }
 
@@ -473,6 +499,11 @@ class UserController extends Controller
         $data['user_tab_menu'] = 'user_profile';
 
         $data['users'] = $users = User::find($id, ['id', 'first_name', 'last_name']);
+
+        if (empty($data['users'])) {
+            $this->helper->one_time_message('error', __('User does not exist.'));
+            return redirect(config('adminPrefix') . '/users');
+        }
 
         if ($request->isMethod('post')) {
 
@@ -521,7 +552,7 @@ class UserController extends Controller
                 $query->where('has_transaction', 'Yes')->where('transaction_type_id', Withdrawal)->where('payment_method_id', $paymentMethodId);
             });
         })
-        ->with(['active_currency:id,code,type', 'active_currency.fees_limit:id,currency_id'])
+        ->with(['active_currency:id,code,type,default', 'active_currency.fees_limit:id,currency_id'])
         ->get(['id', 'currency_id']);
 
         return view('admin.users.withdraw.create', $data);
@@ -530,90 +561,107 @@ class UserController extends Controller
     public function amountFeesLimitCheck(Request $request)
     {
         $amount = $request->amount;
-        $feesDetails = FeesLimit::where(['transaction_type_id' => $request->transaction_type_id, 'currency_id' => $request->currency_id, 'payment_method_id' => $request->payment_method_id])
-            ->first(['min_limit', 'max_limit', 'charge_percentage', 'charge_fixed']);
-        $wallet = Wallet::where(['currency_id' => $request->currency_id, 'user_id' => $request->user_id])->first(['balance']);
+
+        $feesDetails = FeesLimit::where([
+            'transaction_type_id' => $request->transaction_type_id,
+            'currency_id' => $request->currency_id,
+            'payment_method_id' => $request->payment_method_id
+        ])->first(['min_limit', 'max_limit', 'charge_percentage', 'charge_fixed']);
+
+        if (empty($feesDetails)) {
+            return response()->json([
+                'success' => [
+                    'message' => __('Feeslimit not set.'),
+                    'status'  => 401
+                ]
+            ]);
+        }
+
+        $wallet = Wallet::where([
+            'currency_id' => $request->currency_id,
+            'user_id' => $request->user_id
+        ])->first(['balance']);
+
+        $balance = optional($wallet)->balance ?? 0;
+
+        // Initialize charge variables to avoid undefined errors
+        $chargeFixed = 0;
+        $chargePercentage = 0;
+
+        if ($feesDetails) {
+            // Ensure numeric values for fees
+            $chargeFixed = is_numeric($feesDetails->charge_fixed) ? $feesDetails->charge_fixed : 0;
+            $chargePercentage = is_numeric($feesDetails->charge_percentage) ? $feesDetails->charge_percentage : 0;
+        }
 
         if ($request->transaction_type_id == Withdrawal) {
-            //Wallet Balance Limit Check Starts here
-            $checkAmount = $amount + $feesDetails->charge_fixed + (($amount * $feesDetails->charge_percentage) / 100);
-            if (@$wallet)
-            {
-                if ((@$checkAmount) > (@$wallet->balance) || (@$wallet->balance < 0))
-                {
-                    $success['message'] = "Insufficient Balance!";
-                    $success['status']  = '401';
-                    return response()->json(['success' => $success]);
-                }
+
+            if (empty($wallet)) {
+                return response()->json([
+                    'success' => [
+                        'message' => __('Wallet does not exist.'),
+                        'status'  => 401
+                    ]
+                ]);
             }
-            //Wallet Balance Limit Check Ends here
+            // Calculate total amount including fees
+            $checkAmount = $amount + $chargeFixed + (((float) $amount * $chargePercentage) / 100);
+
+            if ($checkAmount > $balance || $balance < 0) {
+                return response()->json([
+                    'success' => [
+                        'message' => __('Insufficient Balance!'),
+                        'status'  => Response::HTTP_UNAUTHORIZED
+                    ]
+                ]);
+            }
         }
 
-        //Amount Limit Check Starts here
-        if (empty($feesDetails))
-        {
-            $feesPercentage            = 0;
-            $feesFixed                 = 0;
-            $totalFess                 = $feesPercentage + $feesFixed;
-            $totalAmount               = $amount + $totalFess;
-            $success['feesPercentage'] = $feesPercentage;
-            $success['feesFixed']      = $feesFixed;
-            $success['totalFees']      = $totalFess;
-            $success['totalFeesHtml']  = formatNumber($totalFess, $request->currency_id);
-            $success['totalAmount']    = $totalAmount;
-            $success['pFees']          = $feesPercentage;
-            $success['pFeesHtml']      = formatNumber($feesPercentage, $request->currency_id);
-            $success['fFees']          = $feesFixed;
-            $success['fFeesHtml']      = formatNumber($feesFixed, $request->currency_id);
-            $success['min']            = 0;
-            $success['max']            = 0;
-            $success['balance']        = 0;
+        if (!$feesDetails) {
+            return $this->prepareFeesResponse(0, 0, $amount, $request->currency_id);
         }
-        else
-        {
-            if (@$feesDetails->max_limit == null)
-            {
-                if ((@$amount < @$feesDetails->min_limit))
-                {
-                    $success['message'] = __('Minimum amount :x', ['x' => formatNumber($feesDetails->min_limit, $request->currency_id)]);
-                    $success['status']  = '401';
-                }
-                else
-                {
-                    $success['status'] = 200;
-                }
-            }
-            else
-            {
-                if ((@$amount < @$feesDetails->min_limit) || (@$amount > @$feesDetails->max_limit))
-                {
-                    $success['message'] = 'Minimum amount ' . formatNumber($feesDetails->min_limit, $request->currency_id) . ' and Maximum amount ' . formatNumber($feesDetails->max_limit, $request->currency_id);
-                    $success['status']  = '401';
-                }
-                else
-                {
-                    $success['status'] = 200;
-                }
-            }
-            $feesPercentage            = $amount * ($feesDetails->charge_percentage / 100);
-            $feesFixed                 = $feesDetails->charge_fixed;
-            $totalFess                 = $feesPercentage + $feesFixed;
-            $totalAmount               = $amount + $totalFess;
-            $success['feesPercentage'] = $feesPercentage;
-            $success['feesFixed']      = $feesFixed;
-            $success['totalFees']      = $totalFess;
-            $success['totalFeesHtml']  = formatNumber($totalFess, $request->currency_id);
-            $success['totalAmount']    = $totalAmount;
-            $success['pFees']          = $feesDetails->charge_percentage;
-            $success['pFeesHtml']      = formatNumber($feesDetails->charge_percentage, $request->currency_id);
-            $success['fFees']          = $feesDetails->charge_fixed;
-            $success['fFeesHtml']      = formatNumber($feesDetails->charge_fixed, $request->currency_id);
-            $success['min']            = $feesDetails->min_limit;
-            $success['max']            = $feesDetails->max_limit;
-            $success['balance']        = @$wallet->balance ? @$wallet->balance : 0;
+
+        // Check min/max limits
+        if ($amount < $feesDetails->min_limit || ($feesDetails->max_limit && $amount > $feesDetails->max_limit)) {
+            $message = __('Minimum amount :min', ['min' => formatNumber($feesDetails->min_limit, $request->currency_id)]);
+            $message .= $feesDetails->max_limit ? ' ' . __('and Maximum amount :max', ['max' => formatNumber($feesDetails->max_limit, $request->currency_id)]) : '';
+            
+            return response()->json([
+                'success' => [
+                    'message' => $message,
+                    'status'  => Response::HTTP_UNAUTHORIZED
+                ]
+            ]);
         }
-        //Amount Limit Check Ends here
-        return response()->json(['success' => $success]);
+
+        // Calculate fees and prepare the response
+        $feesPercentage = (float) $amount * ($chargePercentage / 100);
+        $feesFixed = $chargeFixed;
+        return $this->prepareFeesResponse($feesPercentage, $feesFixed, $amount, $request->currency_id, $balance, $feesDetails);
+    }
+
+    private function prepareFeesResponse($feesPercentage, $feesFixed, $amount, $currencyId, $balance = 0, $feesDetails = null)
+    {
+        $totalFees = $feesPercentage + $feesFixed;
+        $totalAmount = $amount + $totalFees;
+
+        return response()->json([
+            'success' => [
+                'feesPercentage' => $feesPercentage,
+                'feesFixed'      => $feesFixed,
+                'totalFees'      => $totalFees,
+                'totalFeesHtml'  => formatNumber($totalFees, $currencyId),
+                'totalAmount'    => $totalAmount,
+                'pFees'          => $feesDetails->charge_percentage ?? 0,
+                'pFeesHtml'      => formatNumber($feesDetails->charge_percentage ?? 0, $currencyId),
+                'fFees'          => $feesFixed,
+                'fFeesHtml'      => formatNumber($feesFixed, $currencyId),
+                'min'            => $feesDetails->min_limit ?? 0,
+                'max'            => $feesDetails->max_limit ?? 0,
+                'balance'        => $balance,
+                'status'         => Response::HTTP_OK
+            ]
+        ]);
     }
 
     public function eachUserWithdrawSuccess(Request $request)
@@ -682,10 +730,7 @@ class UserController extends Controller
             (new WithdrawalViaAdminMailService)->send($withdrawal);
 
             if (checkAppSmsEnvironment()) {
-                $payoutMessage = 'Amount ' . moneyFormat(optional($withdrawal->currency)->symbol, formatNumber($withdrawal->amount)) . ' was withdrawn by System Administrator.';
-                if (!empty($withdrawal->user->formattedPhone)) {
-                    sendSMS($withdrawal->user->formattedPhone, $payoutMessage);
-                }
+                (new WithdrawViaAdminSMSService)->send($withdrawal);
             }
 
             $data['transInfo']['currency_id'] = $transaction->currency->id;
@@ -725,6 +770,12 @@ class UserController extends Controller
         $data['user_tab_menu'] = 'user_transactions';
 
         $data['users'] = User::find($id, ['id', 'first_name', 'last_name']);
+
+        if (empty($data['users'])) {
+            $this->helper->one_time_message('error', __('User does not exist.'));
+            return redirect(config('adminPrefix').'/users');
+        }
+        
         $data['transactionStatus'] = (new Transaction)->eachUserTransactionGroupBy('status', $id);
         $data['transactionCurrency'] = (new Transaction)->eachUserTransactionGroupBy('currency_id', $id);
         $data['transactionType'] = (new Transaction)->eachUserTransactionGroupBy('transaction_type_id', $id);
@@ -746,6 +797,10 @@ class UserController extends Controller
 
         $data['wallets'] = Wallet::with('currency:id,type,code')->where(['user_id' => $id])->orderBy('id', 'desc')->get();
         $data['users']   = User::find($id, ['id', 'first_name', 'last_name']);
+        if (empty($data['users'])) {
+            $this->helper->one_time_message('error', __('User does not exist.'));
+            return redirect(config('adminPrefix').'/users');
+        }
         return view('admin.users.eachuserwallet', $data);
     }
 
@@ -757,6 +812,12 @@ class UserController extends Controller
 
         $data['tickets'] = Ticket::where(['user_id' => $id])->orderBy('id', 'desc')->get();
         $data['users']   = User::find($id, ['id', 'first_name', 'last_name']);
+
+        if (empty($data['users'])) {
+            $this->helper->one_time_message('error', __('User does not exist.'));
+            return redirect(config('adminPrefix').'/users');
+        }
+
         if(!g_c_v() && a_ut_c_v()) {
             Session::flush();
             return view('vendor.installer.errors.admin');
@@ -773,13 +834,18 @@ class UserController extends Controller
         $data['disputes'] = Dispute::where(['claimant_id' => $id])->orWhere(['defendant_id' => $id])->orderBy('id', 'desc')->get();
         $data['users'] = User::find($id, ['id', 'first_name', 'last_name']);
 
+        if (empty($data['users'])) {
+            $this->helper->one_time_message('error', __('User does not exist.'));
+            return redirect(config('adminPrefix').'/users');
+        }
+
         return view('admin.users.eachuserdispute', $data);
     }
 
     public function destroy($id)
     {
         $user = User::find($id);
-
+ 
         if ($user) {
             try {
                 DB::beginTransaction();
@@ -953,7 +1019,6 @@ class UserController extends Controller
 
     public function adminUpdate(Request $request)
     {
-
         $rules = array(
             'first_name' => 'required|max:30|regex:/^[a-zA-Z\s]*$/',
             'last_name'  => 'required|max:30|regex:/^[a-zA-Z\s]*$/',

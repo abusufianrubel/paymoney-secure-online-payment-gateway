@@ -2,18 +2,21 @@
 
 namespace App\Http\Controllers\Api;
 
-use Intervention\Image\Facades\Image;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Http\Helpers\Common;
-use App\Models\{Country,
+use App\Models\{
+    Country,
     RequestPayment,
     UserDetail,
     Transfer,
     Wallet,
     User
 };
-use Illuminate\Support\Facades\{Auth,
+use Illuminate\Support\Facades\{
+    Auth,
     Hash,
     DB
 };
@@ -33,7 +36,7 @@ class ProfileController extends Controller
     public function checkUserStatusApi(Request $request)
     {
         $user       = User::where(['id' => $request->user_id])->first(['status']);
-        $userStatus = $this->helper->getUserStatus($user->status);
+        $userStatus = Common::getUserStatus($user->status);
         return response()->json([
             'status'      => $this->successStatus,
             'user-status' => $userStatus,
@@ -60,16 +63,13 @@ class ProfileController extends Controller
     public function getUserAvailableWalletsBalances()
     {
         $user_id = request('user_id');
-        if ($user_id)
-        {
+        if ($user_id) {
             //get user formatted phone
             $wallet            = new Wallet();
             $wallets           = $wallet->getAvailableBalance($user_id);
             $success['status'] = $this->successStatus;
             return response()->json(['success' => $success, 'wallets' => $wallets], $this->successStatus);
-        }
-        else
-        {
+        } else {
             echo "In else block";
             exit();
             return false;
@@ -85,7 +85,7 @@ class ProfileController extends Controller
     //Grab specific user profile details based on email address.
     public function getUserSpecificProfile()
     {
-        try{
+        try {
             if (request('type') == 'sendMoney') {
                 $transfer = Transfer::where(['id' => request('tr_ref_id')])->first(['receiver_id', 'email', 'phone']);
                 if (!empty($transfer->receiver)) {
@@ -184,8 +184,7 @@ class ProfileController extends Controller
         $wallets            = Wallet::whereHas('currency', function ($q) {
             $q->where(['type' => 'fiat']);
         })->with(['currency:id,code'])->where(['user_id' => request('user_id')])->get(['id', 'currency_id', 'is_default']);
-        $success['wallets'] = $wallets->map(function ($wallet)
-        {
+        $success['wallets'] = $wallets->map(function ($wallet) {
             $arr['id']           = $wallet->id;
             $arr['currencyCode'] = $wallet->currency->code;
             $arr['is_default']   = $wallet->is_default;
@@ -198,18 +197,14 @@ class ProfileController extends Controller
     public function userProfileDuplicateEmailCheckApi(Request $request)
     {
         $req_id = $request->user_id;
-        $email  = User::where(['email' => $request->email])->where(function ($query) use ($req_id)
-        {
+        $email  = User::where(['email' => $request->email])->where(function ($query) use ($req_id) {
             $query->where('id', '!=', $req_id);
         })->exists();
 
-        if ($email)
-        {
+        if ($email) {
             $data['status'] = true;
             $data['fail']   = "The email has already been taken!";
-        }
-        else
-        {
+        } else {
             $data['status']  = false;
             $data['success'] = "Email Available!";
         }
@@ -221,29 +216,24 @@ class ProfileController extends Controller
         $filename = '';
         $user_id  = request('user_id');
         $picture  = request('file');
-    
-        try
-        {
+
+        try {
             DB::beginTransaction();
             $user     = User::find($user_id, ['id', 'picture']);
 
-            if (isset($picture))
-            {
+            if (isset($picture)) {
                 $ext      = strtolower($picture->getClientOriginalExtension());
                 $filename = time() . '.' . $ext;
 
                 $dir1     = public_path('/user_dashboard/profile/' . $user->picture);
                 $dir2     = public_path('/user_dashboard/profile/thumb/' . $user->picture);
 
-                if (!empty($user->picture))
-                {
-                    if (file_exists($dir1))
-                    {
+                if (!empty($user->picture)) {
+                    if (file_exists($dir1)) {
                         unlink($dir1);
                     }
 
-                    if (file_exists($dir2))
-                    {
+                    if (file_exists($dir2)) {
                         unlink($dir2);
                     }
                 }
@@ -251,15 +241,15 @@ class ProfileController extends Controller
                 $dir1     = public_path('/user_dashboard/profile/' . $filename);
                 $dir2     = public_path('/user_dashboard/profile/thumb/' . $filename);
 
-                if ($ext == 'png' || $ext == 'jpg' || $ext == 'jpeg' || $ext == 'gif' || $ext == 'bmp')
-                {
-                    $img = Image::make($picture->getRealPath());
-                    $img->resize(98, 98)->save($dir1);
-                    $img->resize(70, 70)->save($dir2);
+                if ($ext == 'png' || $ext == 'jpg' || $ext == 'jpeg' || $ext == 'gif' || $ext == 'bmp') {
+                    $manager = new ImageManager(new Driver());
+                    $img = $manager->read($picture->getRealPath());
+                    $img->resize(98, 98);
+                    $img->save($dir1);
+                    $img->resize(70, 70);
+                    $img->save($dir2);
                     $user->picture = $filename;
-                }
-                else
-                {
+                } else {
                     $success['status']  = $this->unauthorisedStatus;
                     $success['message'] = "Invalid Image Format";
                     return response()->json(['success' => $success], $this->unauthorisedStatus);
@@ -270,9 +260,7 @@ class ProfileController extends Controller
             $success['status']  = $this->successStatus;
             $success['message'] = "Image successfully uploaded";
             return response()->json(['success' => $success, 'filename' => $filename], $this->successStatus);
-        }
-        catch (Exception $e)
-        {
+        } catch (Exception $e) {
             DB::rollBack();
             $success['status']  = $this->unauthorisedStatus;
             $success['message'] = $e->getMessage();
@@ -293,15 +281,12 @@ class ProfileController extends Controller
             $user->email      = request('email');
             $user->phone      = request('phone');
             $formattedPhone   = ltrim(request('phone'), '0');
-            if (!empty(request('phone')))
-            {
+            if (!empty(request('phone'))) {
                 $user->phone          = preg_replace("/[\s-]+/", "", $formattedPhone);
                 $user->defaultCountry = request('user_defaultCountry');
                 $user->carrierCode    = request('user_carrierCode');
                 $user->formattedPhone = request('formattedPhone');
-            }
-            else
-            {
+            } else {
                 $user->phone          = null;
                 $user->defaultCountry = null;
                 $user->carrierCode    = null;
@@ -320,8 +305,7 @@ class ProfileController extends Controller
 
             //Default wallet change - starts
             $defaultWallet = Wallet::where('user_id', request('user_id'))->where('is_default', 'Yes')->first(['id', 'is_default']);
-            if ($defaultWallet->id != request('defaultWallet'))
-            {
+            if ($defaultWallet->id != request('defaultWallet')) {
                 //making existing default wallet to 'No'
                 $defaultWallet->is_default = 'No';
                 $defaultWallet->save();
@@ -335,8 +319,7 @@ class ProfileController extends Controller
 
             DB::commit();
 
-            if (!empty($user->formattedPhone))
-            {
+            if (!empty($user->formattedPhone)) {
                 $success['formattedPhone'] = $user->formattedPhone;
             }
             $success['username'] = $user->first_name . ' ' . $user->last_name;
@@ -344,9 +327,7 @@ class ProfileController extends Controller
 
             $success['status'] = $this->successStatus;
             return response()->json(['success' => $success], $this->successStatus);
-        }
-        catch (Exception $e)
-        {
+        } catch (Exception $e) {
             DB::rollBack();
             $success['status']  = $this->unauthorisedStatus;
             $success['message'] = $e->getMessage(); // echo print_r($e->getMessage());
@@ -370,7 +351,6 @@ class ProfileController extends Controller
             $success['status']  = $this->successStatus;
             $success['message'] = 'Password updated successfully!';
             return response()->json(['success' => $success], $this->successStatus);
-
         } else {
             $success['status']  = $this->unauthorisedStatus;
             $success['message'] = 'Please give the correct password!';

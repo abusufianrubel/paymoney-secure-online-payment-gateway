@@ -64,19 +64,40 @@ class MtsProcessor extends PaymentProcessor
 
             isTransactionExist($data['uuid']);
 
-            $this->makeAuth();
-
             $this->walletCheck();
+
+            if (moduleExists('PaymentLink') && in_array($this->data['transaction_type'], [Payment_Link_Received, Payment_Link_Sent])) {
+                $linkPaymentData = getPaymentParam(request()->params);
+                $paymentLink = (new \Modules\PaymentLink\Services\PaymentLinkService)->checkLinkValidity($linkPaymentData['reference']);
+
+                if ($paymentLink->user_id == auth()->user()->id) {
+                    throw new PaymentFailedException(__("You cannot make payment to yourself!"));
+                }
+            }
 
             return [
                 "type" => $this->gateway(),
-                'redirect_url' => $data['redirect_url'],
-                'user' => auth()->id()
+                'redirect_url' => $data['redirect_url'] . '?params=' . $data['params'] . '&user=' . auth()->id() ?? $data['user_id'],
+                'redirect' => true,
+                'user' => auth()->id() ?? $data['user_id']
             ];
 
         } catch (Exception $th) {
+
             throw new PaymentFailedException($th->getMessage(), ["response" => $response ?? null]);
         }
+    }
+
+    /**
+     * Method initiateGateway
+     *
+     * @param $data $data
+     *
+     * @return void
+     */
+    public function initiateGateway($data)
+    {
+        return view(('gateways.' . $this->gateway()), $data);
     }
 
     public function paymentView()
@@ -116,25 +137,10 @@ class MtsProcessor extends PaymentProcessor
         return $this->validateData($data, $rules);
     }
 
-    public function makeAuth()
-    {
-        if ($this->data['transaction_type'] == Payment_Sent) {
-            $auth = [
-                'email' => $this->data['email'],
-                'password' => $this->data['password']
-            ];
-
-            if (!Auth::attempt($auth)) {
-                throw new Exception(__('Authentication fail'));
-            }
-        }
-
-        return true;
-    }
-
+ 
     public function walletCheck()
     {
-        $senderWallet = Wallet::where(['user_id' => auth()->user()->id, 'currency_id' => $this->data['currency_id']])->first(['id', 'balance']);
+        $senderWallet = Wallet::where(['user_id' => auth()->user()->id ?? $this->data['user_id'], 'currency_id' => $this->data['currency_id']])->first(['id', 'balance']);
         //Check User has the wallet or not
         if (!$senderWallet) {
             auth()->logout();

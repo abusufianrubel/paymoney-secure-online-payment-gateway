@@ -2,54 +2,80 @@
 
 namespace App\Http\Middleware;
 
-use App;
 use Closure;
-use Session;
-use Illuminate\Support\Facades\Config;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\App;
 
 class Locale
 {
     /**
-     * Handle an incoming request.
-     *
-     * @param  \Illuminate\Http\Request $request
-     * @param  \Closure                 $next
-     * @return mixed
+     * Set the application locale from session or installer defaults (non-admin routes only).
      */
-    public function handle($request, Closure $next)
+    public function handle(Request $request, Closure $next): mixed
     {
-        $prefix = str_replace('/', '', request()->route()->getPrefix());
-        if ($prefix !== config('adminPrefix'))
-        {
-            if (env('APP_INSTALL'))
-            {
-                if (!session('dflt_lang'))
-                {
-                    $lang = getLanguageDefault();
-                    if (!empty($lang))
-                    {
-                        session(['dflt_lang' => $lang->short_name]);
-                    }
-                }
-            }
-
-            if (Session::get('dflt_lang'))
-            {
-                App::setLocale(Session::get('dflt_lang'));
-            }
-            else
-            {
-                if (env('APP_INSTALL'))
-                {
-                    $lang = getLanguageDefault();
-                    if (!empty($lang))
-                    {
-                        App::setLocale($lang->short_name);
-                        session(['dflt_lang' => $lang->short_name]);
-                    }
-                }
-            }
+        if ($this->isAdminRoute($request)) {
+            return $next($request);
         }
+
+        $this->seedDefaultLanguageSession();
+        $this->applyLocale();
+
         return $next($request);
+    }
+
+    private function isAdminRoute(Request $request): bool
+    {
+        $route = $request->route();
+        if ($route === null) {
+            return false;
+        }
+
+        $prefix = str_replace('/', '', (string) $route->getPrefix());
+
+        return $prefix === (string) config('adminPrefix');
+    }
+
+    private function appIsInstalled(): bool
+    {
+        return filter_var(env('APP_INSTALL'), FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /**
+     * When the app is installed and no language is stored yet, persist the default language key in session.
+     */
+    private function seedDefaultLanguageSession(): void
+    {
+        if (! $this->appIsInstalled() || session()->has('dflt_lang')) {
+            return;
+        }
+
+        $language = getLanguageDefault();
+        if (! empty($language?->short_name)) {
+            session(['dflt_lang' => $language->short_name]);
+        }
+    }
+
+    /**
+     * Prefer session language; otherwise load default language once the app is installed.
+     */
+    private function applyLocale(): void
+    {
+        if ($locale = session('dflt_lang')) {
+            App::setLocale($locale);
+
+            return;
+        }
+
+        if (! $this->appIsInstalled()) {
+            return;
+        }
+
+        $language = getLanguageDefault();
+        if (empty($language?->short_name)) {
+            return;
+        }
+
+        App::setLocale($language->short_name);
+        session(['dflt_lang' => $language->short_name]);
     }
 }

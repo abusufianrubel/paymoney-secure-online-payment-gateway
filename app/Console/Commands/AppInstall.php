@@ -2,8 +2,6 @@
 
 namespace App\Console\Commands;
 
-use Database\Seeders\AdminTableSeeder;
-use Database\Seeders\RoleUserTableSeeder;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 
@@ -40,27 +38,15 @@ class AppInstall extends Command
      */
     public function handle()
     {
-        
         // Main app migrate and seed
         $this->call('migrate:fresh');
         $this->call('db:seed');
-
-        // Admin user table seed
-        $this->info('Admin Table Seeding...');
-        $this->call('db:seed', ['--class' => AdminTableSeeder::class]);
-        $this->info('Admin Table Seeding completed.');
-
-        // Assing role to the admin Seed
-        $this->info('RoleUser Table Seeding...');
-        $this->call('db:seed', ['--class' => RoleUserTableSeeder::class]);
-        $this->info('RoleUser Table Seeding completed.');
-
+        
         // Core addon seed
         $this->moduleSeed();
         $this->call('optimize:clear');
 
     }
-
 
     protected function moduleSeed()
     {

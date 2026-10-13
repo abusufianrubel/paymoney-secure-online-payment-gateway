@@ -79,39 +79,41 @@
                 </div>
             </div>
 		</div>
+		@if ($dispute->status == 'Open')
+			<div class="box p-4">
+				<form action="{{url(config('adminPrefix').'/dispute/reply')}}" id="reply" method="post" enctype="multipart/form-data">
+					{{ csrf_field() }}
 
-		<div class="box p-4">
-            <form action="{{url(config('adminPrefix').'/dispute/reply')}}" id="reply" method="post" enctype="multipart/form-data">
-                {{ csrf_field() }}
+					<div>
+						<label class="f-14 fw-bold mb-2 p-0" for="description">{{ __('Reply') }}</label>
+						<input type="hidden" name="dispute_id" value="{{ $dispute->id }}">
+						<textarea name="description" id="description" class="form-control"></textarea>
 
-                <div>
-                    <label class="f-14 fw-bold mb-2 p-0" for="description">{{ __('Reply') }}</label>
-                    <input type="hidden" name="dispute_id" value="{{ $dispute->id }}">
-                    <textarea name="description" id="description" class="form-control"></textarea>
+						@if($errors->has('description'))
+							<span class="error">
+								{{ $errors->first('description') }}
+							</span>
+						@endif
+					</div>
 
-                    @if($errors->has('description'))
-                        <span class="error">
-                            {{ $errors->first('description') }}
-                        </span>
-                    @endif
-                </div>
+					<div class="mt-4">
+						<label class="control-label f-14 fw-bold" for="file">{{ __('File') }}</label>
+						<input class="form-controls" type="file" name="file" id="file">
+						@if($errors->has('file'))
+							<span class="error">
+								{{ $errors->first('file') }}
+							</span>
+						@endif
+					</div>
 
-                <div class="mt-4">
-                    <label class="control-label f-14 fw-bold" for="file">{{ __('File') }}</label>
-                    <input class="form-controls" type="file" name="file" id="file">
-                    @if($errors->has('file'))
-                        <span class="error">
-                            {{ $errors->first('file') }}
-                        </span>
-                    @endif
-                </div>
+					<div class="text-sm-end">
+						<button type="submit" class="btn btn-theme f-14" id="dispute-reply"><i class="fa fa-spinner fa-spin d-none"></i> <span id="dispute-reply-text">{{ __('Submit') }}</span></button>
+					</div>
+					<div class="clearfix"></div>
+				</form>
+			</div>
+		@endif
 
-                <div class="text-sm-end">
-                    <button type="submit" class="btn btn-theme f-14" id="dispute-reply"><i class="fa fa-spinner fa-spin d-none"></i> <span id="dispute-reply-text">{{ __('Submit') }}</span></button>
-                </div>
-                <div class="clearfix"></div>
-            </form>
-		</div>
 
 		<!-- Claimant Description - starts -->
 		<div class="box p-4">
@@ -205,8 +207,8 @@
 
 @push('extra_body_scripts')
 
-<script src="{{ asset('public/dist/plugins/jquery-validation-1.17.0/dist/jquery.validate.min.js') }}" type="text/javascript"></script>
-<script src="{{ asset('public/dist/plugins/jquery-validation-1.17.0/dist/additional-methods.min.js') }}" type="text/javascript"></script>
+<script src="{{ asset('public/dist/plugins/jquery-validation/dist/jquery.validate.min.js') }}" type="text/javascript"></script>
+<script src="{{ asset('public/dist/plugins/jquery-validation/dist/additional-methods.min.js') }}" type="text/javascript"></script>
 <script type="text/javascript">
 	'use strict';
 	var extensions = JSON.parse(@json($extensions));

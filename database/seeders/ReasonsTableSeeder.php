@@ -2,26 +2,25 @@
 
 namespace Database\Seeders;
 
-use App\Models\Reason;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class ReasonsTableSeeder extends Seeder
 {
     /**
-     * Run the database seeds.
+     * Auto generated seed file
      *
      * @return void
      */
     public function run()
     {
-        Reason::truncate();
-        Reason::insert([
+        DB::table('reasons')->delete();
+        
+        DB::table('reasons')->insert([
             [
-                'id'   => 1,
                 'title' => 'I have not received the goods',
             ],
             [
-                'id'   => 2,
                 'title' => 'Description does not match with product',
             ],
         ]);

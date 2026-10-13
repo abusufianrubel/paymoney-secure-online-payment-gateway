@@ -66,13 +66,58 @@
                         </a>
                     </li>
                     <li class="d-flex align-items-center">
-                        <a href="{{ route('user.setting.identitiy_verify') }}" class="f-13 gilroy-medium">
+                        <a href="{{ route('user.kyc.verifications.initiate') }}" class="f-13 gilroy-medium">
                             <svg width="17" height="15" viewBox="0 0 17 15" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path fill-rule="evenodd" clip-rule="evenodd" d="M3.03788 0H1.82273V6.25H3.03788V0ZM10.4503 6.25H6.56183L6.07577 5.5625V4.3125L6.56183 3.75H10.4503L10.9364 4.375V5.625L10.4503 6.25ZM4.37455 10H0.486061L0 9.375V8.125L0.486061 7.5H4.37455L4.86061 8.125V9.375L4.37455 10ZM9.11365 0H7.8985V2.5H9.11365V0ZM7.8985 7.5H9.11365V15H7.8985V7.5ZM3.03788 11.25H1.82273V15H3.03788V11.25ZM12.6376 11.25H16.5139L17 10.625V9.4375L16.5139 8.8125H12.6376L12.1515 9.4375V10.625L12.6376 11.25ZM15.1894 0H13.9743V7.5H15.1894V0ZM13.9743 12.5H15.1894V15H13.9743V12.5Z" fill="currentColor" />
                             </svg>
-                            <span class="ms-3">{{ __('Settings') }}</span>
+                            <span class="ms-3">{{ __('Verifications') }}</span>
                         </a>
                     </li>
+
+                    <!-- Profile pay QRcode -->
+                    @if (moduleExists('PayMe') && isActive('PayMe'))
+                        <li class="d-flex align-items-center">
+                            <a href="{{ route('payme.qrcode.show') }}" class="f-13 gilroy-medium">
+                                <svg class="payme-svg" width="141" height="141" viewBox="0 0 141 141" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <g clip-path="url(#clip0_13987_137940)">
+                                    <path d="M52.9442 0.287109H0.274902V52.9564H52.9442V0.287109ZM44.166 44.1782H9.05312V9.06532H44.166V44.1782Z" fill="currentColor"/>
+                                    <path d="M17.8313 17.8438H35.3877V35.4002H17.8313V17.8438Z" fill="currentColor"/>
+                                    <path d="M0.274902 140.738H52.9442V88.0684H0.274902V140.738ZM9.05312 96.8466H44.166V131.959H9.05312V96.8466Z" fill="currentColor"/>
+                                    <path d="M17.8313 105.625H35.3877V123.181H17.8313V105.625Z" fill="currentColor"/>
+                                    <path d="M88.0571 0.287109V52.9564H140.726V0.287109H88.0571ZM131.948 44.1782H96.8353V9.06532H131.948V44.1782Z" fill="currentColor"/>
+                                    <path d="M105.614 17.8438H123.17V35.4002H105.614V17.8438Z" fill="currentColor"/>
+                                    <path d="M17.8313 61.7344H0.274902V79.2908H26.6095V70.5126H17.8313V61.7344Z" fill="currentColor"/>
+                                    <path d="M61.7224 79.291H79.2788V96.8474H61.7224V79.291Z" fill="currentColor"/>
+                                    <path d="M26.6096 61.7344H44.166V70.5126H26.6096V61.7344Z" fill="currentColor"/>
+                                    <path d="M79.2788 105.625H61.7224V114.403H70.5006V123.181H79.2788V114.403V105.625Z" fill="currentColor"/>
+                                    <path d="M52.9442 61.7344V70.5126H44.166V79.2908H61.7224V61.7344H52.9442Z" fill="currentColor"/>
+                                    <path d="M70.5005 35.4004H79.2787V52.9568H70.5005V35.4004Z" fill="currentColor"/>
+                                    <path d="M79.2787 70.5126V79.2908H96.8351V61.7344H70.5005V70.5126H79.2787Z" fill="currentColor"/>
+                                    <path d="M61.7224 52.957H70.5006V61.7352H61.7224V52.957Z" fill="currentColor"/>
+                                    <path d="M79.2788 123.182H96.8352V140.738H79.2788V123.182Z" fill="currentColor"/>
+                                    <path d="M61.7224 123.182H70.5006V140.738H61.7224V123.182Z" fill="currentColor"/>
+                                    <path d="M79.2788 96.8477H88.057V105.626H79.2788V96.8477Z" fill="currentColor"/>
+                                    <path d="M79.2788 26.6217V9.06532H70.5006V0.287109H61.7224V35.4H70.5006V26.6217H79.2788Z" fill="currentColor"/>
+                                    <path d="M105.614 123.182H114.392V140.738H105.614V123.182Z" fill="currentColor"/>
+                                    <path d="M105.614 105.625H123.17V114.403H105.614V105.625Z" fill="currentColor"/>
+                                    <path d="M96.8352 114.404H105.613V123.183H96.8352V114.404Z" fill="currentColor"/>
+                                    <path d="M88.0571 105.625H96.8353V114.403H88.0571V105.625Z" fill="currentColor"/>
+                                    <path d="M123.17 88.0684V96.8466H131.948V105.625H140.726V88.0684H131.948H123.17Z" fill="currentColor"/>
+                                    <path d="M131.948 114.404H123.17V140.739H140.726V123.183H131.948V114.404Z" fill="currentColor"/>
+                                    <path d="M88.0571 88.0692V96.8474H114.392V79.291H96.8353V88.0692H88.0571Z" fill="currentColor"/>
+                                    <path d="M105.614 61.7344V70.5126H123.17V79.2908H140.726V61.7344H123.17H105.614Z" fill="currentColor"/>
+                                    </g>
+                                    <defs>
+                                    <clipPath id="clip0_13987_137940">
+                                    <rect width="140.451" height="140.451" fill="white" transform="translate(0.274902 0.287109)"/>
+                                    </clipPath>
+                                    </defs>
+                                    </svg>
+                                    
+                                <span class="ms-3">{{ __('Share PayMe Request') }}</span>
+                            </a>
+                        </li>
+                    @endif
                     <li class="d-flex align-items-center border-top h-63">
                         <a href="{{ route('user.logout') }}" class="f-13 gilroy-medium">
                             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">

@@ -22,4 +22,11 @@ return [
     'file_permission' => 0775,
 
     'api_latest' => 2,
+
+    'migration_versions' => [
+        '5.0.0',
+    ],
+
+    'seed_versions' => [
+    ],
 ];

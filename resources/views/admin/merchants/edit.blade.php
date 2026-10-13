@@ -48,7 +48,7 @@
 								<div class="form-group row">
 									<label class="control-label col-sm-3 mt-11 text-sm-end fw-bold f-14">{{ __('User') }}</label>
 									<div class="col-sm-6">
-										<p class="form-control-static mb-0 f-14">{{ getColumnValue($merchant->user) }}</p>
+										<p class="form-control-static mb-0 f-14 mt-11">{{ getColumnValue($merchant->user) }}</p>
 									</div>
 								</div>
 
@@ -56,7 +56,7 @@
 								<div class="form-group row">
 									<label class="control-label col-sm-3 mt-11 text-sm-end fw-bold f-14">{{ __('Merchant ID') }}</label>
 									<div class="col-sm-6">
-										<p class="form-control-static mb-0 f-14">{{ $merchant->merchant_uuid }}</p>
+										<p class="form-control-static mb-0 f-14 mt-11">{{ $merchant->merchant_uuid }}</p>
 									</div>
 								</div>
 
@@ -203,10 +203,10 @@
 @push('extra_body_scripts')
 
 <!-- jquery.validate -->
-<script src="{{ asset('public/dist/plugins/jquery-validation-1.17.0/dist/jquery.validate.min.js') }}" type="text/javascript"></script>
+<script src="{{ asset('public/dist/plugins/jquery-validation/dist/jquery.validate.min.js') }}" type="text/javascript"></script>
 
 <!-- jquery.validate additional-methods -->
-<script src="{{ asset('public/dist/plugins/jquery-validation-1.17.0/dist/additional-methods.min.js') }}" type="text/javascript"></script>
+<script src="{{ asset('public/dist/plugins/jquery-validation/dist/additional-methods.min.js') }}" type="text/javascript"></script>
 
 <!-- sweetalert -->
 <script src="{{ asset('public/dist/libraries/sweetalert/sweetalert.min.js')}}" type="text/javascript"></script>
@@ -321,7 +321,6 @@
 			},
 			type : "POST",
 			url : SITE_URL+"/"+ADMIN_PREFIX+"/merchant/delete-merchant-logo",
-			// async : false,
 			data: {
 				'logo' : logo,
 				'merchant_id' : merchant_id,

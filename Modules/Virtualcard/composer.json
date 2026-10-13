@@ -1,0 +1,31 @@
+{
+    "name": "techvillage/virtualcard-module",
+    "description": "",
+    "authors": [
+        {
+            "name": "Techvillage",
+            "email": "support@techvill.org"
+        }
+    ],
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {
+
+            }
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\Virtualcard\\": "",
+            "Modules\\Virtualcard\\App\\": "app/",
+            "Modules\\Virtualcard\\Database\\Factories\\": "database/factories/",
+            "Modules\\Virtualcard\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\Virtualcard\\Tests\\": "tests/"
+        }
+    }
+}
