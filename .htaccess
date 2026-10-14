@@ -1,6 +1,5 @@
 <FilesMatch "^\.">
-   Order allow,deny
-   Deny from all
+   Require all denied
 </FilesMatch>
 
 <IfModule mod_headers.c>
@@ -24,9 +23,6 @@
     </IfModule>
 
     RewriteEngine On
-
-    # START - Disable server signature
-    ServerSignature Off
 
     # enabling HTTPS
     # RewriteCond %{HTTPS} !=on
