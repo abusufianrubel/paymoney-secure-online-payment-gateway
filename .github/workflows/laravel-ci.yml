@@ -42,7 +42,6 @@ jobs:
         env:
           APP_ENV: testing
           APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
-          APP_INSTALL: 'true'
           DB_CONNECTION: sqlite
           DB_DATABASE: ':memory:'
           CACHE_STORE: array
