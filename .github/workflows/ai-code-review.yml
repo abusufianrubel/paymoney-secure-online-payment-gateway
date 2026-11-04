@@ -35,4 +35,9 @@ jobs:
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: python3 .github/scripts/ai-review.py
+        run: |
+          if [ -f .github/scripts/ai-review.py ]; then
+            python3 .github/scripts/ai-review.py
+          else
+            echo "Trusted AI review script is not on the base branch yet; skipping this bootstrap PR."
+          fi
