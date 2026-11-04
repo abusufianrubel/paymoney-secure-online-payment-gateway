@@ -1,0 +1,43 @@
+name: AI Pull Request Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: write
+
+concurrency:
+  group: ai-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    name: Gemini code review
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      # Never check out PR code in a job that has access to secrets.
+      # The trusted script is loaded from the base branch; PR changes are fetched via the GitHub API.
+      - name: Checkout trusted workflow tools
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+
+      - name: Run AI review
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          if [ -f .github/scripts/ai-review.py ]; then
+            python3 .github/scripts/ai-review.py
+          else
+            echo "Trusted AI review script is not on the base branch yet; skipping this bootstrap PR."
+          fi
