@@ -69,7 +69,7 @@ def build_diff(files):
 
 
 def call_gemini(api_key, model, prompt):
-    model = model or "gemini-3.6-flash"
+    model = model or "gemini-3.8-flash"
     endpoint = (
         "https://generativelanguage.googleapis.com/v1beta/"
         f"models/{urllib.parse.quote(model, safe='')}:generateContent"
@@ -77,7 +77,6 @@ def call_gemini(api_key, model, prompt):
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
-            "temperature": 0.1,
             "maxOutputTokens": 4096,
         },
     }
