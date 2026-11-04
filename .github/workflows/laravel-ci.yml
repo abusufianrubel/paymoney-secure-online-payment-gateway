@@ -39,6 +39,16 @@ jobs:
         run: composer validate --no-check-publish
 
       - name: Install dependencies
+        env:
+          APP_ENV: testing
+          APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+          APP_INSTALL: 'true'
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ':memory:'
+          CACHE_STORE: array
+          SESSION_DRIVER: array
+          QUEUE_CONNECTION: sync
+          MAIL_MAILER: array
         run: composer install --prefer-dist --no-interaction --no-progress
 
       - name: Run PHPUnit
