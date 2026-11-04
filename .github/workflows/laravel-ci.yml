@@ -60,4 +60,4 @@ jobs:
           SESSION_DRIVER: array
           QUEUE_CONNECTION: sync
           MAIL_MAILER: array
-        run: php artisan test --no-interaction
+        run: php artisan test
